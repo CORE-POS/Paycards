@@ -97,6 +97,13 @@ class Test extends PHPUnit_Framework_TestCase
         $obj = new BetterXmlData($xml);
         $this->assertEquals('Value', $obj->query('/Nodes/Node'));
         $this->assertEquals(false, $obj->query('/Nodes/Fake'));
+
+        $obj = new xmlData($xml);
+        $this->assertEquals('Value', $obj->get('Node'));
+        $this->assertEquals('Value', $obj->get_first('Node'));
+        $this->assertEquals(false, $obj->get('Fake'));
+        $this->assertEquals(false, $obj->get_first('Fake'));
+        $this->assertEquals(true, $obj->isValid());
     }
 
     public function testCaAdmin()
@@ -140,6 +147,34 @@ class Test extends PHPUnit_Framework_TestCase
             $this->assertEquals(true, $dc->check($input));
             $this->assertInternalType('array', $dc->parse($input));
         }
+
+        $p = new PaycardSteering();
+        $this->assertEquals(false, $p->check('foo'));
+        $this->assertEquals(true, $p->check('PCLOOKUP'));
+        $this->assertInternalType('array', $p->parse('PCLOOKUP'));
+    }
+
+    public function testNotifier()
+    {
+        $n = new TermStateNotifier();
+        $states = array(
+            'swipe',
+            'ready',
+            'pin',
+            'type',
+            'cashback',
+            'DCDC',
+            'DCCC',
+            'DCEF',
+            'DCEC',
+            'invalid',
+        );
+        foreach ($states as $state) {
+            CoreLocal::set('ccTermState', $state);
+            $this->assertInternalType('string', $n->draw());
+        }
+        CoreLocal::set('PaycardsCashierFacing', '1');
+        $this->assertInternalType('string', $n->draw());
     }
 
     public function testDialogs()

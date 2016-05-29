@@ -305,6 +305,12 @@ if (!class_exists('Authenticate', false)) {
         }
     }
 }
+if (!class_exists('PrehLib', false)) {
+    class PrehLib
+    {
+        public static function fsEligible(){}
+    }
+}
 
 if (!class_exists('COREPOS\\pos\\lib\\MemberLib')) {
     include(__DIR__ . '/mocks/MemberLib.php');

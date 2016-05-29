@@ -100,7 +100,7 @@ class PaycardDatacapParser extends Parser
                     /* try to automatically do fs total */
                     $try = PrehLib::fsEligible();
                     if ($try !== true) {
-                        $ret['output'] = PaycardLib::paycard_msgBox($type,"Type Mismatch",
+                        $ret['output'] = PaycardLib::paycard_msgBox('',"Type Mismatch",
                             "Foodstamp eligible amount inapplicable","[clear] to cancel");
                         $ret['main_frame'] = false;
                         return $ret;
