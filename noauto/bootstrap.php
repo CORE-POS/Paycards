@@ -242,6 +242,11 @@ if (!class_exists('SQLManager', false)) {
             return $row === null ? false : $row;
         }
 
+        public function getRow($prep, $args=array())
+        {
+            return $this->fetchRow(null);
+        }
+
         public function prepare($query)
         {
             return $query;

@@ -188,7 +188,7 @@ class Valutec extends BasicCCModule
 
     // END INTERFACE METHODS
     
-    private function send_auth()
+    protected function send_auth()
     {
         // initialize
         $dbTrans = Database::tDataConnect();
@@ -200,6 +200,7 @@ class Valutec extends BasicCCModule
         $mode = "";
         $logged_mode = $mode;
         $authMethod = "";
+        $amount = CoreLocal::get('paycard_amount');
         switch (CoreLocal::get("paycard_mode")) {
             case PaycardLib::PAYCARD_MODE_AUTH:
                 $mode = (($amount < 0) ? 'refund' : 'tender');
@@ -259,7 +260,7 @@ class Valutec extends BasicCCModule
         return $this->curlSend($getData,'GET');
     }
 
-    private function send_void()
+    protected function send_void()
     {
         // initialize
         $dbTrans = Database::tDataConnect();
@@ -307,7 +308,7 @@ class Valutec extends BasicCCModule
         return $this->curlSend($getData,'GET');
     }
 
-    private function send_balance()
+    protected function send_balance()
     {
         // prepare data for the request
         $cashierNo = CoreLocal::get("CashierNo");
@@ -352,6 +353,7 @@ class Valutec extends BasicCCModule
         $request = $this->last_request;
         $this->last_paycard_transaction_id = $request->last_paycard_transaction_id;
         $response = new PaycardResponse($request, $authResult);
+        $identifier = $this->valutecIdentifier(CoreLocal::get('paycard_id'));
 
         // initialize
         $dbTrans = Database::tDataConnect();
@@ -469,7 +471,7 @@ class Valutec extends BasicCCModule
         $xml = new xmlData($vdResult["response"]);
         $request = $this->last_request;
         $this->last_paycard_transaction_id = $request->last_paycard_transaction_id;
-        $response = new PaycardResponse($request, $authResult);
+        $response = new PaycardResponse($request, $vdResult);
 
         $mode = 'void';
         $authcode = $this->temp;
@@ -509,7 +511,7 @@ class Valutec extends BasicCCModule
         } catch (Exception $ex) {}
 
         if ($vdResult['curlErr'] != CURLE_OK || $vdResult['curlHTTP'] != 200) {
-            if ($authResult['curlHTTP'] == '0') {
+            if ($vdResult['curlHTTP'] == '0') {
                 CoreLocal::set("boxMsg","No response from processor<br />
                                 The transaction did not go through");
 
@@ -543,13 +545,13 @@ class Valutec extends BasicCCModule
         return PaycardLib::PAYCARD_ERR_PROC; 
     }
 
-    private function handleResponseBalance($balResult)
+    protected function handleResponseBalance($balResult)
     {
         $xml = new xmlData($balResult["response"]);
         $program = 'Gift';
 
         if ($balResult['curlErr'] != CURLE_OK || $balResult['curlHTTP'] != 200) {
-            if ($authResult['curlHTTP'] == '0'){
+            if ($balResult['curlHTTP'] == '0'){
                 CoreLocal::set("boxMsg","No response from processor<br />
                                           The transaction did not go through");
                 return PaycardLib::PAYCARD_ERR_PROC;

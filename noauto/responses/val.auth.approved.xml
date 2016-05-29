@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<Response>
+    <Balance>10</Balance>
+    <TransactionType>Gift</TransactionType>
+    <Identifier>Mock</Identifier>
+    <Authorized>true</Authorized>
+    <AuthorizationCode>1</AuthorizationCode>
+    <ErrorMsg></ErrorMsg>
+</Response>
