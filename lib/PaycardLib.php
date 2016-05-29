@@ -470,6 +470,7 @@ static private function parseTrack2($tr2, $tr1)
         $name = "Customer";
     } else {
         // if we have both, make sure they match
+        list($pan, $exp, $name) = self::parseTrack1($tr1);
         if( $tr2a[0] != $pan)
             throw new Exception(-7); // PAN mismatch
         else if( (substr($tr2a[1],2,2).substr($tr2a[1],0,2)) != $exp)

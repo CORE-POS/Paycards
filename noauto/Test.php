@@ -212,6 +212,22 @@ class Test extends PHPUnit_Framework_TestCase
         $xml = file_get_contents(__DIR__ . '/responses/dc.auth.error.xml');
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->handleResponseDataCap($xml));
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->handleResponseDataCapBalance($xml));
+
+        $this->assertEquals(true, PaycardModule::isReturn('refund'));
+        $this->assertEquals(false, PaycardModule::isReturn('foo'));
+    }
+
+    public function testLib()
+    {
+        PaycardLib::paycard_wipe_pan();
+        PaycardLib::paycard_live();
+        $this->assertEquals(PaycardLib::PAYCARD_TYPE_CREDIT, PaycardLib::paycard_type('4111111111111111'));
+
+        // from: http://www.gae.ucm.es/~padilla/extrawork/magexam1.html
+        $stripe = '%B1234567890123445^PADILLA/L.                ^99011200000000000000**XXX******?'
+            . ';1234567890123445=99011200XXXX00000000?'
+            . ';011234567890123445=724724100000000000030300XXXX040400099010=************************==1=0000000000000000?';
+        $this->assertInternalType('array', PaycardLib::paycard_magstripe($stripe));
     }
 
     public function testPages()
