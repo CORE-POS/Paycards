@@ -133,6 +133,9 @@ class Test extends PHPUnit_Framework_TestCase
             'AVDATACAPGD',
         );
         $dc = new PaycardDatacapParser();
+        $this->assertEquals(false, $dc->check('foo'));
+        $this->assertInternalType('array', $dc->parse($valid[0]));
+        CoreLocal::set('ttlflag', 1);
         foreach ($valid as $input) {
             $this->assertEquals(true, $dc->check($input));
             $this->assertInternalType('array', $dc->parse($input));
