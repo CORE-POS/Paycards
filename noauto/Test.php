@@ -278,6 +278,10 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(true, $page->preprocess());
         FormLib::set('selectlist', 'GIFT');
         $this->assertEquals(true, $page->preprocess());
+        FormLib::set('selectlist', 'CL');
+        $this->assertEquals(true, $page->preprocess());
+        FormLib::set('clear-to-home', 1);
+        $this->assertEquals(false, $page->preprocess());
         CoreLocal::set('PaycardsDatacapMode', '');
         FormLib::clear();
 
@@ -295,6 +299,8 @@ class Test extends PHPUnit_Framework_TestCase
         FormLib::clear();
 
         $page = new paycardSuccess();
+        CoreLocal::set('boxMsg', '');
+        CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_ENCRYPTED);
         FormLib::set('reginput', 'VD');
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
         $this->assertEquals(false, $page->preprocess());
@@ -318,6 +324,8 @@ class Test extends PHPUnit_Framework_TestCase
         FormLib::clear();
 
         $page = new PaycardEmvSuccess();
+        CoreLocal::set('boxMsg', '');
+        CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_ENCRYPTED);
         FormLib::set('reginput', 'VD');
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
         $this->assertEquals(false, $page->preprocess());
@@ -347,9 +355,9 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(false, $page->preprocess());
         FormLib::clear();
         FormLib::set('xml-resp', file_get_contents(__DIR__ . '/responses/dc.auth.approved.xml'));
-        FormLib::set('output', 'display');
+        FormLib::set('output-method', 'display');
         $this->assertEquals(false, $page->preprocess());
-        FormLib::set('output', 'receipt');
+        FormLib::set('output-method', 'receipt');
         $this->assertEquals(false, $page->preprocess());
     }
 
