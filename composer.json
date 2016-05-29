@@ -6,7 +6,8 @@
         "corepos/composer-installer": ">=1.0.1"
     },
     "require-dev": {
-        "phpunit/phpunit": "^5.3"
+        "phpunit/phpunit": "^5.3",
+        "codeclimate/php-test-reporter": "^0.3.2"
     },
     "autoload": {
         "exclude-from-classmap": ["/*.php", "/ajax/", "/gui/", "/lib/", "/noauto/"]

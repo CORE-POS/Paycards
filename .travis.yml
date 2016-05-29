@@ -2,3 +2,12 @@ language: php
 php:
     - 5.6
 
+install:
+    - composer install
+
+#after_script:
+#    - vendor/bin/test-reporter
+
+#addons:
+#    code_climate:
+#        repo_token: 461be60a44fc2293c80a05712a1aa18ff7d12effec9a806d7722435b12ea2bbe
