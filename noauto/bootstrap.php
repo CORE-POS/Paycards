@@ -153,6 +153,7 @@ if (!class_exists('MiscLib', false)) {
 if (!class_exists('TransRecord', false)) {
     class TransRecord
     {
+        public static function addComment($c){}
         public static function addRecord($arr)
         {
         }

@@ -346,7 +346,7 @@ class Valutec extends BasicCCModule
         PaycardLib::PAYCARD_MODE_BALANCE => 'handleResponseBalance',
     );
 
-    private function handleResponseAuth($authResult)
+    protected function handleResponseAuth($authResult)
     {
         $xml = new xmlData($authResult["response"]);
         $request = $this->last_request;
@@ -464,7 +464,7 @@ class Valutec extends BasicCCModule
         return PaycardLib::PAYCARD_ERR_PROC;
     }
 
-    private function handleResponseVoid($vdResult)
+    protected function handleResponseVoid($vdResult)
     {
         $xml = new xmlData($vdResult["response"]);
         $request = $this->last_request;

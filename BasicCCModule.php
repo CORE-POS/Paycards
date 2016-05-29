@@ -331,7 +331,7 @@ class BasicCCModule
         $type = CoreLocal::get('paycard_type');
         if (isset($this->respondByType[$type])) {
             $method = $this->respondByType[$type];
-            return $this->$method();
+            return $this->$method($response);
         } else {
             return false;
         }

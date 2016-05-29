@@ -201,8 +201,8 @@ class GoEMerchant extends BasicCCModule
         }
         $resultCode = $xml->get_first("STATUS1");
         $resultMsg = $xml->get_first("RESPONSE1");
+        $rMsg = $resultMsg;
         if ($resultMsg) {
-            $rMsg = $resultMsg;
             if (strlen($rMsg) > 100) {
                 $rMsg = substr($rMsg,0,100);
             }

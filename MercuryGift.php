@@ -711,7 +711,9 @@ class MercuryGift extends BasicCCModule
         }
 
         $normalized = ($validResponse == 0) ? 4 : 0;
+        $resultCode = 0;
         $status = $xml->get('CMDSTATUS');
+        $rMsg = $status;
         if ($status == 'Approved') {
             $normalized = 1;
             $resultCode = 1;
@@ -740,9 +742,9 @@ class MercuryGift extends BasicCCModule
                                 xBalance=%.2f
                             WHERE paycardTransactionID=%d",
                                 $now,
-                                $authResult['curlTime'],
-                                $authResult['curlErr'],
-                                $authResult['curlHTTP'],
+                                $vdResult['curlTime'],
+                                $vdResult['curlErr'],
+                                $vdResult['curlHTTP'],
                                 $normalized,
                                 $resultCode,
                                 $apprNumber,
@@ -755,7 +757,7 @@ class MercuryGift extends BasicCCModule
         $dbTrans->query($finishQ);
 
         if ($vdResult['curlErr'] != CURLE_OK || $vdResult['curlHTTP'] != 200) {
-            if ($authResult['curlHTTP'] == '0'){
+            if ($vdResult['curlHTTP'] == '0'){
                 if (!$this->second_try){
                     $this->second_try = true;
 
@@ -802,7 +804,7 @@ class MercuryGift extends BasicCCModule
         $program = 'Gift';
 
         if ($balResult['curlErr'] != CURLE_OK || $balResult['curlHTTP'] != 200) {
-            if ($authResult['curlHTTP'] == '0'){
+            if ($balResult['curlHTTP'] == '0'){
                 if (!$this->second_try) {
                     $this->second_try = true;
 

@@ -24,41 +24,88 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertInternalType('string', $bm->desoapify('action', $soaped));
         $this->assertEquals(PaycardLib::PAYCARD_ERR_NOSEND, $bm->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND));
 
+        $httpErr = array(
+            'curlErr' => CURLE_OK,
+            'curlErrText' => '',
+            'curlTime' => 0,
+            'curlHTTP' => 0,
+            'response' => '',
+        );
+        $req = new PaycardRequest('1-1-1');
+        $req->last_paycard_transaction_id=1;
+
         $a = new AuthorizeDotNet();
         $this->assertEquals(true, $a->handlesType(PaycardLib::PAYCARD_TYPE_CREDIT));
         $this->assertEquals(false, $a->handlesType(PaycardLib::PAYCARD_TYPE_GIFT));
         $this->assertInternalType('array', $a->entered(true, array()));
         $this->assertInternalType('array', $a->paycard_void(1));
+        $a->last_request = $req;
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $a->handleResponse($httpErr));
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_COMM, $a->handleResponse($httpErr));
 
         $f = new FirstData();
         $this->assertEquals(true, $f->handlesType(PaycardLib::PAYCARD_TYPE_CREDIT));
         $this->assertEquals(false, $f->handlesType(PaycardLib::PAYCARD_TYPE_GIFT));
         $this->assertInternalType('array', $f->entered(true, array()));
         $this->assertInternalType('array', $f->paycard_void(1));
+        $f->last_request = $req;
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $f->handleResponse($httpErr));
+        try {
+            CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
+            $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $f->handleResponse($httpErr));
+        } catch (Exception $ex){}
 
         $g = new GoEMerchant();
         $this->assertEquals(true, $g->handlesType(PaycardLib::PAYCARD_TYPE_CREDIT));
         $this->assertEquals(false, $g->handlesType(PaycardLib::PAYCARD_TYPE_GIFT));
         $this->assertInternalType('array', $g->entered(true, array()));
         $this->assertInternalType('array', $g->paycard_void(1));
+        $g->last_request = $req;
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $g->handleResponse($httpErr));
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $g->handleResponse($httpErr));
 
         $m = new MercuryGift();
         $this->assertEquals(false, $m->handlesType(PaycardLib::PAYCARD_TYPE_CREDIT));
         $this->assertEquals(true, $m->handlesType(PaycardLib::PAYCARD_TYPE_GIFT));
         $this->assertInternalType('array', $m->entered(true, array()));
         $this->assertInternalType('array', $m->paycard_void(1));
+        $m->last_request = $req;
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_DATA, $m->handleResponse($httpErr));
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $m->handleResponse($httpErr));
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_BALANCE);
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $m->handleResponse($httpErr));
+
 
         $v = new Valutec();
         $this->assertEquals(false, $v->handlesType(PaycardLib::PAYCARD_TYPE_CREDIT));
         $this->assertEquals(true, $v->handlesType(PaycardLib::PAYCARD_TYPE_GIFT));
         $this->assertInternalType('array', $v->entered(true, array()));
         $this->assertInternalType('array', $v->paycard_void(1));
+        $v->last_request = $req;
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->handleResponse($httpErr));
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->handleResponse($httpErr));
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_BALANCE);
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->handleResponse($httpErr));
 
         $v = new MercuryE2E();
         $this->assertEquals(false, $v->handlesType(PaycardLib::PAYCARD_TYPE_CREDIT));
         $this->assertEquals(true, $v->handlesType(PaycardLib::PAYCARD_TYPE_ENCRYPTED));
         $this->assertInternalType('array', $v->entered(true, array()));
         $this->assertInternalType('array', $v->paycard_void(1));
+        $v->last_request = $req;
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->handleResponse($httpErr));
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->handleResponse($httpErr));
     }
 
     public function testPages()
