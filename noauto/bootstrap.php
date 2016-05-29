@@ -194,9 +194,19 @@ if (!class_exists('SQLManager', false)) {
         {
         }
 
+        public function insertID()
+        {
+            return 1;
+        }
+
         public function curdate()
         {
             return 'curdate()';
+        }
+
+        public function now()
+        {
+            return 'now()';
         }
 
         public static function addResult($row)

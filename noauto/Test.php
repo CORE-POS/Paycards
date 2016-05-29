@@ -234,8 +234,41 @@ class Test extends PHPUnit_Framework_TestCase
     public function testReqResp()
     {
         $req = new PaycardRequest('1-1-1');
+        $req->setManual(0);
+        $req->setRefNum(0);
+        $req->setMode(0);
+        $req->setAmount(0);
+        $req->setCardholder(0);
+        $req->setIssuer(0);
+        $req->setPAN(0);
+        $req->setSent(1, 1, 0, 0);
+        $req->setProcessor(0);
+        $req->saveRequest();
+        $req->changeAmount(1);
+        $req->updateCardInfo('pan', 'name', 'issuer');
+
         $resp = new PaycardResponse($req, array('curlTime'=>0, 'curlErr'=>0, 'curlHTTP'=>200));
+        $resp->setToken(1,2,3);
+        $resp->setBalance(0);
+        $resp->setValid(1);
+        $resp->setResponseCode(1);
+        $resp->setResultCode(1);
+        $resp->setNormalizedCode(1);
+        $resp->setResultMsg('asdf');
+        $resp->setApprovalNum('asdf');
+        $resp->setTransactionID('asdf');
+        $resp->saveResponse();
+
+        CoreLocal::set('paycard_trans', '1-1-1');
         $req = new PaycardVoidRequest('1-1-1');
+        try {
+            $req->findOriginal();
+        } catch (Exception $ex){}
+        SQLManager::addResult(array('refNum'=>1,'xTransactionID'=>1,'amount'=>1,'xToken'=>1,'processData'=>1,'acqRefData'=>1,'xApprovalNumber'=>1,'mode'=>1,'cardType'=>1));
+        $req->findOriginal();
+        SQLManager::clear();
+        $req->saveRequest();
+
         $req = new PaycardGiftRequest('1-1-1');
     }
 }
