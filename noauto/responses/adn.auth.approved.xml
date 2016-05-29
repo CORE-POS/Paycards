@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<Response>
+    <ResponseCode>1</ResponseCode>
+    <Code>1</Code>
+    <Description>Mock</Description>
+    <TransID>1</TransID>
+    <AuthCode>1</AuthCode>
+</Response>

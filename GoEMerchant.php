@@ -109,7 +109,7 @@ class GoEMerchant extends BasicCCModule
         if (!$xTransID) {
             $validResponse = -3;
         }
-        $apprNumber = $xml->get("AUTH_CODE");
+        $apprNumber = $xml->get_first("AUTH_CODE");
         // valid credit (return) transactions don't have an approval number
 
         /**

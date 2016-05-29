@@ -263,6 +263,7 @@ class BasicCCModule
         if (MiscLib::win32()) {
             curl_setopt($curl_handle, CURLOPT_CAINFO, LOCAL_CERT_PATH);
         }
+
         if ($type == 'SOAP') {
             $headers = array();
             if (!empty($this->SOAPACTION)) {
@@ -270,7 +271,7 @@ class BasicCCModule
             }
             $headers[] = "Content-type: text/xml";
             curl_setopt($curl_handle, CURLOPT_HTTPHEADER, $headers);
-        } else if ($xml) {
+        } elseif ($xml) {
             curl_setopt($curl_handle, CURLOPT_HTTPHEADER,
                 array("Content-type: text/xml"));
         }
@@ -285,25 +286,35 @@ class BasicCCModule
 
         set_time_limit(60);
 
-        $response = curl_exec($curl_handle);
+        if (!defined('MOCK_ALL_REQUESTS')) {
+            $response = curl_exec($curl_handle);
+
+            if ($type == "SOAP") {
+                $response = str_replace("&lt;","<",$response);
+                $response = str_replace("&gt;",">",$response);
+            }
+
+            $funcReturn = array(
+                'curlErr' => curl_errno($curl_handle),
+                'curlErrText' => curl_error($curl_handle),
+                'curlTime' => curl_getinfo($curl_handle,
+                        CURLINFO_TOTAL_TIME),
+                'curlHTTP' => curl_getinfo($curl_handle,
+                        CURLINFO_HTTP_CODE),
+                'response' => $response
+            );
+        } else {
+            $funcReturn = array(
+                'curlErr' => 0,
+                'curlErrText' => '',
+                'curlTime' => 0,
+                'curlHTTP' => 200,
+                'response' => self::$mock_response,
+            );
+        }
 
         // request sent; get rid of PAN info
         $this->setPAN(array());
-
-        if ($type == "SOAP") {
-            $response = str_replace("&lt;","<",$response);
-            $response = str_replace("&gt;",">",$response);
-        }
-
-        $funcReturn = array(
-            'curlErr' => curl_errno($curl_handle),
-            'curlErrText' => curl_error($curl_handle),
-            'curlTime' => curl_getinfo($curl_handle,
-                    CURLINFO_TOTAL_TIME),
-            'curlHTTP' => curl_getinfo($curl_handle,
-                    CURLINFO_HTTP_CODE),
-            'response' => $response
-        );
 
         curl_close($curl_handle);
 
@@ -312,6 +323,12 @@ class BasicCCModule
         } else {
             return $funcReturn;
         }
+    }
+
+    private static $mock_response = '';
+    public static function mockResponse($m)
+    {
+        self::$mock_response = $m;
     }
 
     /** 

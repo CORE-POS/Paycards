@@ -14,15 +14,27 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(false, $bm->handlesType(PaycardLib::PAYCARD_TYPE_ENCRYPTED));
         $this->assertInternalType('array', $bm->entered(true, array()));
         $bm->cleanup(array());
+        $this->assertEquals(0, $bm->doSend(PaycardLib::PAYCARD_MODE_AUTH));
+        $this->assertEquals(false, $bm->handleResponse(PaycardLib::PAYCARD_TYPE_CREDIT));
         $this->assertInternalType('array', $bm->paycard_void(1));
         $this->assertEquals(false, $bm->myRefNum('1-1-1'));
         $this->assertInternalType('array', $bm->lookupTransaction('1-1-1', true, 'lookup'));
         $this->assertInternalType('string', $bm->refnum(1));
+        $this->assertEquals('', $bm->refnum(9999));
         $this->assertInternalType('string', $bm->array2post(array('foo'=>'bar')));
         $soaped = $bm->soapify('action',array('foo'=>'bar'));
         $this->assertInternalType('string', $soaped);
         $this->assertInternalType('string', $bm->desoapify('action', $soaped));
-        $this->assertEquals(PaycardLib::PAYCARD_ERR_NOSEND, $bm->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND));
+        $errors = array(
+            PaycardLib::PAYCARD_ERR_NOSEND,
+            PaycardLib::PAYCARD_ERR_COMM,
+            PaycardLib::PAYCARD_ERR_TIMEOUT,
+            PaycardLib::PAYCARD_ERR_DATA,
+            PaycardLib::PAYCARD_ERR_PROC,
+        );
+        foreach ($errors as $error) {
+            $this->assertEquals($error, $bm->setErrorMsg($error));
+        }
 
         $httpErr = array(
             'curlErr' => CURLE_OK,
@@ -42,8 +54,20 @@ class Test extends PHPUnit_Framework_TestCase
         $a->last_request = $req;
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $a->handleResponse($httpErr));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/adn.auth.approved.xml'));
+        $a->setPAN(array('pan'=>'4111111111111111', 'tr1'=>'', 'tr2'=>'', 'tr3'=>''));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_OK, $a->doSend(PaycardLib::PAYCARD_MODE_AUTH));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/adn.auth.declined.xml'));
+        $a->setPAN(array('pan'=>'4111111111111111', 'tr1'=>'', 'tr2'=>'', 'tr3'=>''));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $a->doSend(PaycardLib::PAYCARD_MODE_AUTH));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/adn.auth.error.xml'));
+        $a->setPAN(array('pan'=>'4111111111111111', 'tr1'=>'', 'tr2'=>'', 'tr3'=>''));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $a->doSend(PaycardLib::PAYCARD_MODE_AUTH));
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
         $this->assertEquals(PaycardLib::PAYCARD_ERR_COMM, $a->handleResponse($httpErr));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/adn.auth.approved.xml'));
+        $a->setPAN(array('pan'=>'4111111111111111', 'tr1'=>'', 'tr2'=>'', 'tr3'=>''));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_NOSEND, $a->doSend(PaycardLib::PAYCARD_MODE_VOID));
 
         $f = new FirstData();
         $this->assertEquals(true, $f->handlesType(PaycardLib::PAYCARD_TYPE_CREDIT));
@@ -66,6 +90,15 @@ class Test extends PHPUnit_Framework_TestCase
         $g->last_request = $req;
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $g->handleResponse($httpErr));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/gem.auth.approved.xml'));
+        $g->setPAN(array('pan'=>'4111111111111111', 'tr1'=>'', 'tr2'=>'', 'tr3'=>''));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_OK, $g->doSend(PaycardLib::PAYCARD_MODE_AUTH));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/gem.auth.declined.xml'));
+        $g->setPAN(array('pan'=>'4111111111111111', 'tr1'=>'', 'tr2'=>'', 'tr3'=>''));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $g->doSend(PaycardLib::PAYCARD_MODE_AUTH));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/gem.auth.error.xml'));
+        $g->setPAN(array('pan'=>'4111111111111111', 'tr1'=>'', 'tr2'=>'', 'tr3'=>''));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $g->doSend(PaycardLib::PAYCARD_MODE_AUTH));
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $g->handleResponse($httpErr));
 
@@ -104,6 +137,10 @@ class Test extends PHPUnit_Framework_TestCase
         $v->last_request = $req;
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->handleResponse($httpErr));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/me.auth.approved.xml'));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_OK, $v->doSend(PaycardLib::PAYCARD_MODE_AUTH));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/me.auth.declined.xml'));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->doSend(PaycardLib::PAYCARD_MODE_AUTH));
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->handleResponse($httpErr));
     }

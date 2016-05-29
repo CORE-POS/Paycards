@@ -1,5 +1,6 @@
 <?php
 ini_set('error_reporting', E_ALL);
+define('MOCK_ALL_REQUESTS', true);
 
 /* mock COREPOS API classes for testing */
 

@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<Response>
+    <OrderID>1</OrderID>
+    <Status>2</Status>
+    <Auth_Response>Mock</Auth_Response>
+    <Reference_Number>1</Reference_Number>
+    <Auth_Code>1</Auth_Code>
+</Response>
