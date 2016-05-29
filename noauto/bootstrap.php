@@ -160,6 +160,7 @@ if (!class_exists('TransRecord', false)) {
         {
         }
         public static function addFlaggedTender($desc, $code, $amt, $id, $flag){}
+        public static function debugLog($msg){}
     }
 }
 
@@ -344,6 +345,7 @@ if (!class_exists('PrehLib', false)) {
     class PrehLib
     {
         public static function fsEligible(){}
+        public static function peekItem($bool){}
     }
 }
 if (!class_exists('Void', false)) {
@@ -355,9 +357,19 @@ if (!class_exists('Void', false)) {
         }
     }
 }
+if (!class_exists('ESCPOSPrintHandler', false)) {
+    class ESCPOSPrintHandler
+    {
+        public function writeLine($msg){}
+    }
+}
 
 if (!class_exists('COREPOS\\pos\\lib\\MemberLib')) {
     include(__DIR__ . '/mocks/MemberLib.php');
+}
+
+if (!class_exists('COREPOS\\pos\\lib\\FormLib')) {
+    include(__DIR__ . '/mocks/FormLib.php');
 }
 
 include(__DIR__ . '/self.php');

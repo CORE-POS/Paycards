@@ -21,6 +21,7 @@
 
 *********************************************************************************/
 
+use COREPOS\pos\lib\FormLib;
 if (!class_exists('AutoLoader')) {
     include_once(dirname(__FILE__).'/../../../lib/AutoLoader.php');
 }
@@ -34,14 +35,14 @@ class PaycardEmvSuccess extends BasicCorePage
         $this->bmp_path = $this->page_url . 'scale-drivers/drivers/NewMagellan/ss-output/tmp/';
 
         // check for input
-        if(isset($_REQUEST["reginput"])) {
-            $input = strtoupper(trim($_POST["reginput"]));
+        if (FormLib::get('reginput', false) !== false) {
+            $input = strtoupper(trim(FormLib::get('reginput')));
 
             // capture file if present; otherwise re-request 
             // signature via terminal
-            if (isset($_REQUEST['doCapture']) && $_REQUEST['doCapture'] == 1 && $input == '') {
-                if (isset($_REQUEST['bmpfile']) && !empty($_REQUEST['bmpfile']) && file_exists($_REQUEST['bmpfile'])) {
-                    $bmp = file_get_contents($_REQUEST['bmpfile']);
+            if (FormLib::get('doCapture') == 1 && $input == '') {
+                if (file_exists(FormLib::get('bmpfile'))) {
+                    $bmp = file_get_contents(FormLib::get('bmpfile'));
                     $format = 'BMP';
                     $img_content = $bmp;
 
@@ -64,7 +65,7 @@ class PaycardEmvSuccess extends BasicCorePage
                     );
                     $capR = $dbc->execute($capP, $args);
 
-                    unlink($_REQUEST['bmpfile']);
+                    unlink(FormLib::get('bmpfile'));
                     // continue to below. finishing transaction is the same
                     // as with paper signature slip
 

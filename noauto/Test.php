@@ -1,5 +1,7 @@
 <?php
 
+use COREPOS\pos\lib\FormLib;
+
 class Test extends PHPUnit_Framework_TestCase
 {
     public function testPlugin()
@@ -262,6 +264,93 @@ class Test extends PHPUnit_Framework_TestCase
         $page = new PaycardProcessPage();
         $this->assertInternalType('string', $page->getHeader());
         $this->assertInternalType('string', $page->getFooter());
+
+        $page = new PaycardEmvMenu();
+        CoreLocal::set('PaycardsDatacapMode', 1);
+        $this->assertEquals(true, $page->preprocess());
+        CoreLocal::set('PaycardsDatacapMode', 2);
+        $this->assertEquals(true, $page->preprocess());
+        foreach (array('CAADMIN', 'CC', 'PVEF', 'ACGD') as $choice) {
+            FormLib::set('selectlist', $choice);
+            $this->assertEquals(false, $page->preprocess());
+        }
+        FormLib::set('selectlist', 'EBT');
+        $this->assertEquals(true, $page->preprocess());
+        FormLib::set('selectlist', 'GIFT');
+        $this->assertEquals(true, $page->preprocess());
+        CoreLocal::set('PaycardsDatacapMode', '');
+        FormLib::clear();
+
+        $page = new paycardboxMsgAuth();
+        FormLib::set('reginput', 'CL');
+        $this->assertEquals(false, $page->preprocess());
+        FormLib::set('reginput', '100');
+        $this->assertEquals(true, $page->preprocess());
+        FormLib::set('reginput', '');
+        $this->assertEquals(true, $page->preprocess());
+        FormLib::set('validate', '1');
+        ob_start();
+        $this->assertEquals(false, $page->preprocess());
+        ob_end_clean();
+        FormLib::clear();
+
+        $page = new paycardSuccess();
+        FormLib::set('reginput', 'VD');
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
+        $this->assertEquals(false, $page->preprocess());
+        FormLib::set('reginput', '');
+        $this->assertEquals(false, $page->preprocess());
+        FormLib::set('doCapture', 1);
+        $this->assertEquals(true, $page->preprocess());
+        $temp_file = tempnam(sys_get_temp_dir(), 'Tux');
+        file_put_contents($temp_file, 'mock');
+        FormLib::set('bmpfile', $temp_file);
+        $this->assertEquals(false, $page->preprocess());
+        $this->assertEquals(false, file_exists($temp_file));
+        CoreLocal::set('paycard_amount', -1);
+        CoreLocal::set('PaycardsSigCapture', 1);
+        ob_start();
+        $page->body_content();
+        ob_end_clean();
+        CoreLocal::set('paycard_amount', '');
+        CoreLocal::set('PaycardsSigCapture', '');
+        CoreLocal::set('paycard_mode', '');
+        FormLib::clear();
+
+        $page = new PaycardEmvSuccess();
+        FormLib::set('reginput', 'VD');
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
+        $this->assertEquals(false, $page->preprocess());
+        FormLib::set('reginput', '');
+        $this->assertEquals(false, $page->preprocess());
+        FormLib::set('doCapture', 1);
+        $this->assertEquals(true, $page->preprocess());
+        $temp_file = tempnam(sys_get_temp_dir(), 'Tux');
+        file_put_contents($temp_file, 'mock');
+        FormLib::set('bmpfile', $temp_file);
+        $this->assertEquals(false, $page->preprocess());
+        $this->assertEquals(false, file_exists($temp_file));
+        CoreLocal::set('paycard_amount', -1);
+        CoreLocal::set('PaycardsSigCapture', 1);
+        ob_start();
+        $page->body_content();
+        ob_end_clean();
+        CoreLocal::set('paycard_amount', '');
+        CoreLocal::set('PaycardsSigCapture', '');
+        CoreLocal::set('paycard_mode', '');
+        FormLib::clear();
+ 
+        $page = new PaycardEmvCaAdmin();
+        FormLib::set('selectlist', 'KC');
+        $this->assertEquals(true, $page->preprocess());
+        FormLib::set('selectlist', 'CL');
+        $this->assertEquals(false, $page->preprocess());
+        FormLib::clear();
+        FormLib::set('xml-resp', file_get_contents(__DIR__ . '/responses/dc.auth.approved.xml'));
+        FormLib::set('output', 'display');
+        $this->assertEquals(false, $page->preprocess());
+        FormLib::set('output', 'receipt');
+        $this->assertEquals(false, $page->preprocess());
     }
 
     public function testXml()

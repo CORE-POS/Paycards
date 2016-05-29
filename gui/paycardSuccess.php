@@ -21,13 +21,13 @@
 
 *********************************************************************************/
 
+use COREPOS\pos\lib\FormLib;
 if (!class_exists('AutoLoader')) {
     include_once(dirname(__FILE__).'/../../../lib/AutoLoader.php');
 }
 
 class paycardSuccess extends BasicCorePage 
 {
-
     private $bmp_path;
 
     function preprocess()
@@ -35,14 +35,14 @@ class paycardSuccess extends BasicCorePage
         $this->bmp_path = $this->page_url . 'scale-drivers/drivers/NewMagellan/ss-output/tmp/';
 
         // check for input
-        if(isset($_REQUEST["reginput"])) {
-            $input = strtoupper(trim($_POST["reginput"]));
+        if (FormLib::get('reginput', false) !== false) {
+            $input = strtoupper(trim(FormLib::get('reginput')));
 
             // capture file if present; otherwise re-request 
             // signature via terminal
-            if (isset($_REQUEST['doCapture']) && $_REQUEST['doCapture'] == 1 && $input == '') {
-                if (isset($_REQUEST['bmpfile']) && !empty($_REQUEST['bmpfile']) && file_exists($_REQUEST['bmpfile'])) {
-                    $bmp = file_get_contents($_REQUEST['bmpfile']);
+            if (FormLib::get('doCapture') == 1 && $input == '') {
+                if (file_exists(FormLib::get('bmpfile'))) {
+                    $bmp = file_get_contents(FormLib::get('bmpfile'));
                     $format = 'BMP';
                     $img_content = $bmp;
 
@@ -65,7 +65,7 @@ class paycardSuccess extends BasicCorePage
                     );
                     $capR = $dbc->execute($capP, $args);
 
-                    unlink($_REQUEST['bmpfile']);
+                    unlink(FormLib::get('bmpfile'));
                     // continue to below. finishing transaction is the same
                     // as with paper signature slip
 
@@ -79,7 +79,7 @@ class paycardSuccess extends BasicCorePage
             $mode = CoreLocal::get("paycard_mode");
             $type = CoreLocal::get("paycard_type");
             $tender_id = CoreLocal::get("paycard_id");
-            if( $input == "") { // [enter] exits this screen
+            if ($input == "") { // [enter] exits this screen
                 // remember the mode, type and transid before we reset them
                 CoreLocal::set("boxMsg","");
 
@@ -110,12 +110,12 @@ class paycardSuccess extends BasicCorePage
 
                 $this->change_page($this->page_url."gui-modules/pos2.php");
 
-                return False;
-            } else if ($mode == PaycardLib::PAYCARD_MODE_AUTH && $input == "VD" 
+                return false;
+            } elseif ($mode == PaycardLib::PAYCARD_MODE_AUTH && $input == "VD" 
                 && (CoreLocal::get('CacheCardType') == 'CREDIT' || CoreLocal::get('CacheCardType') == '')){
                 $plugin_info = new Paycards();
                 $this->change_page($plugin_info->pluginUrl()."/gui/paycardboxMsgVoid.php");
-                return False;
+                return false;
             }
         }
         /* shouldn't happen unless session glitches
@@ -130,10 +130,12 @@ class paycardSuccess extends BasicCorePage
                 <br>[void] " . _('to reverse the charge') . "
                 </font>");
         }
-        return True;
+
+        return true;
     }
 
-    function head_content(){
+    function head_content()
+    {
         ?>
         <script type="text/javascript">
         var formSubmitted = false;

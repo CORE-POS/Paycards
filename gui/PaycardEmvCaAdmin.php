@@ -21,6 +21,7 @@
 
 *********************************************************************************/
 
+use COREPOS\pos\lib\FormLib;
 if (!class_exists('AutoLoader')) {
     include_once(dirname(__FILE__).'/../../../lib/AutoLoader.php');
 }
@@ -35,45 +36,44 @@ class PaycardEmvCaAdmin extends NoInputCorePage
         'PR' => 'Parameter Report',
         'PD' => 'Parameter Download',
     );
+    private $map = array(
+        'KC' => 'keyChange',
+        'KR' => 'keyReport',
+        'SR' => 'statsReport',
+        'DR' => 'declineReport',
+        'PR' => 'paramReport',
+        'PD' => 'paramDownload',
+    );
 
     private $xml = false;
     private $output = 'receipt';
     
     function preprocess()
     {
-        if (isset($_REQUEST["selectlist"])) {
+        if (FormLib::get("selectlist", false) !== false) {
             /** generate XML based on menu choice **/
-            switch ($_REQUEST['selectlist']) {
+            switch (FormLib::get('selectlist')) {
                 case 'KC':
-                    $this->xml = DatacapCaAdmin::keyChange();
-                    $this->output = 'display';
-                    break;
                 case 'PD':
-                    $this->xml = DatacapCaAdmin::paramDownload();
                     $this->output = 'display';
-                    break;
+                    // intentional fallthrough
                 case 'KR':
-                    $this->xml = DatacapCaAdmin::keyReport();
-                    break;
                 case 'SR':
-                    $this->xml = DatacapCaAdmin::statsReport();
-                    break;
                 case 'DR':
-                    $this->xml = DatacapCaAdmin::declineReport();
-                    break;
                 case 'PR':
-                    $this->xml = DatacapCaAdmin::paramReport();
+                    $method = $this->map[FormLib::get('selectlist')];
+                    $this->xml = DatacapCaAdmin::$method();
                     break;
                 case 'CL':
                 default:
                     $this->change_page('PaycardEmvMenu.php');
                     return false;
             }
-        } elseif (isset($_REQUEST['xml-resp'])) {
+        } elseif (FormLib::get('xml-resp')) {
             /** parse response XML and display a dialog box
                 or print a receipt **/
-            $xml = $_REQUEST['xml-resp'];
-            $output = $_REQUEST['output-method'];
+            $xml = FormLib::get('xml-resp');
+            $output = FormLib::get('output-method');
             $resp = DatacapCaAdmin::parseResponse($xml);
             if ($output == 'display' || $resp['receipt'] === false) {
                 CoreLocal::set('boxMsg', '<strong>' . $resp['status'] . '</strong><br />' . $resp['msg-text']);
