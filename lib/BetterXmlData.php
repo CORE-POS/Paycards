@@ -9,24 +9,6 @@ class BetterXmlData
         $this->xpath = new DOMXPath($this->dom);
     }
 
-    public function get($tag)
-    {
-        $res = $this->xpath->query('*/' . $tag);
-        if ($res === false) {
-            return false;
-        }
-        if ($res->length > 0) {
-            return $res->item(0)->textContent;
-        } else {
-            return false;
-        }
-    }
-
-    public function get_first($tag)
-    {
-        return $this->get($tag);
-    }
-
     public function query($query, $as_array=false)
     {
         $res = $this->xpath->query($query);

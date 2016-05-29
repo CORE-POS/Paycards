@@ -158,6 +158,7 @@ if (!class_exists('TransRecord', false)) {
         public static function addRecord($arr)
         {
         }
+        public static function addFlaggedTender($desc, $code, $amt, $id, $flag){}
     }
 }
 
@@ -342,6 +343,15 @@ if (!class_exists('PrehLib', false)) {
     class PrehLib
     {
         public static function fsEligible(){}
+    }
+}
+if (!class_exists('Void', false)) {
+    class Void
+    {
+        public function voidid($id, $json)
+        {
+            return array();
+        }
     }
 }
 

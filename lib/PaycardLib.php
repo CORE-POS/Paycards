@@ -736,10 +736,10 @@ static public function getTenderInfo($type, $issuer)
     }
     
     $found = $dbc->execute($lookup, $args);
-    if ($found === false || $dbc->num_rows($found) == 0) {
+    if ($found === false || $dbc->numRows($found) == 0) {
         return array($default_code, $default_description);
     } else {
-        $row = $dbc->fetch_row($found);
+        $row = $dbc->fetchRow($found);
         return array($row['TenderCode'], $row['TenderName']);
     }
 }

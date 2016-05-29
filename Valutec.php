@@ -138,6 +138,7 @@ class Valutec extends BasicCCModule
                 );
                 break;
             case PaycardLib::PAYCARD_MODE_AUTH:
+                $amt = "".(-1*(CoreLocal::get("paycard_amount")));
                 CoreLocal::set("autoReprint",1);
                 $record_id = $this->last_paycard_transaction_id;
                 $charflag = ($record_id != 0) ? 'PT' : '';
