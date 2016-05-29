@@ -4,10 +4,15 @@ php:
 
 install:
     - composer install
+    - npm install acorn
 
-#after_script:
-#    - vendor/bin/test-reporter
+script:
+    - phpunit
+    - sh noauto/acorn.sh
 
-#addons:
-#    code_climate:
-#        repo_token: 461be60a44fc2293c80a05712a1aa18ff7d12effec9a806d7722435b12ea2bbe
+after_script:
+    - vendor/bin/test-reporter
+
+addons:
+    code_climate:
+        repo_token: 81f8a04e131cc7b92250685a363eee7f12f7de5a036228b9d03551e0040eab62
