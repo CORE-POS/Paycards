@@ -8,7 +8,7 @@ install:
 
 script:
     - phpunit
-    - sh noauto/acorn.sh
+#    - sh noauto/acorn.sh
 
 after_script:
     - vendor/bin/test-reporter
