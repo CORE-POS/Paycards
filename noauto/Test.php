@@ -175,6 +175,24 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertInternalType('array', $p->parse('4111111111111111' . date('my')));
     }
 
+    public function testEnc()
+    {
+        // source: Visa Test Card using Sign&Pay w/ test keys
+        $pan = '02E600801F2E2700039B25423430303330302A2A2A2A2A2A363738315E544553542F4D50535E313531322A2A2A2A2A2A2A2A2A2A2A2A2A3F3B3430303330302A2A2A2A2A2A363738313D313531322A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A3FA7284186B3E8E1A3E2AD8548E732DBB5B33285117FB1B0CDBA6D732E5DF031DE3CB590DE2E02BDEF6182373B7401A3E3D304013C85D3BEFDEBF552A3C30914246B0145538F2E5856885CAA06FF64E201CB974CD506ADDCB22C9F3BF500C62310C9C88B56FD2BDF6E59481BC4B6C4F034264B2C38F8FF6F4405D563AA7D49B82221111010000000E001BFXXXX03';
+        $info = EncBlock::parseEncBlock($pan);
+        $this->assertEquals('D304013C85D3BEFDEBF552A3C30914246B0145538F2E5856885CAA06FF64E201CB974CD506ADDCB2', $info['Block']);
+        $this->assertEquals('MagneSafe', $info['Format']);
+        $this->assertEquals('21111010000000E001BF', $info['Key']);
+        $this->assertEquals('Visa', $info['Issuer']);
+        $this->assertEquals('TEST/MPS', $info['Name']);
+        $this->assertEquals('6781', $info['Last4']);
+
+        $pin = str_repeat('F', 36);
+        EncBlock::parsePinBlock($pin);
+        $pin .= '0';
+        EncBlock::parsePinBlock($pin);
+    }
+
     public function testNotifier()
     {
         $n = new TermStateNotifier();
