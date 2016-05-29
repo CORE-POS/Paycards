@@ -159,9 +159,12 @@ class Test extends PHPUnit_Framework_TestCase
         $v->last_request = $req;
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->handleResponse($httpErr));
-        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/me.auth.approved.xml'));
-        $this->assertEquals(PaycardLib::PAYCARD_ERR_OK, $v->doSend(PaycardLib::PAYCARD_MODE_AUTH));
-        $v->cleanup(array());
+        foreach (array('DEBIT', 'EBTFOOD', 'EBTCASH', 'CREDIT') as $type) {
+            CoreLocal::set('CacheCardType', $type);
+            BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/me.auth.approved.xml'));
+            $this->assertEquals(PaycardLib::PAYCARD_ERR_OK, $v->doSend(PaycardLib::PAYCARD_MODE_AUTH));
+            $v->cleanup(array());
+        }
         BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/me.auth.declined.xml'));
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->doSend(PaycardLib::PAYCARD_MODE_AUTH));
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
@@ -175,6 +178,9 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertInternalType('string', $v->prepareDataCapAuth('GIFT', 1, false));
         $this->assertInternalType('string', $v->prepareDataCapAuth('EMV', 1, true));
         $this->assertEquals('Error', $v->prepareDataCapVoid(1));
+        SQLManager::addResult(array('registerNo'=>1,'transNo'=>1));
+        SQLManager::addResult(array('refNum'=>1,'xTransactionID'=>1,'amount'=>1,'token'=>1,'processData'=>1,'acqRefData'=>1,'xApprovalNumber'=>1,'mode'=>1,'cardType'=>1));
+        $this->assertInternalType('string', $v->prepareDataCapVoid(1));
         $this->assertInternalType('string', $v->prepareDataCapBalance('EBTFOOD', false));
         $this->assertInternalType('string', $v->prepareDataCapBalance('EBTCASH', true));
         $this->assertInternalType('string', $v->prepareDataCapBalance('GIFT', false));
@@ -183,6 +189,12 @@ class Test extends PHPUnit_Framework_TestCase
         $xml = file_get_contents(__DIR__ . '/responses/dc.auth.approved.xml');
         $this->assertEquals(PaycardLib::PAYCARD_ERR_OK, $v->handleResponseDataCap($xml));
         $this->assertEquals(PaycardLib::PAYCARD_ERR_OK, $v->handleResponseDataCapBalance($xml));
+        $xml = file_get_contents(__DIR__ . '/responses/dc.auth.declined.xml');
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->handleResponseDataCap($xml));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->handleResponseDataCapBalance($xml));
+        $xml = file_get_contents(__DIR__ . '/responses/dc.auth.error.xml');
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->handleResponseDataCap($xml));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->handleResponseDataCapBalance($xml));
     }
 
     public function testPages()

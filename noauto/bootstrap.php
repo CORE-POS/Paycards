@@ -155,6 +155,7 @@ if (!class_exists('TransRecord', false)) {
     class TransRecord
     {
         public static function addComment($c){}
+        public static function addFsTaxExempt(){}
         public static function addRecord($arr)
         {
         }
