@@ -92,11 +92,13 @@ class Test extends PHPUnit_Framework_TestCase
     public function testXml()
     {
         $xml = '<' . '?xml version="1.0"?' . '>'
-            . '<Nodes><Node>Value</Node><Foo>Bar</Foo></Nodes>';
+            . '<Nodes><Node>Value</Node><Foo>Bar</Foo><Foo>Baz</Foo></Nodes>';
 
         $obj = new BetterXmlData($xml);
         $this->assertEquals('Value', $obj->query('/Nodes/Node'));
         $this->assertEquals(false, $obj->query('/Nodes/Fake'));
+        $this->assertEquals(array('Bar','Baz'), $obj->query('/Nodes/Foo', true));
+        $this->assertEquals("Bar\nBaz\n", $obj->query('/Nodes/Foo'));
 
         $obj = new xmlData($xml);
         $this->assertEquals('Value', $obj->get('Node'));
@@ -104,10 +106,16 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(false, $obj->get('Fake'));
         $this->assertEquals(false, $obj->get_first('Fake'));
         $this->assertEquals(true, $obj->isValid());
+        $this->assertEquals(array('Bar','Baz','Baz'), $obj->get('Foo'));
+        $obj->array_dump();
     }
 
     public function testCaAdmin()
     {
+        DatacapCaAdmin::caLanguage();
+        CoreLocal::set('PaycardsDatacapMode', 2);
+        DatacapCaAdmin::caLanguage();
+        CoreLocal::set('PaycardsDatacapMode', 3);
         DatacapCaAdmin::caLanguage();
         $funcs = array(
             'keyChange',
@@ -143,6 +151,7 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(false, $dc->check('foo'));
         $this->assertInternalType('array', $dc->parse($valid[0]));
         CoreLocal::set('ttlflag', 1);
+        CoreLocal::set('CacheCardCashBack', 10);
         foreach ($valid as $input) {
             $this->assertEquals(true, $dc->check($input));
             $this->assertInternalType('array', $dc->parse($input));

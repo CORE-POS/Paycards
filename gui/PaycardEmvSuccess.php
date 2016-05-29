@@ -281,7 +281,5 @@ class PaycardEmvSuccess extends BasicCorePage
     }
 }
 
-if (basename($_SERVER['PHP_SELF']) == basename(__FILE__)) {
-    new PaycardEmvSuccess();
-}
+AutoLoader::dispatch();
 

@@ -130,5 +130,5 @@ function emvSubmit()
     }
 }
 
-if (basename($_SERVER['PHP_SELF']) == basename(__FILE__))
-    new PaycardEmvVoid();
+AutoLoader::dispatch();
+

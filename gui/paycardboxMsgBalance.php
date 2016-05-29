@@ -67,5 +67,5 @@ class paycardboxMsgBalance extends PaycardProcessPage {
     }
 }
 
-if (basename($_SERVER['PHP_SELF']) == basename(__FILE__))
-    new paycardboxMsgBalance();
+AutoLoader::dispatch();
+

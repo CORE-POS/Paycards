@@ -104,5 +104,5 @@ class paycardboxMsgGift extends PaycardProcessPage {
     }
 }
 
-if (basename($_SERVER['PHP_SELF']) == basename(__FILE__))
-    new paycardboxMsgGift(0,1);
+AutoLoader::dispatch();
+

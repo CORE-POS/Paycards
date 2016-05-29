@@ -281,6 +281,5 @@ class paycardSuccess extends BasicCorePage
     }
 }
 
-if (basename($_SERVER['PHP_SELF']) == basename(__FILE__))
-    new paycardSuccess();
+AutoLoader::dispatch();
 

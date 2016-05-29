@@ -97,5 +97,5 @@ function emvSubmit() {
     }
 }
 
-if (basename($_SERVER['PHP_SELF']) == basename(__FILE__))
-    new PaycardEmvBalance();
+AutoLoader::dispatch();
+
