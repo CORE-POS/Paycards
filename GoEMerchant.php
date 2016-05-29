@@ -206,7 +206,6 @@ class GoEMerchant extends BasicCCModule
             if (strlen($rMsg) > 100) {
                 $rMsg = substr($rMsg,0,100);
             }
-            $sqlValues .= sprintf(",'%s'",$rMsg);
         }
 
         $normalized = ($validResponse == 0) ? 4 : 0;

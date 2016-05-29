@@ -290,7 +290,7 @@ class MercuryE2E extends BasicCCModule
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_COMM);
         }
 
-        switch (strtoupper($xml->get("CMDSTATUS"))) {
+        switch (strtoupper($xml->get_first("CMDSTATUS"))) {
             case 'APPROVED':
                 return PaycardLib::PAYCARD_ERR_OK;
             case 'DECLINED':
@@ -881,6 +881,7 @@ class MercuryE2E extends BasicCCModule
     {
         $rawXml = $xml;
         $ref = $this->refnum(CoreLocal::get('paycard_id'));
+        $transID = CoreLocal::get('paycard_id');
         $request = $this->getRequestObj($ref);
         $request->last_paycard_transaction_id = CoreLocal::get('LastEmvPcId');
         $this->last_paycard_transaction_id = $request->last_paycard_transaction_id;
@@ -964,7 +965,7 @@ class MercuryE2E extends BasicCCModule
                         (dateID, tdate, empNo, registerNo, transNo, transID, content)
                     VALUES 
                         (?, ?, ?, ?, ?, ?, ?)');
-                $dbc->execute($printP, array(date('Ymd'), date('Y-m-d H:i:s'), $cashierNo, $laneNo, $transNo, $receiptID, $printData));
+                $dbc->execute($printP, array(date('Ymd'), date('Y-m-d H:i:s'), CoreLocal::get('cashierNo'), CoreLocal::get('laneno'), CoreLocal::get('transno'), $receiptID, $printData));
             }
         }
 

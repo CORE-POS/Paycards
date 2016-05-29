@@ -106,6 +106,12 @@ class Test extends PHPUnit_Framework_TestCase
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $g->handleResponse($httpErr));
         $g->cleanup(array());
+        SQLManager::clear();
+        SQLManager::addResult(array('refNum'=>1,'xTransactionID'=>1));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/gem.auth.approved.xml'));
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
+        CoreLocal::set('paycard_trans', '1-1-1');
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_OK, $g->doSend(PaycardLib::PAYCARD_MODE_VOID));
 
         $m = new MercuryGift();
         $this->assertEquals(false, $m->handlesType(PaycardLib::PAYCARD_TYPE_CREDIT));
@@ -171,12 +177,19 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->handleResponse($httpErr));
         $v->cleanup(array());
         $this->assertEquals(PaycardLib::PAYCARD_ERR_NOSEND, $v->doSend(PaycardLib::PAYCARD_MODE_VOID));
+        SQLManager::clear();
+        SQLManager::addResult(array('refNum'=>1,'xTransactionID'=>1,'amount'=>1,'token'=>1,'processData'=>1,'acqRefData'=>1,'xApprovalNumber'=>1,'mode'=>1,'cardType'=>1));
+        CoreLocal::set('paycard_trans', '1-1-1');
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/me.auth.approved.xml'));
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_OK, $v->doSend(PaycardLib::PAYCARD_MODE_VOID));
 
         $this->assertInternalType('string', $v->prepareDataCapAuth('DEBIT', 1, false));
         $this->assertInternalType('string', $v->prepareDataCapAuth('EBTFOOD', 1, true));
         $this->assertInternalType('string', $v->prepareDataCapAuth('EBTCASH', 1, false));
         $this->assertInternalType('string', $v->prepareDataCapAuth('GIFT', 1, false));
         $this->assertInternalType('string', $v->prepareDataCapAuth('EMV', 1, true));
+        SQLManager::clear();
         $this->assertEquals('Error', $v->prepareDataCapVoid(1));
         SQLManager::addResult(array('registerNo'=>1,'transNo'=>1));
         SQLManager::addResult(array('refNum'=>1,'xTransactionID'=>1,'amount'=>1,'token'=>1,'processData'=>1,'acqRefData'=>1,'xApprovalNumber'=>1,'mode'=>1,'cardType'=>1));
@@ -185,9 +198,13 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertInternalType('string', $v->prepareDataCapBalance('EBTCASH', true));
         $this->assertInternalType('string', $v->prepareDataCapBalance('GIFT', false));
         $this->assertInternalType('string', $v->prepareDataCapGift(PaycardLib::PAYCARD_MODE_ADDVALUE, 10, false));
+        $this->assertInternalType('string', $v->prepareDataCapGift(PaycardLib::PAYCARD_MODE_ADDVALUE, 10, true));
 
         $xml = file_get_contents(__DIR__ . '/responses/dc.auth.approved.xml');
-        $this->assertEquals(PaycardLib::PAYCARD_ERR_OK, $v->handleResponseDataCap($xml));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_OK, $v->handleResponseDataCap(str_replace('MockTC','EMV', $xml)));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_OK, $v->handleResponseDataCap(str_replace('MockCT','Foodstamp', $xml)));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_OK, $v->handleResponseDataCap(str_replace('MockCT','Cash', $xml)));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_OK, $v->handleResponseDataCap(str_replace('MockTT','PrePaid', $xml)));
         $this->assertEquals(PaycardLib::PAYCARD_ERR_OK, $v->handleResponseDataCapBalance($xml));
         $xml = file_get_contents(__DIR__ . '/responses/dc.auth.declined.xml');
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->handleResponseDataCap($xml));
@@ -199,6 +216,8 @@ class Test extends PHPUnit_Framework_TestCase
 
     public function testPages()
     {
+        SQLManager::clear();
+
         $pages = array(
             'PaycardEmvBalance',
             'PaycardEmvCaAdmin',

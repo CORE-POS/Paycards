@@ -2,6 +2,8 @@
 <Response>
     <OrderID>1</OrderID>
     <Status>1</Status>
+    <Status1>1</Status1>
+    <Response1>Mock</Response1>
     <Auth_Response>Mock</Auth_Response>
     <Reference_Number>1</Reference_Number>
     <Auth_Code>1</Auth_Code>

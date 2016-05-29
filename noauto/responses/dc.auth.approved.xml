@@ -7,10 +7,10 @@
     </CmdResponse>
     <TranResponse>
         <AuthCode>1</AuthCode>
-        <TranCode>1</TranCode>
+        <TranCode>MockTC</TranCode>
         <RefNo>1</RefNo>
-        <CardType>Mock</CardType>
-        <TranType>Mock</TranType>
+        <CardType>MockCT</CardType>
+        <TranType>MockTT</TranType>
         <Amount>
             <Balance>10</Balance>
             <Authorize>5</Authorize>
