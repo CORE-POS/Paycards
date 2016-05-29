@@ -645,15 +645,15 @@ class GoEMerchant extends BasicCCModule
         if ($curl_result['curlErr'] != CURLE_OK || $curl_result['curlHTTP'] != 200) {
             return array(
                 'output' => DisplayLib::boxMsg('No response from processor', '', true),
-                'confirm_dest' => MiscLib::base_url() . 'gui-modules/pos2.php',
-                'cancel_dest' => MiscLib::base_url() . 'gui-modules/pos2.php',
+                'confirm_dest' => MiscLib::baseURL() . 'gui-modules/pos2.php',
+                'cancel_dest' => MiscLib::baseURL() . 'gui-modules/pos2.php',
             );
         }
 
         $directions = 'Press [enter] or [clear] to continue';
         $resp = array(
-            'confirm_dest' => MiscLib::base_url() . 'gui-modules/pos2.php',
-            'cancel_dest' => MiscLib::base_url() . 'gui-modules/pos2.php',
+            'confirm_dest' => MiscLib::baseURL() . 'gui-modules/pos2.php',
+            'cancel_dest' => MiscLib::baseURL() . 'gui-modules/pos2.php',
         );
         $info = new Paycards();
         $url_stem = $info->pluginUrl();

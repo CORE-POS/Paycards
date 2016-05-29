@@ -232,6 +232,21 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertInternalType('array', PaycardLib::paycard_magstripe($stripe));
     }
 
+    public function testLookups()
+    {
+        $m = new MercuryE2E();
+        $ref = str_repeat('9', 16);
+        $this->assertEquals(true, $m->myRefNum($ref));
+        $this->assertEquals(false, $m->myRefNum('foo'));
+        $m->lookupTransaction($ref, true, 'verify');
+
+        $g = new GoEMerchant();
+        $ref = str_repeat('9', 12) . '-' . str_repeat('9', 12);
+        $this->assertEquals(true, $g->myRefNum($ref));
+        $this->assertEquals(false, $g->myRefNum('foo'));
+        $g->lookupTransaction($ref, true, 'verify');
+    }
+
     public function testPages()
     {
         SQLManager::clear();
