@@ -21,26 +21,27 @@
 
 *********************************************************************************/
 
+use COREPOS\pos\lib\FormLib;
 if (!class_exists('AutoLoader')) {
     include_once(dirname(__FILE__).'/../../../lib/AutoLoader.php');
 }
 
-class paycardboxMsgVoid extends PaycardProcessPage {
-
-    protected $mask_input = True;
+class paycardboxMsgVoid extends PaycardProcessPage 
+{
+    protected $mask_input = true;
 
     function preprocess()
     {
         // check for posts before drawing anything, so we can redirect
-        if( isset($_REQUEST['reginput'])) {
-            $input = strtoupper(trim($_REQUEST['reginput']));
+        if (FormLib::get('reginput', false) !== false) {
+            $input = strtoupper(trim(FormLib::get('reginput')));
             // CL always exits
-            if( $input == "CL") {
+            if ($input == "CL") {
                 PaycardLib::paycard_reset();
                 CoreLocal::set("toggletax",0);
                 CoreLocal::set("togglefoodstamp",0);
                 $this->change_page($this->page_url."gui-modules/pos2.php?reginput=TO&repeat=1");
-                return False;
+                return false;
             }
     
             $continue = false;

@@ -339,6 +339,11 @@ if (!class_exists('Authenticate', false)) {
         {
             return 100;
         }
+
+        public static function checkPermission($emp, $level)
+        {
+            return true;
+        }
     }
 }
 if (!class_exists('PrehLib', false)) {

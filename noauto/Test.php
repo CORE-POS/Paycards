@@ -359,6 +359,36 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(false, $page->preprocess());
         FormLib::set('output-method', 'receipt');
         $this->assertEquals(false, $page->preprocess());
+        FormLib::clear();
+
+        $page = new PaycardEmvPage();
+        FormLib::set('reginput', 'CL');
+        $this->assertEquals(false, $page->preprocess());
+        FormLib::set('reginput', '100');
+        $this->assertEquals(true, $page->preprocess());
+        FormLib::set('reginput', '');
+        $this->assertEquals(true, $page->preprocess());
+        FormLib::clear();
+
+        $page = new paycardboxMsgVoid();
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
+        CoreLocal::set('RegisteredPaycardClasses', array('AuthorizeDotNet'));
+        CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_CREDIT);
+        $this->assertEquals(true, $page->preprocess());
+        FormLib::set('reginput', 'CL');
+        $this->assertEquals(false, $page->preprocess());
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
+        FormLib::set('reginput', '1234');
+        $this->assertEquals(true, $page->preprocess());
+        FormLib::clear();
+
+        $page = new paycardboxMsgGift();
+        FormLib::set('reginput', 'CL');
+        $this->assertEquals(false, $page->preprocess());
+        FormLib::set('reginput', '100');
+        $this->assertEquals(true, $page->preprocess());
+        FormLib::set('reginput', '');
+        $this->assertEquals(true, $page->preprocess());
     }
 
     public function testXml()

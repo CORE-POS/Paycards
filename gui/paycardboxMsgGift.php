@@ -21,6 +21,7 @@
 
 *********************************************************************************/
 
+use COREPOS\pos\lib\FormLib;
 if (!class_exists('AutoLoader')) {
     include_once(dirname(__FILE__).'/../../../lib/AutoLoader.php');
 }
@@ -30,23 +31,23 @@ class paycardboxMsgGift extends PaycardProcessPage {
     function preprocess()
     {
         // check for posts before drawing anything, so we can redirect
-        if( isset($_REQUEST['reginput'])) {
-            $input = strtoupper(trim($_REQUEST['reginput']));
+        if (FormLib::get('reginput', false) !== false) {
+            $input = strtoupper(trim(FormLib::get('reginput')));
             // CL always exits
-            if( $input == "CL") {
+            if ($input == "CL") {
                 CoreLocal::set("msgrepeat",0);
                 CoreLocal::set("toggletax",0);
                 CoreLocal::set("togglefoodstamp",0);
                 PaycardLib::paycard_reset();
                 $this->change_page($this->page_url."gui-modules/pos2.php");
-                return False;
+                return false;
             }
     
             // when (de)activating/adding-value, double check that the current amount is acceptable
             // before checking input (similar logic is later when generating the message)
             $amtValid = false;
             $amt = CoreLocal::get("paycard_amount");
-            if( !is_numeric($amt) || $amt < 0.005) {
+            if (!is_numeric($amt) || $amt < 0.005) {
             } else {
                 // all errors are caught above; here, the amount is okay
                 $amtValid = true;
@@ -65,7 +66,8 @@ class paycardboxMsgGift extends PaycardProcessPage {
             }
             // if we're still here, we haven't accepted a valid amount yet; display prompt again
         } // post?
-        return True;
+
+        return true;
     }
 
     function body_content()
