@@ -62,6 +62,7 @@ class MercuryE2E extends BasicCCModule
     */
     public function entered($validate,$json)
     {
+        $pan = CoreLocal::get('paycard_PAN');
         if (CoreLocal::get('paycard_mode') == PaycardLib::PAYCARD_MODE_AUTH) {
             $e2e = EncBlock::parseEncBlock(CoreLocal::get('paycard_PAN'));
             if (empty($e2e['Block']) || empty($e2e['Key'])){
@@ -75,9 +76,9 @@ class MercuryE2E extends BasicCCModule
 
                 return $json;
             }
+            $pan = str_repeat('*', 12) . $e2e['Last4'];
         }
 
-        $pan = str_repeat('*', 12) . $e2e['Last4'];
         return PaycardModule::ccEntered($pan, false, $json);
     }
 

@@ -212,11 +212,7 @@ class MercuryGift extends BasicCCModule
 
         // save the details
         CoreLocal::set("paycard_type",PaycardLib::PAYCARD_TYPE_GIFT);
-        if ($lineitem['trans_type'] == "T" && $lineitem['trans_subtype'] == "GD") {
-            CoreLocal::set("paycard_mode",PaycardLib::PAYCARD_MODE_VOID);
-        } else {
-            CoreLocal::set("paycard_mode",PaycardLib::PAYCARD_MODE_VOIDITEM);
-        }
+        CoreLocal::set("paycard_mode",PaycardLib::PAYCARD_MODE_VOID);
     
         return $ret;
     }

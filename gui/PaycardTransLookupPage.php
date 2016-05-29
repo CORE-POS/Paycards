@@ -76,7 +76,7 @@ class PaycardTransLookupPage extends BasicCorePage
             $local = true;
             $id = substr($id, 2);
         }
-        $mode = $_REQUEST['mode'];
+        $mode = isset($_REQUEST['mode']) ? $_REQUEST['mode'] : 'lookup';
         $msg = 'Looking up transaction';
         if ($mode == 'verify') {
             $msg = 'Verifying transaction';
