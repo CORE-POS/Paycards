@@ -56,6 +56,7 @@ if (!class_exists('BasicCorePage', false)) {
     class BasicCorePage 
     {
         protected $page_url = '';
+        protected $body_class = '';
         public function change_page($url){}
         public function addOnloadCommand($str){}
         public function input_header($action='')
@@ -64,6 +65,14 @@ if (!class_exists('BasicCorePage', false)) {
         }
         public function hide_input($hide){}
         public function head_content(){}
+        protected function scale_box()
+        {
+            return '';
+        }
+        protected function scanner_scale_polling()
+        {
+            return '';
+        }
     }
 }
 
@@ -80,7 +89,9 @@ if (!class_exists('Parser', false)) {
     {
         public function default_json()
         {
-            return array();
+            return array(
+                'main_frame' => false,
+            );
         }
     }
 }
@@ -130,6 +141,11 @@ if (!class_exists('MiscLib', false)) {
         public static function baseURL()
         {
             return '';
+        }
+
+        public static function win32()
+        {
+            return false;
         }
     }
 }

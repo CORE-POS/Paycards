@@ -87,6 +87,10 @@ class Test extends PHPUnit_Framework_TestCase
             $p->body_content();
             ob_end_clean();
         }
+
+        $page = new PaycardProcessPage();
+        $this->assertInternalType('string', $page->getHeader());
+        $this->assertInternalType('string', $page->getFooter());
     }
 
     public function testXml()
@@ -161,6 +165,14 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(false, $p->check('foo'));
         $this->assertEquals(true, $p->check('PCLOOKUP'));
         $this->assertInternalType('array', $p->parse('PCLOOKUP'));
+
+        $p = new paycardEntered();
+        $this->assertEquals(false, $p->check('foo'));
+        $this->assertEquals(true, $p->check('foo?'));
+        $this->assertEquals(true, $p->check('02E6008012345'));
+        $this->assertEquals(true, $p->check('02***03'));
+        $this->assertEquals(true, $p->check('4111111111111111' . date('my')));
+        $this->assertInternalType('array', $p->parse('4111111111111111' . date('my')));
     }
 
     public function testNotifier()
