@@ -70,7 +70,7 @@ class PaycardTransLookupPage extends BasicCorePage
     {
         $this->input_header('onsubmit="PaycardTransLookupPage.formCallback();return false;"');
         echo '<div class="baseHeight">';
-        $id = $_REQUEST['id'];
+        $id = isset($_REQUEST['id']) ? $_REQUEST['id'] : 0;
         $local = false;
         if (substr($id, 0, 2) == '_l') {
             $local = true;

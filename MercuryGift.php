@@ -211,7 +211,6 @@ class MercuryGift extends BasicCCModule
         $ret = PaycardModule::ccVoid($transID, $laneNo, $transNo, $json);
 
         // save the details
-        CoreLocal::set("paycard_PAN",$request['PAN']);
         CoreLocal::set("paycard_type",PaycardLib::PAYCARD_TYPE_GIFT);
         if ($lineitem['trans_type'] == "T" && $lineitem['trans_subtype'] == "GD") {
             CoreLocal::set("paycard_mode",PaycardLib::PAYCARD_MODE_VOID);
