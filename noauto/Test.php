@@ -125,13 +125,17 @@ class Test extends PHPUnit_Framework_TestCase
         $m->last_request = $req;
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
         $this->assertEquals(PaycardLib::PAYCARD_ERR_DATA, $m->handleResponse($httpErr));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/me.auth.approved.xml'));
+        $m->setPAN(array('pan'=>'4111111111111111', 'tr1'=>'', 'tr2'=>'', 'tr3'=>''));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_DATA, $m->doSend(PaycardLib::PAYCARD_MODE_AUTH));
         CoreLocal::set('paycard_response', array('Balance'=>10));
         $m->cleanup(array());
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
-        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $m->handleResponse($httpErr));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_NOSEND, $m->handleResponse($httpErr));
         $m->cleanup(array());
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_BALANCE);
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $m->handleResponse($httpErr));
+        $m->cleanup(array());
 
 
         $v = new Valutec();

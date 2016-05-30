@@ -366,7 +366,7 @@ class MercuryGift extends BasicCCModule
                     AND transNo=" . $transNo . "
                     AND transID=" . $transID;
         $search = $dbTrans->query($sql);
-        if (!$search || $dbTrans->num_rows($search) != 1) {
+        if (!$search || $dbTrans->numRows($search) != 1) {
             return PaycardLib::PAYCARD_ERR_NOSEND; // database error, nothing sent (ok to retry)
         }
         $log = $dbTrans->fetchRow($search);
