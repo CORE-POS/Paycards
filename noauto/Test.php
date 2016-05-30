@@ -404,6 +404,41 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(true, $page->preprocess());
         FormLib::set('reginput', '');
         $this->assertEquals(true, $page->preprocess());
+        FormLib::clear();
+
+        $page = new PaycardEmvGift();
+        FormLib::set('amount', 100);
+        FormLib::set('mode', PaycardLib::PAYCARD_MODE_AUTH);
+        $this->assertEquals(false, $page->preprocess());
+        FormLib::set('mode', PaycardLib::PAYCARD_MODE_ACTIVATE);
+        FormLib::set('reginput', 'CL');
+        $this->assertEquals(false, $page->preprocess());
+        FormLib::set('reginput', '200');
+        $this->assertEquals(true, $page->preprocess());
+        FormLib::set('reginput', 'MANUAL');
+        $this->assertEquals(true, $page->preprocess());
+        ob_start();
+        $page->head_content();
+        ob_end_clean();
+        FormLib::clear();
+        FormLib::set('xml-resp', file_get_contents(__DIR__ . '/responses/dc.auth.approved.xml'));
+        FormLib::set('amount', 100);
+        FormLib::set('mode', PaycardLib::PAYCARD_MODE_AUTH);
+        $this->assertEquals(false, $page->preprocess());
+        FormLib::clear();
+
+        $page = new PaycardEmvBalance();
+        FormLib::set('reginput', 'CL');
+        $this->assertEquals(false, $page->preprocess());
+        FormLib::set('reginput', 'MANUAL');
+        $this->assertEquals(true, $page->preprocess());
+        ob_start();
+        $page->head_content();
+        ob_end_clean();
+        FormLib::clear();
+        FormLib::set('xml-resp', file_get_contents(__DIR__ . '/responses/dc.auth.approved.xml'));
+        $this->assertEquals(false, $page->preprocess());
+        FormLib::clear();
     }
 
     public function testXml()

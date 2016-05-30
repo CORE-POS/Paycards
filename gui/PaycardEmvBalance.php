@@ -22,6 +22,7 @@
 
 *********************************************************************************/
 
+use COREPOS\pos\lib\FormLib;
 if (!class_exists('AutoLoader')) {
     include_once(dirname(__FILE__).'/../../../lib/AutoLoader.php');
 }
@@ -34,8 +35,8 @@ class PaycardEmvBalance extends PaycardProcessPage
     function preprocess()
     {
         // check for posts before drawing anything, so we can redirect
-        if (isset($_REQUEST['reginput'])) {
-            $input = strtoupper(trim($_REQUEST['reginput']));
+        if (FormLib::get('reginput',false) !== false) {
+            $input = strtoupper(trim(FormLib::get('reginput')));
             // CL always exits
             if ($input == "CL") {
                 PaycardLib::paycard_reset();
@@ -50,8 +51,8 @@ class PaycardEmvBalance extends PaycardProcessPage
                 $this->run_transaction = true;
             }
             // if we're still here, we haven't accepted a valid amount yet; display prompt again
-        } elseif (isset($_REQUEST['xml-resp'])) {
-            $xml = $_REQUEST['xml-resp'];
+        } elseif (FormLib::get('xml-resp') !== '') {
+            $xml = FormLib::get('xml-resp');
             $this->emvResponseHandler($xml, true);
             return false;
         }

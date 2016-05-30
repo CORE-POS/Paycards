@@ -22,6 +22,7 @@
 
 *********************************************************************************/
 
+use COREPOS\pos\lib\FormLib;
 if (!class_exists('AutoLoader')) {
     include_once(dirname(__FILE__).'/../../../lib/AutoLoader.php');
 }
@@ -36,8 +37,8 @@ class PaycardEmvGift extends PaycardProcessPage
     function preprocess()
     {
         // check for posts before drawing anything, so we can redirect
-        if (isset($_REQUEST['mode'])) {
-            $this->mode = $_REQUEST['mode'];
+        if (FormLib::get('mode') !== '') {
+            $this->mode = FormLib::get('mode');
             if ($this->mode != PaycardLib::PAYCARD_MODE_ACTIVATE && $this->mode != PaycardLib::PAYCARD_MODE_ADDVALUE) {
                 CoreLocal::set('boxMsg', 'Invalid Gift Card Mode');
                 $this->change_page(MiscLib::baseURL() . 'gui-modules/boxMsg2.php');
@@ -45,12 +46,12 @@ class PaycardEmvGift extends PaycardProcessPage
                 return false;
             }
         }
-        if (isset($_REQUEST['amount']) && is_numeric($_REQUEST['amount'])) {
-            $this->amount = $_REQUEST['amount'];
+        if (is_numeric(FormLib::get('amount'))) {
+            $this->amount = FormLib::get('amount');
         }
 
-        if (isset($_REQUEST['reginput'])) {
-            $input = strtoupper(trim($_REQUEST['reginput']));
+        if (FormLib::get('reginput', false) !== '') {
+            $input = strtoupper(trim(FormLib::get('reginput')));
             // CL always exits
             if( $input == "CL") {
                 CoreLocal::set("msgrepeat",0);
@@ -77,8 +78,8 @@ class PaycardEmvGift extends PaycardProcessPage
                 $this->amount = $input / 100.00;
             }
             // if we're still here, we haven't accepted a valid amount yet; display prompt again
-        } elseif (isset($_REQUEST['xml-resp'])) {
-            $xml = $_REQUEST['xml-resp'];
+        } elseif (FormLib::get('xml-resp') !== '') {
+            $xml = FormLib::get('xml-resp');
             $this->emvResponseHandler($xml);
             return false;
         } // post?
