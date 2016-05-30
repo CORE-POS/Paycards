@@ -21,9 +21,7 @@
 
 *********************************************************************************/
 
-if (!class_exists('AutoLoader')) {
-    include_once(dirname(__FILE__).'/../../../lib/AutoLoader.php');
-}
+if (!class_exists('AutoLoader')) include_once(dirname(__FILE__).'/../../../lib/AutoLoader.php');
 
 class PaycardTransListPage extends NoInputCorePage 
 {
