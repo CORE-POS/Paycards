@@ -255,7 +255,7 @@ class FirstData extends BasicCCModule {
                <v1:Type>$mode</v1:Type> 
               </v1:CreditCardTxType>";
           $xml .= "<v1:CreditCardData> 
-               <v1:CardNumber>$pan</v1:CardNumber> 
+               <v1:CardNumber>$cardPAN</v1:CardNumber> 
                <v1:ExpMonth>$cardExM</v1:ExpMonth> 
                <v1:ExpYear>$cardExY</v1:ExpYear> 
                <v1:CardCodeValue>$cvv2</v1:CardCodeValue>
@@ -271,8 +271,9 @@ class FirstData extends BasicCCModule {
             </fdggwsapi:FDGGWSApiOrderRequest>';
 
         $this->GATEWAY = "https://ws.firstdataglobalgateway.com/fdggwsapi/services/order.wsdl";
-        if ($live == 0)
+        if (CoreLocal::get("training") == 1) {
             $this->GATEWAY = "https://ws.merchanttest.firstdataglobalgateway.com/fdggwsapi/services/order.wsdl";
+        }
 
         $extraCurlSetup = array(
             CURLOPT_HTTPAUTH => CURLAUTH_BASIC,

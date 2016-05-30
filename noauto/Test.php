@@ -80,8 +80,10 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertInternalType('array', $f->paycard_void(1));
         $f->last_request = $req;
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
-        $f->cleanup(array());
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $f->handleResponse($httpErr));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/fd.auth.approved.xml'));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_OK, $f->doSend(PaycardLib::PAYCARD_MODE_AUTH));
+        $f->cleanup(array());
         try {
             CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
             $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $f->handleResponse($httpErr));
