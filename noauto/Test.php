@@ -561,7 +561,31 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(true, $p->check('02E6008012345'));
         $this->assertEquals(true, $p->check('02***03'));
         $this->assertEquals(true, $p->check('4111111111111111' . date('my')));
+        CoreLocal::set('ttlflag', 1);
         $this->assertInternalType('array', $p->parse('4111111111111111' . date('my')));
+        $this->assertInternalType('array', $p->parse('PV4111111111111111' . date('my')));
+        $this->assertInternalType('array', $p->parse('AV4111111111111111' . date('my')));
+        $this->assertInternalType('array', $p->parse('AC4111111111111111' . date('my')));
+        try {
+            CoreLocal::set('ttlflag', 0);
+            $this->assertInternalType('array', $p->parse('AC4111111111111111' . date('my')));
+        } catch (Exception $ex){}
+        CoreLocal::set('ttlflag', 1);
+        CoreLocal::set('amtdue', 1);
+        CoreLocal::set('RegisteredPaycardClasses', array());
+        $this->assertInternalType('array', $p->parse('4111111111111111' . date('my')));
+        CoreLocal::set('RegisteredPaycardClasses', array('AuthorizeDotNet'));
+        $this->assertInternalType('array', $p->parse('4111111111111111' . date('my')));
+        $this->assertInternalType('array', $p->parse('2E60080dummyEncrypted' . date('my')));
+        CoreLocal::set('CacheCardType', 'DEBIT');
+        CoreLocal::set('CacheCardCashBack', '1');
+        $this->assertInternalType('array', $p->parse('2E60080dummyEncrypted' . date('my')));
+        CoreLocal::set('CacheCardCashBack', '');
+        CoreLocal::set('CacheCardType', 'EBTFOOD');
+        try {
+            $this->assertInternalType('array', $p->parse('2E60080dummyEncrypted' . date('my')));
+        } catch (Exception $ex){}
+        CoreLocal::set('CacheCardType', '');
     }
 
     public function testEnc()
