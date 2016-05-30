@@ -21,6 +21,7 @@
 
 *********************************************************************************/
 
+use COREPOS\pos\lib\FormLib;
 if (!class_exists('AutoLoader')) {
     include_once(dirname(__FILE__).'/../../../lib/AutoLoader.php');
 }
@@ -30,8 +31,8 @@ class paycardboxMsgBalance extends PaycardProcessPage {
     function preprocess()
     {
         // check for posts before drawing anything, so we can redirect
-        if( isset($_REQUEST['reginput'])) {
-            $input = strtoupper(trim($_REQUEST['reginput']));
+        if (FormLib::get('reginput', false) !== false) {
+            $input = strtoupper(trim(FormLib::get('reginput')));
             // CL always exits
             if( $input == "CL") {
                 CoreLocal::set("msgrepeat",0);
@@ -43,7 +44,7 @@ class paycardboxMsgBalance extends PaycardProcessPage {
             }
     
             // when checking balance, no input is confirmation to proceed
-            if( $input == "") {
+            if ($input === "") {
                 $this->addOnloadCommand("paycard_submitWrapper();");
                 $this->action = "onsubmit=\"return false;\"";
             }

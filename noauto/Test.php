@@ -441,6 +441,43 @@ class Test extends PHPUnit_Framework_TestCase
         FormLib::set('xml-resp', file_get_contents(__DIR__ . '/responses/dc.auth.approved.xml'));
         $this->assertEquals(false, $page->preprocess());
         FormLib::clear();
+
+        $page = new  paycardboxMsgBalance();
+        FormLib::set('reginput', 'CL');
+        $this->assertEquals(false, $page->preprocess());
+        FormLib::set('reginput', '');
+        $this->assertEquals(true, $page->preprocess());
+        FormLib::clear();
+
+        $page = new PaycardEmvVoid();
+        SQLManager::addResult(array(0=>1));
+        FormLib::set('reginput', 'CL');
+        $this->assertEquals(false, $page->preprocess());
+        SQLManager::addResult(array(0=>1));
+        FormLib::set('reginput', '1234');
+        $this->assertEquals(true, $page->preprocess());
+        ob_start();
+        $page->head_content();
+        ob_end_clean();
+        FormLib::clear();
+        FormLib::set('xml-resp', file_get_contents(__DIR__ . '/responses/dc.auth.approved.xml'));
+        SQLManager::addResult(array(0=>1));
+        $this->assertEquals(false, $page->preprocess());
+        FormLib::clear();
+
+        $page = new PaycardTransLookupPage();
+        FormLib::set('doLookup', 1);
+        FormLib::set('id', str_repeat('9', 16));
+        FormLib::set('local', 1);
+        FormLib::set('mode', 'verify');
+        ob_start();
+        $this->assertEquals(false, $page->preprocess());
+        CoreLocal::set('RegisteredPaycardClasses', array('MercuryE2E'));
+        $this->assertEquals(false, $page->preprocess());
+        FormLib::set('id', '9_l');
+        $page->body_content();
+        ob_end_clean();
+        FormLib::clear();
     }
 
     public function testXml()
@@ -573,27 +610,69 @@ class Test extends PHPUnit_Framework_TestCase
         try {
             PaycardDialogs::enabledCheck();
         } catch (Exception $ex) {}
+        CoreLocal::set('CCintegrate', 1);
+        $this->assertEquals(true, PaycardDialogs::enabledCheck());
+        CoreLocal::set('CCintegrate', '');
 
         CoreLocal::set('paycard_exp', date('my'));
         $this->assertEquals(true, PaycardDialogs::validateCard('4111111111111111'));
+        CoreLocal::set('paycard_exp', date('0101'));
+        try {
+            PaycardDialogs::validateCard('4111111111111111');
+        } catch (Exception $ex) {}
+        try {
+            PaycardDialogs::validateCard('4111111111111112'); // bad luhn checksum
+        } catch (Exception $ex) {}
 
         try {
             PaycardDialogs::voidableCheck('1111', array(1,1,1));
         } catch (Exception $ex) {}
+        SQLManager::addResult(array('transID'=>1));
+        SQLManager::addResult(array('transID'=>1));
+        try {
+            PaycardDialogs::voidableCheck('1111', array(1,1,1)); // too many results
+        } catch (Exception $ex) {}
+        SQLManager::clear();
+        SQLManager::addResult(array('transID'=>1));
+        $this->assertEquals(1, PaycardDialogs::voidableCheck('1111', array(1,1,1)));
 
         $this->assertInternalType('string', PaycardDialogs::invalidMode());
 
         try {
             PaycardDialogs::getRequest('1-1-1', 1);
         } catch (Exception $ex) {}
+        SQLManager::addResult(array(0=>1));
+        SQLManager::addResult(array(0=>1));
+        try {
+            PaycardDialogs::getRequest('1-1-1', 1);
+        } catch (Exception $ex) {}
+        SQLManager::clear();
+        SQLManager::addResult(array(0=>1));
+        $this->assertEquals(array(0=>1), PaycardDialogs::getRequest('1-1-1', 1));
 
         try {
             PaycardDialogs::getResponse('1-1-1', 1);
         } catch (Exception $ex) {}
+        SQLManager::addResult(array(0=>1));
+        SQLManager::addResult(array(0=>1));
+        try {
+            PaycardDialogs::getResponse('1-1-1', 1);
+        } catch (Exception $ex) {}
+        SQLManager::clear();
+        SQLManager::addResult(array(0=>1));
+        $this->assertEquals(array(0=>1), PaycardDialogs::getResponse('1-1-1', 1));
 
         try {
             PaycardDialogs::getTenderLine('1-1-1', 1);
         } catch (Exception $ex) {}
+        SQLManager::addResult(array(0=>1));
+        SQLManager::addResult(array(0=>1));
+        try {
+            PaycardDialogs::getTenderLine('1-1-1', 1);
+        } catch (Exception $ex) {}
+        SQLManager::clear();
+        SQLManager::addResult(array(0=>1));
+        $this->assertEquals(array(0=>1), PaycardDialogs::getTenderLine('1-1-1', 1));
 
         try {
             PaycardDialogs::notVoided('1-1-1', 1);

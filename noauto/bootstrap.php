@@ -335,6 +335,10 @@ if (!class_exists('TenderModule', false)) {
 if (!class_exists('Authenticate', false)) {
     class Authenticate
     {
+        public static function checkPassword($p)
+        {
+            return true;
+        }
         public static function getPermission($emp)
         {
             return 100;
