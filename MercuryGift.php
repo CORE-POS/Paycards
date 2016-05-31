@@ -569,7 +569,7 @@ class MercuryGift extends BasicCCModule
         }
 
         $normalized = ($validResponse == 0) ? 4 : 0;
-        $status = $xml->get('CMDSTATUS');
+        $status = $xml->get_first('CMDSTATUS');
         $rMsg = $status;
         $resultCode = 0;
         if ($status == 'Approved') {
