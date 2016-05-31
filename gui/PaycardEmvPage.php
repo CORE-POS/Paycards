@@ -69,14 +69,9 @@ class PaycardEmvPage extends PaycardProcessPage
                 }
             }
             // if we're still here, we haven't accepted a valid amount yet; display prompt again
-        } elseif (isset($_REQUEST['xml-resp'])) {
-            $xml = $_REQUEST['xml-resp'];
+        } elseif (FormLib::get('xml-resp') !== '') {
+            $xml = FormLib::get('xml-resp');
             $this->emvResponseHandler($xml);
-            if (isset($_REQUEST['err-info'])) {
-                $fp = fopen(dirname(__FILE__) . '/../resp.xml', 'a');
-                fwrite($fp, $_REQUEST['err-info'] . "\n\n");
-                fclose($fp);
-            }
             return false;
         } // post?
 

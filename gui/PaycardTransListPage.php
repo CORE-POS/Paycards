@@ -21,6 +21,7 @@
 
 *********************************************************************************/
 
+use COREPOS\pos\lib\FormLib;
 if (!class_exists('AutoLoader')) include_once(dirname(__FILE__).'/../../../lib/AutoLoader.php');
 
 class PaycardTransListPage extends NoInputCorePage 
@@ -29,8 +30,8 @@ class PaycardTransListPage extends NoInputCorePage
     function preprocess()
     {
         // check for posts before drawing anything, so we can redirect
-        if (isset($_REQUEST['selectlist'])) {
-            $id = $_REQUEST['selectlist'];
+        if (FormLib::get('selectlist', false) !== false) {
+            $id = FormLib::get('selectlist');
 
             if ($id == 'CL' || $id == '') {
                 $this->change_page($this->page_url."gui-modules/pos2.php");

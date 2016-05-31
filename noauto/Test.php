@@ -349,6 +349,30 @@ class Test extends PHPUnit_Framework_TestCase
         ob_start();
         $this->assertEquals(false, $page->preprocess());
         ob_end_clean();
+        CoreLocal::set('amtdue', 1);
+        CoreLocal::set('paycard_amount', 1);
+        CoreLocal::set('PaycardRetryBalanceLimit', 1);
+        ob_start();
+        $this->assertEquals(false, $page->preprocess());
+        $page->body_content();
+        CoreLocal::set('PaycardRetryBalanceLimit', '');
+        $page->body_content();
+        CoreLocal::set('CacheCardType', 'EBTFOOD');
+        CoreLocal::set('fsEligible', 1);
+        CoreLocal::set('subtotal', 1);
+        CoreLocal::set('CacheCardType', '');
+        CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_GIFT);
+        $page->body_content();
+        CoreLocal::set('amtdue', -1);
+        CoreLocal::set('paycard_amount', -1);
+        $page->body_content();
+        ob_end_clean();
+        CoreLocal::set('fsEligible', '');
+        CoreLocal::set('subtotal', '');
+        CoreLocal::set('amtdue', '');
+        CoreLocal::set('paycard_amount', '');
+        CoreLocal::set('paycard_type', '');
+ 
         FormLib::clear();
 
         $page = new paycardSuccess();
@@ -421,6 +445,33 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(true, $page->preprocess());
         FormLib::set('reginput', '');
         $this->assertEquals(true, $page->preprocess());
+        CoreLocal::set('amtdue', 1);
+        CoreLocal::set('paycard_amount', 1);
+        CoreLocal::set('PaycardRetryBalanceLimit', 1);
+        $this->assertEquals(true, $page->preprocess());
+        ob_start();
+        $page->head_content();
+        $page->body_content();
+        CoreLocal::set('PaycardRetryBalanceLimit', '');
+        $page->body_content();
+        CoreLocal::set('CacheCardType', 'EBTFOOD');
+        CoreLocal::set('fsEligible', 1);
+        CoreLocal::set('subtotal', 1);
+        CoreLocal::set('CacheCardType', '');
+        CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_GIFT);
+        $page->body_content();
+        CoreLocal::set('amtdue', -1);
+        CoreLocal::set('paycard_amount', -1);
+        $page->body_content();
+        ob_end_clean();
+        CoreLocal::set('fsEligible', '');
+        CoreLocal::set('subtotal', '');
+        CoreLocal::set('amtdue', '');
+        CoreLocal::set('paycard_amount', '');
+        CoreLocal::set('paycard_type', '');
+        FormLib::clear();
+        FormLib::set('xml-resp', file_get_contents(__DIR__ . '/responses/dc.auth.approved.xml'));
+        $this->assertEquals(false, $page->preprocess());
         FormLib::clear();
 
         $page = new paycardboxMsgVoid();
@@ -513,6 +564,19 @@ class Test extends PHPUnit_Framework_TestCase
         FormLib::set('id', '9_l');
         $page->body_content();
         ob_end_clean();
+        FormLib::clear();
+
+        $page = new PaycardTransListPage();
+        SQLManager::addResult(array('amount'=>1, 'PAN'=>'1', 'refNum'=>1));
+        SQLManager::addResult(array('dt'=>date('Y-m-d H:i:s'), 'amount'=>1, 'PAN'=>'1', 'refNum'=>1, 'cashierNo'=>1,'laneNo'=>1,'transNo'=>1));
+        ob_start();
+        $page->body_content();
+        ob_end_clean();
+        SQLManager::clear();
+        FormLib::set('selectlist', 'CL');
+        $this->assertEquals(false, $page->preprocess());
+        FormLib::set('selectlist', 'Foo');
+        $this->assertEquals(false, $page->preprocess());
         FormLib::clear();
     }
 
