@@ -306,11 +306,7 @@ class MercuryGift extends BasicCCModule
             <RefNo>$identifier</RefNo>
             <Memo>CORE POS 1.0.0</Memo>
             <Account>";
-        if ($cardTr2) {
-            $msgXml .= "<Track2>$cardTr2</Track2>";
-        } else {
-            $msgXml .= "<AcctNo>$cardPAN</AcctNo>";
-        }
+        $msgXml .= $cardTr2 ? "<Track2>$cardTr2</Track2>" : "<AcctNo>$cardPAN</AcctNo>";
         $msgXml .= "</Account>
             <Amount>
             <Purchase>$amountText</Purchase>
@@ -443,11 +439,7 @@ class MercuryGift extends BasicCCModule
             <RefNo>$authcode</RefNo>
             <Memo>CORE POS 1.0.0</Memo>
             <Account>";
-        if ($cardTr2) {
-            $msgXml .= "<Track2>$cardTr2</Track2>";
-        } else {
-            $msgXml .= "<AcctNo>$cardPAN</AcctNo>";
-        }
+        $msgXml .= $cardTr2 ? "<Track2>$cardTr2</Track2>" : "<AcctNo>$cardPAN</AcctNo>";
         $msgXml .= "</Account>
             <Amount>
             <Purchase>$amountText</Purchase>
@@ -490,11 +482,7 @@ class MercuryGift extends BasicCCModule
             <RefNo>$identifier</RefNo>
             <Memo>CORE POS</Memo>
             <Account>";
-        if ($cardTr2) {
-            $msgXml .= "<Track2>$cardTr2</Track2>";
-        } else {
-            $msgXml .= "<AcctNo>$cardPAN</AcctNo>";
-        }
+        $msgXml .= $cardTr2 ? "<Track2>$cardTr2</Track2>" : "<AcctNo>$cardPAN</AcctNo>";
         $msgXml .= "</Account>
             </Transaction>
             </TStream>";

@@ -377,6 +377,10 @@ if (!class_exists('COREPOS\\pos\\lib\\MemberLib')) {
     include(__DIR__ . '/mocks/MemberLib.php');
 }
 
+if (!class_exists('COREPOS\\pos\\lib\\DeptLib')) {
+    include(__DIR__ . '/mocks/DeptLib.php');
+}
+
 if (!class_exists('COREPOS\\pos\\lib\\FormLib')) {
     include(__DIR__ . '/mocks/FormLib.php');
 }

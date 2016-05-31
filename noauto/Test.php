@@ -152,9 +152,9 @@ class Test extends PHPUnit_Framework_TestCase
         BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/mg.auth.approved.xml'));
         $m->setPAN(array('pan'=>'4111111111111111', 'tr1'=>'', 'tr2'=>'', 'tr3'=>''));
         $this->assertEquals(PaycardLib::PAYCARD_ERR_DATA, $m->doSend(PaycardLib::PAYCARD_MODE_ACTIVATE));
-        $this->assertInternalType('array', $m->entered(true, array()));
         CoreLocal::set('paycard_response', array('Balance'=>10));
         $m->cleanup(array());
+        $this->assertInternalType('array', $m->entered(true, array()));
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_ADDVALUE);
         BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/mg.auth.approved.xml'));
         $m->setPAN(array('pan'=>'4111111111111111', 'tr1'=>'', 'tr2'=>'', 'tr3'=>''));
