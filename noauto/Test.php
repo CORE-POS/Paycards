@@ -124,19 +124,42 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertInternalType('array', $m->paycard_void(1));
         $m->last_request = $req;
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
+        CoreLocal::set('CCintegrate', 1);
         $this->assertEquals(PaycardLib::PAYCARD_ERR_DATA, $m->handleResponse($httpErr));
-        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/me.auth.approved.xml'));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/mg.auth.approved.xml'));
         $m->setPAN(array('pan'=>'4111111111111111', 'tr1'=>'', 'tr2'=>'', 'tr3'=>''));
         $this->assertEquals(PaycardLib::PAYCARD_ERR_DATA, $m->doSend(PaycardLib::PAYCARD_MODE_AUTH));
         CoreLocal::set('paycard_response', array('Balance'=>10));
         $m->cleanup(array());
+        $this->assertInternalType('array', $m->entered(true, array()));
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
         $this->assertEquals(PaycardLib::PAYCARD_ERR_NOSEND, $m->handleResponse($httpErr));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/mg.auth.approved.xml'));
+        $m->setPAN(array('pan'=>'4111111111111111', 'tr1'=>'', 'tr2'=>'', 'tr3'=>''));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_NOSEND, $m->doSend(PaycardLib::PAYCARD_MODE_VOID));
+        CoreLocal::set('paycard_response', array('Balance'=>10));
         $m->cleanup(array());
+        $this->assertInternalType('array', $m->entered(true, array()));
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_BALANCE);
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $m->handleResponse($httpErr));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/mg.auth.approved.xml'));
+        $m->setPAN(array('pan'=>'4111111111111111', 'tr1'=>'', 'tr2'=>'', 'tr3'=>''));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $m->doSend(PaycardLib::PAYCARD_MODE_BALANCE));
+        CoreLocal::set('paycard_response', array('Balance'=>10));
         $m->cleanup(array());
-
+        $this->assertInternalType('array', $m->entered(true, array()));
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_ACTIVATE);
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/mg.auth.approved.xml'));
+        $m->setPAN(array('pan'=>'4111111111111111', 'tr1'=>'', 'tr2'=>'', 'tr3'=>''));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_DATA, $m->doSend(PaycardLib::PAYCARD_MODE_ACTIVATE));
+        $this->assertInternalType('array', $m->entered(true, array()));
+        CoreLocal::set('paycard_response', array('Balance'=>10));
+        $m->cleanup(array());
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_ADDVALUE);
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/mg.auth.approved.xml'));
+        $m->setPAN(array('pan'=>'4111111111111111', 'tr1'=>'', 'tr2'=>'', 'tr3'=>''));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_DATA, $m->doSend(PaycardLib::PAYCARD_MODE_ADDVALUE));
+        CoreLocal::set('CCintegrate', '');
 
         $v = new Valutec();
         $this->assertEquals(false, $v->handlesType(PaycardLib::PAYCARD_TYPE_CREDIT));
@@ -223,6 +246,15 @@ class Test extends PHPUnit_Framework_TestCase
 
         $this->assertEquals(true, PaycardModule::isReturn('refund'));
         $this->assertEquals(false, PaycardModule::isReturn('foo'));
+        CoreLocal::set('CCintegrate', 1);
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_BALANCE);
+        $this->assertInternalType('array', PaycardModule::ccEntered('4111111111111111', true, array()));
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
+        $this->assertInternalType('array', PaycardModule::ccEntered('4111111111111111', true, array()));
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
+        $this->assertInternalType('array', PaycardModule::ccEntered('4111111111111111', true, array()));
+        $this->assertEquals(true, PaycardModule::commError(array('curlErr'=>CURLE_OK, 'curlHTTP'=>500)));
+        CoreLocal::set('CCintegrate', '');
     }
 
     public function testLib()

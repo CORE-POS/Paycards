@@ -1,0 +1,13 @@
+<GiftTransactionResult><?xml version="1.0"?>
+<Response>
+    <CmdStatus>Approved</CmdStatus>
+    <DSixReturnCode>Mock</DSixReturnCode>
+    <CmdStatus>Mock</CmdStatus>
+    <AuthCode>Mock</AuthCode>
+    <RefNo>Mock</RefNo>
+    <Balance>0</Balance>
+    <Authorize>1</Authorize>
+    <RecordNo>Mock</RecordNo>
+    <ProcessData>Mock</ProcessData>
+    <AcqRefData>Mock</AcqRefData>
+</Response></GiftTransactionResult>
