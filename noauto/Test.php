@@ -268,6 +268,50 @@ class Test extends PHPUnit_Framework_TestCase
             . ';1234567890123445=99011200XXXX00000000?'
             . ';011234567890123445=724724100000000000030300XXXX040400099010=************************==1=0000000000000000?';
         $this->assertInternalType('array', PaycardLib::paycard_magstripe($stripe));
+        $tr2 = ';1234567890123445=99011200XXXX00000000?';
+        $this->assertInternalType('array', PaycardLib::paycard_magstripe($tr2));
+        PaycardLib::paycard_info('02E60080asaf');
+        PaycardLib::paycard_info('02***03');
+        PaycardLib::paycard_info('6008900'. str_repeat('0', 11));
+        PaycardLib::paycard_info('6008750'. str_repeat('0', 11));
+
+        $this->assertEquals(0, PaycardLib::paycard_accepted('6008750'. str_repeat('0', 11), false));
+
+        CoreLocal::set('training', '');
+        CoreLocal::set('CashierNo', '');
+        CoreLocal::set('CCintegrate', 1);
+        $this->assertEquals(1, PaycardLib::paycard_live(PaycardLib::PAYCARD_TYPE_CREDIT));
+        CoreLocal::set('CCintegrate', '');
+        $this->assertEquals(0, PaycardLib::paycard_live(PaycardLib::PAYCARD_TYPE_CREDIT));
+
+        $this->assertEquals('4111********1111', PaycardLib::paycard_maskPAN('4111111111111111', 4, 4));
+
+        CoreLocal::set('CacheCardType', 'EBTFOOD');
+        CoreLocal::set('paycard_amount', 1);
+        CoreLocal::set('fsEligible', -1);
+        $this->assertEquals(array(false, 'Enter a negative amount'), PaycardLib::validateAmount());
+        CoreLocal::set('paycard_amount', -1);
+        CoreLocal::set('fsEligible', 1);
+        $this->assertEquals(array(false, 'Enter a positive amount'), PaycardLib::validateAmount());
+        CoreLocal::set('paycard_amount', 5);
+        $this->assertEquals(array(false, 'Cannot exceed amount due'), PaycardLib::validateAmount());
+        CoreLocal::set('CacheCardType', 'DEBIT');
+        CoreLocal::set('fsEligible', '');
+        CoreLocal::set('amtdue', 1);
+        CoreLocal::set('CacheCardCashBack', 1);
+        $this->assertEquals(array(false, 'Cannot exceed amount due plus cashback'), PaycardLib::validateAmount());
+        CoreLocal::set('CacheCardCashBack', '');
+        CoreLocal::set('paycard_amount', 1);
+        CoreLocal::set('PaycardRetryBalanceLimit', 0.50);
+        $this->assertEquals(array(false, 'Cannot exceed card balance'), PaycardLib::validateAmount());
+        CoreLocal::set('paycard_amount', '');
+        CoreLocal::set('PaycardRetryBalanceLimit', '');
+        CoreLocal::set('CacheCardType', '');
+
+        $this->assertInternalType('array', PaycardLib::getTenderInfo('EMV', 'Visa'));
+        SQLManager::addResult(array('TenderCode'=>'TC', 'TenderName'=>'Foo'));
+        $this->assertInternalType('array', PaycardLib::getTenderInfo('GIFT', 'Visa'));
+        SQLManager::clear();
     }
 
     public function testLookups()
@@ -288,6 +332,7 @@ class Test extends PHPUnit_Framework_TestCase
     public function testPages()
     {
         SQLManager::clear();
+        CoreLocal::set('paycard_amount', 1);
 
         $pages = array(
             'PaycardEmvBalance',
@@ -493,6 +538,21 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(true, $page->preprocess());
         FormLib::set('reginput', '');
         $this->assertEquals(true, $page->preprocess());
+        CoreLocal::set('paycard_amount', 0);
+        CoreLocal::set('paycard_type', PaycardLib::PAYCARD_MODE_ACTIVATE);
+        ob_start();
+        $page->body_content();
+        CoreLocal::set('paycard_amount', 10);
+        $page->body_content();
+        CoreLocal::set('paycard_type', PaycardLib::PAYCARD_MODE_ADDVALUE);
+        $page->body_content();
+        CoreLocal::set('paycard_amount', 0);
+        $page->body_content();
+        CoreLocal::set('paycard_amount', -10);
+        $page->body_content();
+        ob_end_clean();
+        CoreLocal::set('paycard_type', '');
+        CoreLocal::set('paycard_amount', '');
         FormLib::clear();
 
         $page = new PaycardEmvGift();
@@ -656,6 +716,7 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertInternalType('array', $p->parse('PCLOOKUP'));
 
         $p = new paycardEntered();
+        $p->doc();
         $this->assertEquals(false, $p->check('foo'));
         $this->assertEquals(true, $p->check('foo?'));
         $this->assertEquals(true, $p->check('02E6008012345'));
@@ -683,9 +744,13 @@ class Test extends PHPUnit_Framework_TestCase
         CoreLocal::set('CacheCardCashBack', '');
         CoreLocal::set('CacheCardType', 'EBTFOOD');
         try {
+            $this->assertEquals(true, $p->check('2E60080dummyEncrypted' . date('my')));
             $this->assertInternalType('array', $p->parse('2E60080dummyEncrypted' . date('my')));
         } catch (Exception $ex){}
         CoreLocal::set('CacheCardType', '');
+        $stripe = '%B1234567890123445^PADILLA/L.                ^99011200000000000000**XXX******?;1234567890123445=99011200XXXX00000000?';
+        $this->assertEquals(true, $p->check($stripe));
+        $this->assertInternalType('array', $p->parse($stripe));
     }
 
     public function testEnc()
@@ -816,10 +881,27 @@ class Test extends PHPUnit_Framework_TestCase
         SQLManager::addResult(array(0=>1));
         $this->assertEquals(array(0=>1), PaycardDialogs::getTenderLine('1-1-1', 1));
 
+        $this->assertEquals(true, PaycardDialogs::notVoided('1-1-1', 1));
         try {
+            SQLManager::addResult(array(0=>1, 'transID'=>1));
             PaycardDialogs::notVoided('1-1-1', 1);
         } catch (Exception $ex) {}
 
+        $response = array(
+            'commErr' => 0,
+            'httpCode' => 200,
+            'validResponse' => 1,
+            'xResponseCode' => 1,
+            'xTransactionID' => 1,
+        );
+        $request = array('live'=>PaycardLib::paycard_live(PaycardLib::PAYCARD_TYPE_CREDIT));
+        $lineitem = array(
+            'trans_type'=>'T',
+            'trans_subtype'=>'CC',
+            'voided'=>0,
+            'trans_status'=>'',
+        );
+        $this->assertEquals(true, PaycardDialogs::validateVoid($request, $response, $lineitem, 1));
     }
 
     public function testReqResp()

@@ -266,12 +266,6 @@ static public function paycard_live($type = self::PAYCARD_TYPE_UNKNOWN)
     if( $type === self::PAYCARD_TYPE_CREDIT) {
         if( CoreLocal::get("CCintegrate") != 1)
             return 0;
-    } else if( $type === self::PAYCARD_TYPE_GIFT) {
-        if( CoreLocal::get("training") == 1)
-            return 0;
-    } else if( $type === self::PAYCARD_TYPE_STORE) {
-        if( CoreLocal::get("storecardLive") != 1)
-            return 0;
     }
     return 1;
 } // paycard_live()
@@ -416,13 +410,6 @@ static private function getTracks($data)
             } else {
                 throw new Exception(-3); // there should only be one or two tracks with the track2/3 start-sentinel
             }
-        } else if (substr($track,0,1) == "T"){
-            // tender amount. not really a standard
-            // sentinel, but need the value sent
-            // from cc-terminal if in case it differs
-            $amt = str_pad(substr($track,1),3,'0',STR_PAD_LEFT);
-            $amt = substr($amt,0,strlen($amt)-2).".".substr($amt,-2);    
-            CoreLocal::set("paycard_amount",$amt);
         }
         // ignore tracks with unrecognized start sentinels
         // readers often put E? or something similar if they have trouble reading,
