@@ -737,6 +737,7 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertInternalType('array', $p->parse('4111111111111111' . date('my')));
         CoreLocal::set('RegisteredPaycardClasses', array('AuthorizeDotNet'));
         $this->assertInternalType('array', $p->parse('4111111111111111' . date('my')));
+        $p = new paycardEntered();
         $this->assertInternalType('array', $p->parse('2E60080dummyEncrypted' . date('my')));
         CoreLocal::set('CacheCardType', 'DEBIT');
         CoreLocal::set('CacheCardCashBack', '1');

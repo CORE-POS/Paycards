@@ -142,7 +142,7 @@ class PaycardDatacapParser extends Parser
                 $ret['main_frame'] = $plugin_info->pluginUrl().'/gui/PaycardEmvGift.php?mode=' . CoreLocal::get('paycard_mode');
                 break;
             case 'AVDATACAPGD':
-                CoreLocal::set('CacheCardType', 'GITFT');
+                CoreLocal::set('CacheCardType', 'GIFT');
                 CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_ADDVALUE);
                 CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_GIFT);
                 $ret['main_frame'] = $plugin_info->pluginUrl().'/gui/PaycardEmvGift.php?mode=' . CoreLocal::get('paycard_mode');

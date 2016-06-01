@@ -128,12 +128,6 @@ class paycardEntered extends Parser
         try {
             $this->checkTotal($mode, $type);
 
-            // check for pre-validation override
-            if (strtoupper(substr($card,0,1)) == 'O') {
-                $validate = false;
-                $card = substr($card, 1);
-            }
-
             // parse card data
             if (CoreLocal::get("paycard_manual")) {
                 // make sure it's numeric
