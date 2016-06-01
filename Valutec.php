@@ -277,7 +277,7 @@ class Valutec extends BasicCCModule
         $termID = $this->getTermID();
 
         try {
-            $log = $request->findOriginal();
+            $search = $request->findOriginal();
             $request->saveRequest();
         } catch (Exception $ex) {
             return PaycardLib::PAYCARD_ERR_NOSEND; // database error, nothing sent (ok to retry)

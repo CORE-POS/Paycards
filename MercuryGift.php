@@ -348,8 +348,10 @@ class MercuryGift extends BasicCCModule
         $amountText = number_format(abs($amount), 2, '.', '');
         $mode = 'void';
         $cardPAN = $this->getPAN();
+        $cardTr2 = $this->getTrack2();
         $identifier = date('mdHis'); // the void itself needs a unique identifier, so just use a timestamp minus the year (10 digits only)
         $termID = $this->getTermID();
+        $password = $this->getPw();
 
         // look up the auth code from the original response 
         // (card number and amount should already be in session vars)
@@ -362,7 +364,7 @@ class MercuryGift extends BasicCCModule
                     AND transNo=" . $transNo . "
                     AND transID=" . $transID;
         $search = $dbTrans->query($sql);
-        if (!$search || $dbTrans->numRows($search) != 1) {
+        if (!$search || $dbTrans->numRows($search) == 0) {
             return PaycardLib::PAYCARD_ERR_NOSEND; // database error, nothing sent (ok to retry)
         }
         $log = $dbTrans->fetchRow($search);
@@ -378,7 +380,7 @@ class MercuryGift extends BasicCCModule
                     AND transNo=" . $transNo . "
                     AND transID=" . $transID;
         $search = $dbTrans->query($sql);
-        if (!$search || $dbTrans->num_rows($search) != 1) {
+        if (!$search || $dbTrans->numRows($search) == 0) {
             return PaycardLib::PAYCARD_ERR_NOSEND; // database error, nothing sent (ok to retry)
         }
         $row = $dbTrans->fetchRow($search);
@@ -700,7 +702,7 @@ class MercuryGift extends BasicCCModule
 
         $normalized = ($validResponse == 0) ? 4 : 0;
         $resultCode = 0;
-        $status = $xml->get('CMDSTATUS');
+        $status = $xml->get_first('CMDSTATUS');
         $rMsg = $status;
         if ($status == 'Approved') {
             $normalized = 1;
