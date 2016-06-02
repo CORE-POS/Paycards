@@ -81,7 +81,7 @@ class Test extends PHPUnit_Framework_TestCase
         CoreLocal::set('paycard_trans', '1-1-1');
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $a->doSend(PaycardLib::PAYCARD_MODE_VOID));
-        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/adn.auth.declined.xml'));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/adn.auth.error.xml'));
         $a->setPAN(array('pan'=>'4111111111111111', 'tr1'=>'', 'tr2'=>'', 'tr3'=>''));
         SQLManager::addResult(array('xTransactionID'=>1));
         CoreLocal::set('paycard_trans', '1-1-1');
@@ -612,6 +612,7 @@ class Test extends PHPUnit_Framework_TestCase
         CoreLocal::set('CacheCardType', 'EBTFOOD');
         CoreLocal::set('fsEligible', 1);
         CoreLocal::set('subtotal', 1);
+        $page->body_content();
         CoreLocal::set('CacheCardType', '');
         CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_GIFT);
         $page->body_content();
@@ -629,6 +630,7 @@ class Test extends PHPUnit_Framework_TestCase
 
         $page = new paycardSuccess();
         CoreLocal::set('boxMsg', '');
+        $this->assertEquals(true, $page->preprocess());
         CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_ENCRYPTED);
         FormLib::set('reginput', 'VD');
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
@@ -654,6 +656,7 @@ class Test extends PHPUnit_Framework_TestCase
 
         $page = new PaycardEmvSuccess();
         CoreLocal::set('boxMsg', '');
+        $this->assertEquals(true, $page->preprocess());
         CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_ENCRYPTED);
         FormLib::set('reginput', 'VD');
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
@@ -828,13 +831,16 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(false, $page->preprocess());
         CoreLocal::set('RegisteredPaycardClasses', array('MercuryE2E'));
         $this->assertEquals(false, $page->preprocess());
-        FormLib::set('id', '9_l');
+        FormLib::set('local', 0);
+        $this->assertEquals(false, $page->preprocess());
+        FormLib::set('id', '_l9');
         $page->body_content();
         ob_end_clean();
         FormLib::clear();
 
         $page = new PaycardTransListPage();
         SQLManager::addResult(array('amount'=>1, 'PAN'=>'1', 'refNum'=>1));
+        SQLManager::addResult(false); // end first while loop
         SQLManager::addResult(array('dt'=>date('Y-m-d H:i:s'), 'amount'=>1, 'PAN'=>'1', 'refNum'=>1, 'cashierNo'=>1,'laneNo'=>1,'transNo'=>1));
         ob_start();
         $page->body_content();

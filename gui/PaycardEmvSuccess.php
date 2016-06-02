@@ -196,12 +196,8 @@ class PaycardEmvSuccess extends BasicCorePage
         <?php
     }
 
-    function body_content()
+    private function doSigCapture()
     {
-        $this->input_header("onsubmit=\"return submitWrapper();\" action=\"".$_SERVER['PHP_SELF']."\"");
-        ?>
-        <div class="baseHeight">
-        <?php
         // Signature Capture support
         // If:
         //   a) enabled
@@ -215,7 +211,17 @@ class PaycardEmvSuccess extends BasicCorePage
         }
         $needSig = (CoreLocal::get('paycard_amount') > CoreLocal::get('CCSigLimit') || CoreLocal::get('paycard_amount') < 0) ? true : false;
         $isVoid = (CoreLocal::get('paycard_mode') == PaycardLib::PAYCARD_MODE_VOID) ? true : false;
-        if (CoreLocal::get("PaycardsSigCapture") == 1 && $isCredit && $needSig && !$isVoid) {
+
+        return (CoreLocal::get("PaycardsSigCapture") == 1 && $isCredit && $needSig && !$isVoid); 
+    }
+
+    function body_content()
+    {
+        $this->input_header("onsubmit=\"return submitWrapper();\" action=\"".$_SERVER['PHP_SELF']."\"");
+        ?>
+        <div class="baseHeight">
+        <?php
+        if ($this->doSigCapture()) {
             echo "<div id=\"boxMsg\" class=\"centeredDisplay\">";
 
             echo "<div class=\"boxMsgAlert coloredArea\">";
@@ -260,23 +266,26 @@ class PaycardEmvSuccess extends BasicCorePage
         echo DisplayLib::printfooter();
         echo "</div>";
 
-        $rp_type = '';
-        if (isset($_REQUEST['receipt']) && strlen($_REQUEST['receipt']) > 0) {
-            $rp_type = $_REQUEST['receipt'];
+        $rp_type = $this->rpType(CoreLocal::get('paycard_type'));
+        if (FormLib::get('receipt') !== '') {
+            $rp_type = FormLib::get('receipt');
             $this->addOnloadCommand("\$('#reginput').val('RP');\n");
             $this->addOnloadCommand("submitWrapper();\n");
-        } elseif (CoreLocal::get("paycard_type") == PaycardLib::PAYCARD_TYPE_GIFT) {
-            if( CoreLocal::get("paycard_mode") == PaycardLib::PAYCARD_MODE_BALANCE) {
-                $rp_type = "gcBalSlip";
-            } else {
-                $rp_type ="gcSlip";
-            }
-        } elseif( CoreLocal::get("paycard_type") == PaycardLib::PAYCARD_TYPE_CREDIT) {
-            $rp_type = "ccSlip";
-        } elseif( CoreLocal::get("paycard_type") == PaycardLib::PAYCARD_TYPE_ENCRYPTED) {
-            $rp_type = "ccSlip";
         }
+        $rp_type = $this->rpType(CoreLocal::get('paycard_type'));
         printf("<input type=\"hidden\" id=\"rp_type\" value=\"%s\" />",$rp_type);
+    }
+
+    private function rpType($type)
+    {
+        switch ($type) {
+            case PaycardLib::PAYCARD_TYPE_GIFT:
+                return CoreLocal::get('paycard_mode') == PaycardLib::PAYCARD_MODE_BALANCE ? 'gcBalSlip' : 'gcSlip';
+            case PaycardLib::PAYCARD_TYPE_CREDIT:
+            case PaycardLib::PAYCARD_TYPE_ENCRYPTED:
+            default:
+                return 'ccSlip';
+        }
     }
 }
 
