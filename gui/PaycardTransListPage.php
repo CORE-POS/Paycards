@@ -79,7 +79,6 @@ class PaycardTransListPage extends NoInputCorePage
                                         . $w['cashierNo'] . '-' . $w['laneNo'] . '-' . $w['transNo'] . ' : ' 
                                         . sprintf('%.2f', $w['amount']);
             }
-            var_dump($other);
         }
         ?>
         <div class="baseHeight">

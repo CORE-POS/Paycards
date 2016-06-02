@@ -179,6 +179,7 @@ class Test extends PHPUnit_Framework_TestCase
         CoreLocal::set('CCintegrate', 1);
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
         $this->assertInternalType('array', $m->entered(true, array()));
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
         $this->assertInternalType('array', $m->entered(false, array()));
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_ACTIVATE);
         $this->assertInternalType('array', $m->entered(false, array()));
@@ -269,6 +270,7 @@ class Test extends PHPUnit_Framework_TestCase
         CoreLocal::set('CCintegrate', 1);
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
         $this->assertInternalType('array', $v->entered(true, array()));
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
         $this->assertInternalType('array', $v->entered(false, array()));
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
         $this->assertInternalType('array', $v->entered(false, array()));
@@ -337,11 +339,17 @@ class Test extends PHPUnit_Framework_TestCase
         BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/me.auth.declined.xml'));
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->doSend(PaycardLib::PAYCARD_MODE_AUTH));
         CoreLocal::set('CacheCardType', 'EBTFOOD');
+        CoreLocal::set('paycard_voiceauthcode', 1);
         BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/me.auth.declined.xml'));
         $this->assertEquals(PaycardLib::PAYCARD_ERR_NSF_RETRY, $v->doSend(PaycardLib::PAYCARD_MODE_AUTH));
+        CoreLocal::set('paycard_voiceauthcode', '');
+        CoreLocal::set('ebt_authcode', 1);
+        CoreLocal::set('ebt_vnum', 1);
         CoreLocal::set('CacheCardType', 'CREDIT');
         BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/me.auth.error.xml'));
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->doSend(PaycardLib::PAYCARD_MODE_AUTH));
+        CoreLocal::set('ebt_authcode', '');
+        CoreLocal::set('ebt_vnum', '');
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->handleResponse($httpErr));
         $v->cleanup(array());
@@ -683,6 +691,9 @@ class Test extends PHPUnit_Framework_TestCase
         $page = new PaycardEmvCaAdmin();
         FormLib::set('selectlist', 'KC');
         $this->assertEquals(true, $page->preprocess());
+        ob_start();
+        $page->head_content();
+        ob_end_clean();
         FormLib::set('selectlist', 'CL');
         $this->assertEquals(false, $page->preprocess());
         FormLib::clear();
@@ -698,7 +709,7 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(false, $page->preprocess());
         FormLib::set('reginput', '100');
         $this->assertEquals(true, $page->preprocess());
-        FormLib::set('reginput', '');
+        FormLib::set('reginput', 'MANUAL');
         $this->assertEquals(true, $page->preprocess());
         CoreLocal::set('amtdue', 1);
         CoreLocal::set('paycard_amount', 1);
@@ -774,6 +785,9 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(false, $page->preprocess());
         FormLib::set('reginput', '200');
         $this->assertEquals(true, $page->preprocess());
+        ob_start();
+        $page->body_content();
+        ob_end_clean();
         FormLib::set('reginput', 'MANUAL');
         $this->assertEquals(true, $page->preprocess());
         ob_start();
@@ -782,7 +796,7 @@ class Test extends PHPUnit_Framework_TestCase
         FormLib::clear();
         FormLib::set('xml-resp', file_get_contents(__DIR__ . '/responses/dc.auth.approved.xml'));
         FormLib::set('amount', 100);
-        FormLib::set('mode', PaycardLib::PAYCARD_MODE_AUTH);
+        FormLib::set('mode', PaycardLib::PAYCARD_MODE_ACTIVATE);
         $this->assertEquals(false, $page->preprocess());
         FormLib::clear();
 

@@ -219,9 +219,7 @@ class paycardSuccess extends BasicCorePage
     function body_content()
     {
         $this->input_header("onsubmit=\"return submitWrapper();\" action=\"".$_SERVER['PHP_SELF']."\"");
-        ?>
-        <div class="baseHeight">
-        <?php
+        echo '<div class="baseHeight">';
         if ($this->doSigCapture()) {
             $reginput = FormLib::get('reginput');
             $openB = ($reginput === '' || $reginput === 'CL') ? '<b>' : '';
@@ -256,9 +254,7 @@ HTML;
         }
         CoreLocal::set("CachePanEncBlock","");
         CoreLocal::set("CachePinEncBlock","");
-        ?>
-        </div>
-        <?php
+        echo '</div>';
         echo "<div id=\"footer\">";
         echo DisplayLib::printfooter();
         echo "</div>";

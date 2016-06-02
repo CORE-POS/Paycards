@@ -48,7 +48,7 @@ class PaycardEmvGift extends PaycardProcessPage
             $this->amount = FormLib::get('amount');
         }
 
-        if (FormLib::get('reginput', false) !== '') {
+        if (FormLib::get('reginput', false) !== false) {
             $input = strtoupper(trim(FormLib::get('reginput')));
             // CL always exits
             if( $input == "CL") {
@@ -111,9 +111,7 @@ function emvSubmit()
 
     function body_content()
     {
-        ?>
-        <div class="baseHeight">
-        <?php
+        echo '<div class="baseHeight">';
         $title = ($this->mode == PaycardLib::PAYCARD_MODE_ACTIVATE) ? 'Activate Gift Card' : 'Add Value to Gift Card';
         $msg = '';
         if (!$this->amount) {
@@ -123,6 +121,7 @@ function emvSubmit()
             $msg .= 'Value: $' . sprintf('%.2f', $this->amount) . '
                     [enter] to continue if correct<br>Enter a different amount if incorrect<br>
                     [clear] to cancel';
+            $this->addOnloadCommand("\$('#formlocal').append(\$('<input type=\"hidden\" name=\"amount\" />').val({$this->amount}));\n");
         }
         // generate message to print
         echo PaycardLib::paycard_msgBox(
@@ -131,13 +130,8 @@ function emvSubmit()
                 '',
                 $msg
         );
-        ?>
-        </div>
-        <?php
+        echo '</div>';
         $this->addOnloadCommand("\$('#formlocal').append(\$('<input type=\"hidden\" name=\"mode\" />').val({$this->mode}));\n");
-        if ($this->amount) {
-            $this->addOnloadCommand("\$('#formlocal').append(\$('<input type=\"hidden\" name=\"amount\" />').val({$this->amount}));\n");
-        }
     }
 }
 

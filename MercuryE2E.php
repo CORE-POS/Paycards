@@ -956,6 +956,7 @@ class MercuryE2E extends BasicCCModule
                 CoreLocal::set('EmvSignature', false);
             }
             $printData = $xml->query('/RStream/PrintData/*', false);
+            /* Code Climate's syntax highlighting gets confused by the previous line */
             if (strlen($printData) > 0) {
                 $receiptID = $transID;
                 if (CoreLocal::get('paycard_mode') == PaycardLib::PAYCARD_MODE_VOID) {
