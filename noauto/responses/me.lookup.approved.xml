@@ -1,0 +1,9 @@
+<CTranDetailResponse><?xml version="1.0"?>
+<Response>
+    <CmdStatus>Approved</CmdStatus>
+    <Reference>Mock</Reference>
+    <AuthCode>Mock</AuthCode>
+    <TranType>Mock</TranType>
+    <Total>1</Total>
+    <Voided>0</Voided>
+</Response></CTransDetailResponse>

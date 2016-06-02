@@ -444,6 +444,7 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertInternalType('array', PaycardModule::ccEntered('4111111111111111', true, array()));
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
         $this->assertInternalType('array', PaycardModule::ccEntered('4111111111111111', true, array()));
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
         $this->assertInternalType('array', PaycardModule::ccEntered('4111111111111111', false, array()));
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
         $this->assertInternalType('array', PaycardModule::ccEntered('4111111111111111', true, array()));
@@ -515,12 +516,24 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(true, $m->myRefNum($ref));
         $this->assertEquals(false, $m->myRefNum('foo'));
         $m->lookupTransaction($ref, true, 'verify');
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/me.lookup.approved.xml'));
+        $this->assertInternalType('array', $m->lookupTransaction($ref, true, 'verify'));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/me.lookup.declined.xml'));
+        $this->assertInternalType('array', $m->lookupTransaction($ref, true, 'verify'));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/me.lookup.error.xml'));
+        $this->assertInternalType('array', $m->lookupTransaction($ref, true, 'verify'));
 
         $g = new GoEMerchant();
         $ref = str_repeat('9', 12) . '-' . str_repeat('9', 12);
         $this->assertEquals(true, $g->myRefNum($ref));
         $this->assertEquals(false, $g->myRefNum('foo'));
         $g->lookupTransaction($ref, true, 'verify');
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/gem.lookup.approved.xml'));
+        $this->assertInternalType('array', $g->lookupTransaction($ref, true, 'verify'));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/gem.lookup.declined.xml'));
+        $this->assertInternalType('array', $g->lookupTransaction($ref, true, 'verify'));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/gem.lookup.error.xml'));
+        $this->assertInternalType('array', $g->lookupTransaction($ref, true, 'verify'));
     }
 
     public function testPages()
