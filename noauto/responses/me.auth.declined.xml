@@ -2,10 +2,9 @@
 <Response>
     <CmdStatus>Declined</CmdStatus>
     <DSixReturnCode>Mock</DSixReturnCode>
-    <CmdStatus>Mock</CmdStatus>
     <AuthCode>Mock</AuthCode>
     <RefNo>Mock</RefNo>
-    <Balance>0</Balance>
+    <Balance>0.50</Balance>
     <Authorize>1</Authorize>
     <RecordNo>Mock</RecordNo>
     <ProcessData>Mock</ProcessData>

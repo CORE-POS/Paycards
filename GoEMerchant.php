@@ -87,7 +87,6 @@ class GoEMerchant extends BasicCCModule
         $laneNo = CoreLocal::get("laneno");
         $transNo = CoreLocal::get("transno");
         $transID = CoreLocal::get("paycard_id");
-        $cvv2 = CoreLocal::get("paycard_cvv2");
         $validResponse = ($xml->isValid()) ? 1 : 0;
 
         $refNum = $xml->get("ORDER_ID");
@@ -363,7 +362,6 @@ class GoEMerchant extends BasicCCModule
         $refNum = $this->refnum($transID);
         $this->last_ref_num = $refNum;
         $live = 1;
-        $cvv2 = CoreLocal::get("paycard_cvv2");
 
         $merchantID = GOEMERCH_ID;
         $password = GOEMERCH_PASSWD;
@@ -447,9 +445,6 @@ class GoEMerchant extends BasicCCModule
             $xml .= "<FIELD KEY=\"card_exp\">".$cardExM.$cardExY."</FIELD>";
         } else {
             $xml .= "<FIELD KEY=\"mag_data\">$magstripe</FIELD>";
-        }
-        if (!empty($cvv2)) {
-            $xml .= "<FIELD KEY=\"cvv2\">$cvv2</FIELD>";
         }
         if ($cardName != "Customer") {
             $xml .= "<FIELD KEY=\"owner_name\">$cardName</FIELD>";

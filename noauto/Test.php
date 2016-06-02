@@ -106,7 +106,9 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $g->doSend(PaycardLib::PAYCARD_MODE_AUTH));
         BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/gem.auth.error.xml'));
         $g->setPAN(array('pan'=>'4111111111111111', 'tr1'=>'', 'tr2'=>'', 'tr3'=>''));
+        CoreLocal::set('training', 1);
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $g->doSend(PaycardLib::PAYCARD_MODE_AUTH));
+        CoreLocal::set('training', '');
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $g->handleResponse($httpErr));
         $g->cleanup(array());
@@ -116,6 +118,23 @@ class Test extends PHPUnit_Framework_TestCase
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
         CoreLocal::set('paycard_trans', '1-1-1');
         $this->assertEquals(PaycardLib::PAYCARD_ERR_OK, $g->doSend(PaycardLib::PAYCARD_MODE_VOID));
+        SQLManager::clear();
+        SQLManager::addResult(array('refNum'=>1,'xTransactionID'=>1));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/gem.auth.declined.xml'));
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
+        CoreLocal::set('paycard_trans', '1-1-1');
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $g->doSend(PaycardLib::PAYCARD_MODE_VOID));
+        SQLManager::clear();
+        SQLManager::addResult(array('refNum'=>1,'xTransactionID'=>1));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/gem.auth.error.xml'));
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
+        CoreLocal::set('paycard_trans', '1-1-1');
+        CoreLocal::set('training', 1);
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $g->doSend(PaycardLib::PAYCARD_MODE_VOID));
+        CoreLocal::set('training', '');
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_BALANCE);
+        $this->assertEquals(null, $g->handleResponse(array()));
+        $this->assertEquals(0, $g->doSend(PaycardLib::PAYCARD_MODE_BALANCE));
 
         $m = new MercuryGift();
         $this->assertEquals(0, $m->doSend(-999));
@@ -236,6 +255,12 @@ class Test extends PHPUnit_Framework_TestCase
         }
         BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/me.auth.declined.xml'));
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->doSend(PaycardLib::PAYCARD_MODE_AUTH));
+        CoreLocal::set('CacheCardType', 'EBTFOOD');
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/me.auth.declined.xml'));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_NSF_RETRY, $v->doSend(PaycardLib::PAYCARD_MODE_AUTH));
+        CoreLocal::set('CacheCardType', 'CREDIT');
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/me.auth.error.xml'));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->doSend(PaycardLib::PAYCARD_MODE_AUTH));
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->handleResponse($httpErr));
         $v->cleanup(array());
@@ -246,6 +271,18 @@ class Test extends PHPUnit_Framework_TestCase
         BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/me.auth.approved.xml'));
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
         $this->assertEquals(PaycardLib::PAYCARD_ERR_OK, $v->doSend(PaycardLib::PAYCARD_MODE_VOID));
+        SQLManager::clear();
+        SQLManager::addResult(array('refNum'=>1,'xTransactionID'=>1,'amount'=>1,'token'=>1,'processData'=>1,'acqRefData'=>1,'xApprovalNumber'=>1,'mode'=>1,'cardType'=>1));
+        CoreLocal::set('paycard_trans', '1-1-1');
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/me.auth.declined.xml'));
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_NOSEND, $v->doSend(PaycardLib::PAYCARD_MODE_VOID));
+        SQLManager::clear();
+        SQLManager::addResult(array('refNum'=>1,'xTransactionID'=>1,'amount'=>1,'token'=>1,'processData'=>1,'acqRefData'=>1,'xApprovalNumber'=>1,'mode'=>1,'cardType'=>1));
+        CoreLocal::set('paycard_trans', '1-1-1');
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/me.auth.error.xml'));
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->doSend(PaycardLib::PAYCARD_MODE_VOID));
 
         $this->assertInternalType('string', $v->prepareDataCapAuth('DEBIT', 1, false));
         $this->assertInternalType('string', $v->prepareDataCapAuth('EBTFOOD', 1, true));
@@ -275,6 +312,12 @@ class Test extends PHPUnit_Framework_TestCase
         $xml = file_get_contents(__DIR__ . '/responses/dc.auth.error.xml');
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->handleResponseDataCap($xml));
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $v->handleResponseDataCapBalance($xml));
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_BALANCE);
+        $this->assertEquals(null, $v->handleResponse(array()));
+        $this->assertEquals(0, $v->doSend(PaycardLib::PAYCARD_MODE_BALANCE));
+        $v->cleanup(array());
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_ADDVALUE);
+        $v->cleanup(array());
 
         $this->assertEquals(true, PaycardModule::isReturn('refund'));
         $this->assertEquals(false, PaycardModule::isReturn('foo'));
@@ -283,6 +326,7 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertInternalType('array', PaycardModule::ccEntered('4111111111111111', true, array()));
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
         $this->assertInternalType('array', PaycardModule::ccEntered('4111111111111111', true, array()));
+        $this->assertInternalType('array', PaycardModule::ccEntered('4111111111111111', false, array()));
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
         $this->assertInternalType('array', PaycardModule::ccEntered('4111111111111111', true, array()));
         $this->assertEquals(true, PaycardModule::commError(array('curlErr'=>CURLE_OK, 'curlHTTP'=>500)));
@@ -798,7 +842,34 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('TEST/MPS', $info['Name']);
         $this->assertEquals('6781', $info['Last4']);
 
+        $idtech = '027901801F2F2800439B%*4003********6781^TEST/MPS^****************?*;4003********6781=********************?*D52F87101668584959DCB691AAD2222776085780319725F2281A56EAA2B44F93A63BC8D8B35DB1017D870B1E21CF6066A1FAFB4948F26010F6B7AEB8A317186DA064F37F71FF3573A4CA056242361E786DB5A2463624DF4E84968EBC368AEE8A77EE8C87AAA196FE9E0E4BB78A08C116348E92D1C02CF2A2FCEA99DE13E4C1218120510070265E060295B6F03';
+        $info = EncBlock::parseEncBlock($idtech);
+        $this->assertEquals('1FAFB4948F26010F6B7AEB8A317186DA064F37F71FF3573A4CA056242361E786DB5A2463624DF4E8', $info['Block']);
+        $this->assertEquals('MagneSafe', $info['Format']);
+        $this->assertEquals('120510070265E060295B', $info['Key']);
+        $this->assertEquals('Unknown', $info['Issuer']);
+        $this->assertEquals('TEST/MPS', $info['Name']);
+        $this->assertEquals('6781', $info['Last4']);
+
         $magtek = '%B4003000050006781^TEST/MPS^13050000000000000?;4003000050006781=13050000000000000000?|0600|96F7CCEB8461264BB3CB3F4539163C8C59E87F2B16F1E876C778A3A15CF840422FAFF02FA2E27FD4DBC29B38535069B9|BDEC23AAA899006C36843F14E0F6A6472C8CDF81271764E160B455FC55AA5DD05F2AD04769614A91||61402200|B54A267EAAEB5B9A85212421B09BEA3B6F4AC894DBDE5A246E2780F461E63C6175C92D0F62703CAC551A206D66760744172CF7E14A223605|B01F8C4072210AA|BF6325ABD6A63EE7|9012090B01F8C4000007|F7D7||0000';
+        $info = EncBlock::parseEncBlock($magtek);
+        $this->assertEquals('BDEC23AAA899006C36843F14E0F6A6472C8CDF81271764E160B455FC55AA5DD05F2AD04769614A91', $info['Block']);
+        $this->assertEquals('MagneSafe', $info['Format']);
+        $this->assertEquals('9012090B01F8C4000007', $info['Key']);
+        $this->assertEquals('Unknown', $info['Issuer']);
+        $this->assertEquals('TEST/MPS', $info['Name']);
+        $this->assertEquals('6781', $info['Last4']);
+
+        $magtek = ';4003000050006781=13050000000000000000?|0600|96F7CCEB8461264BB3CB3F4539163C8C59E87F2B16F1E876C778A3A15CF840422FAFF02FA2E27FD4DBC29B38535069B9|BDEC23AAA899006C36843F14E0F6A6472C8CDF81271764E160B455FC55AA5DD05F2AD04769614A91||61402200|B54A267EAAEB5B9A85212421B09BEA3B6F4AC894DBDE5A246E2780F461E63C6175C92D0F62703CAC551A206D66760744172CF7E14A223605|B01F8C4072210AA|BF6325ABD6A63EE7|9012090B01F8C4000007|F7D7||0000';
+        $info = EncBlock::parseEncBlock($magtek);
+        $this->assertEquals('BDEC23AAA899006C36843F14E0F6A6472C8CDF81271764E160B455FC55AA5DD05F2AD04769614A91', $info['Block']);
+        $this->assertEquals('MagneSafe', $info['Format']);
+        $this->assertEquals('9012090B01F8C4000007', $info['Key']);
+        $this->assertEquals('Visa', $info['Issuer']);
+        $this->assertEquals('Cardholder', $info['Name']);
+        $this->assertEquals('6781', $info['Last4']);
+
+        $magtek = '%B4003000050006781^TEST/MPS^13050000000000000?|0600|96F7CCEB8461264BB3CB3F4539163C8C59E87F2B16F1E876C778A3A15CF840422FAFF02FA2E27FD4DBC29B38535069B9|BDEC23AAA899006C36843F14E0F6A6472C8CDF81271764E160B455FC55AA5DD05F2AD04769614A91||61402200|B54A267EAAEB5B9A85212421B09BEA3B6F4AC894DBDE5A246E2780F461E63C6175C92D0F62703CAC551A206D66760744172CF7E14A223605|B01F8C4072210AA|BF6325ABD6A63EE7|9012090B01F8C4000007|F7D7||0000';
         $info = EncBlock::parseEncBlock($magtek);
         $this->assertEquals('BDEC23AAA899006C36843F14E0F6A6472C8CDF81271764E160B455FC55AA5DD05F2AD04769614A91', $info['Block']);
         $this->assertEquals('MagneSafe', $info['Format']);
@@ -814,6 +885,15 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('21111010000002600183', $info['Key']);
         $this->assertEquals('Unknown', $info['Issuer']);
         $this->assertEquals('TEST/MPS', $info['Name']);
+        $this->assertEquals('6781', $info['Last4']);
+
+        $ingenico = '23.0;4003000000006781=15120000000000000000?@@320D3C963EF3A21D730A9B467C8AE43022DDC9241BB3D2FEBD936773191B55BE6F2948589ABBA829:21111010000002600183';
+        $info = EncBlock::parseEncBlock($ingenico);
+        $this->assertEquals('320D3C963EF3A21D730A9B467C8AE43022DDC9241BB3D2FEBD936773191B55BE6F2948589ABBA829', $info['Block']);
+        $this->assertEquals('MagneSafe', $info['Format']);
+        $this->assertEquals('21111010000002600183', $info['Key']);
+        $this->assertEquals('Visa', $info['Issuer']);
+        $this->assertEquals('Cardholder', $info['Name']);
         $this->assertEquals('6781', $info['Last4']);
 
         $pin = str_repeat('F', 36);

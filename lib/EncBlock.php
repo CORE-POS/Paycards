@@ -60,12 +60,18 @@ class EncBlock extends LibraryClass
         $parts = explode("|",$str);
         $tr1 = False;
         $tr2 = False;
-        if ($str[0] == "%") {
+        if ($str[0] === "%" || $str[0] === ';') {
             /* non-numbered format */
             $ret['Block'] = $parts[3];
             $ret['Key'] = $parts[9];
-            $tr1 = $parts[0];
-            $tr2 = $parts[1];
+            if ($str[0] === '%' && strstr($parts[0], ';')) {
+                list($tr1, $tr2) = explode(';', $parts[0], 2);
+                $tr2 = ';' . $tr2;
+            } elseif ($str[0] === '%') {
+                $tr1 = $parts[0];
+            } elseif ($str[0] === ';') {
+                $tr2 = $parts[0];
+            }
         } else if ($str[0] == "1") {
             /* numbered format */
             foreach($parts as $p) {
@@ -92,7 +98,7 @@ class EncBlock extends LibraryClass
             $ret['Issuer'] = PaycardLib::paycard_issuer($pan);
         } else if($tr2 && $tr2[0] == ";") {
             $tr2 = substr($tr2,1);
-            $pan = substr($tr2,0,strpos("="));
+            $pan = substr($tr2,0,strpos($tr2, "="));
             $ret['Last4'] = substr($pan,-4);
             $ret['Issuer'] = PaycardLib::paycard_issuer($pan);
         }

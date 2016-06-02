@@ -65,10 +65,10 @@ class PaycardModule
             $enabled = PaycardDialogs::enabledCheck();
             $request = PaycardDialogs::getRequest(array($cashier, $lane, $trans), $transID);
             $response = PaycardDialogs::getResponse(array($cashier, $lane, $trans), $transID);
-            // look up any previous successful voids
-            $eligible = PaycardDialogs::notVoided(array($cashier, $lane, $trans), $transID);
             $lineitem = PaycardDialogs::getTenderLine(array($cashier, $lane, $trans), $transID);
             $valid = PaycardDialogs::validateVoid($request, $response, $lineitem, $transID);
+            // look up any previous successful voids
+            $eligible = PaycardDialogs::notVoided(array($cashier, $lane, $trans), $transID);
         } catch (Exception $ex) {
             $json['output'] = $ex->getMessage();
             return $json;
