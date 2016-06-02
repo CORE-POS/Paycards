@@ -70,37 +70,34 @@ class paycardboxMsgGift extends PaycardProcessPage {
 
     function body_content()
     {
-        ?>
-        <div class="baseHeight">
-        <?php
+        echo '<div class="baseHeight">';
         // generate message to print
         $type = CoreLocal::get("paycard_type");
         $mode = CoreLocal::get("paycard_mode");
         $amt = CoreLocal::get("paycard_amount");
-        if( $amt == 0) {
-            if( $mode == PaycardLib::PAYCARD_MODE_ACTIVATE)
+        if ($amt == 0) {
+            if ($mode == PaycardLib::PAYCARD_MODE_ACTIVATE) {
                 echo PaycardLib::paycard_msgBox($type,"Enter Activation Amount",
                     "Enter the amount to put on the card",
                     "[clear] to cancel");
-            else if( $mode == PaycardLib::PAYCARD_MODE_ADDVALUE)
+            } elseif ($mode == PaycardLib::PAYCARD_MODE_ADDVALUE) {
                 echo PaycardLib::paycard_msgBox($type,"Enter Add-Value Amount",
                     "Enter the amount to put on the card",
                     "[clear] to cancel");
-        } else if( !is_numeric($amt) || $amt < 0.005) {
+            }
+        } elseif (!is_numeric($amt) || $amt < 0.005) {
             echo PaycardLib::paycard_msgBox($type,"Invalid Amount",
                 "Enter a positive amount to put on the card",
                 "[clear] to cancel");
-        } else if( $mode == PaycardLib::PAYCARD_MODE_ACTIVATE) {
+        } elseif ($mode == PaycardLib::PAYCARD_MODE_ACTIVATE) {
             echo PaycardLib::paycard_msgBox($type,"Activate ".PaycardLib::paycard_moneyFormat($amt)."?","",
                 "[enter] to continue if correct<br>Enter a different amount if incorrect<br>[clear] to cancel");
-        } else if( $mode == PaycardLib::PAYCARD_MODE_ADDVALUE) {
+        } elseif ($mode == PaycardLib::PAYCARD_MODE_ADDVALUE) {
             echo PaycardLib::paycard_msgBox($type,"Add Value ".PaycardLib::paycard_moneyFormat($amt)."?","",
                 "[enter] to continue if correct<br>Enter a different amount if incorrect<br>[clear] to cancel");
         }
         CoreLocal::set("msgrepeat",2);
-        ?>
-        </div>
-        <?php
+        echo '</div>';
     }
 }
 

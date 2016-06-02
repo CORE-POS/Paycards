@@ -126,7 +126,6 @@ class MercuryGift extends BasicCCModule
             case PaycardLib::PAYCARD_MODE_AUTH: 
                 return $this->send_auth();
             case PaycardLib::PAYCARD_MODE_VOID:
-            case PaycardLib::PAYCARD_MODE_VOIDITEM:
                 return $this->send_void();
             case PaycardLib::PAYCARD_MODE_BALANCE:
                 return $this->send_balance();
@@ -184,7 +183,6 @@ class MercuryGift extends BasicCCModule
                 );
                 break;
             case PaycardLib::PAYCARD_MODE_VOID:
-            case PaycardLib::PAYCARD_MODE_VOIDITEM:
                 $v = new Void();
                 $v->voidid(CoreLocal::get("paycard_id"), array());
                 $resp = CoreLocal::get("paycard_response");
@@ -510,7 +508,6 @@ class MercuryGift extends BasicCCModule
             case PaycardLib::PAYCARD_MODE_ADDVALUE:
                 return $this->handleResponseAuth($authResult);
             case PaycardLib::PAYCARD_MODE_VOID:
-            case PaycardLib::PAYCARD_MODE_VOIDITEM:
                 return $this->handleResponseVoid($authResult);
             case PaycardLib::PAYCARD_MODE_BALANCE:
                 return $this->handleResponseBalance($authResult);

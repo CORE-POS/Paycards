@@ -33,7 +33,6 @@ class PaycardLib {
     const PAYCARD_MODE_VOID          =3; // for voiding tenders/credits, rung in as T
     const PAYCARD_MODE_ACTIVATE      =4;
     const PAYCARD_MODE_ADDVALUE      =5;
-    const PAYCARD_MODE_VOIDITEM      =6; // for voiding sales/addvalues, rung in as I
     const PAYCARD_MODE_CASHOUT       =7; // for cashing out a wedgecard
 
     const PAYCARD_TYPE_UNKNOWN       =0;

@@ -79,9 +79,9 @@ class EncBlock extends LibraryClass
                     $ret['Block'] = substr($p,2);    
                 } else if (strlen($p) > 3 && substr($p,0,3)=="11~") {
                     $ret['Key'] = substr($p,3);    
-                } else if (strlen($p) > 2 && substr($p,0,3)=="6~") {
+                } else if (strlen($p) > 2 && substr($p,0,2)=="6~") {
                     $tr1 = substr($p,2);
-                } else if (strlen($p) > 2 && substr($p,0,3)=="7~") {
+                } else if (strlen($p) > 2 && substr($p,0,2)=="7~") {
                     $tr2 = substr($p,2);
                 }
             }

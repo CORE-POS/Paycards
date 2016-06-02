@@ -515,6 +515,24 @@ class Test extends PHPUnit_Framework_TestCase
         SQLManager::addResult(array('TenderCode'=>'TC', 'TenderName'=>'Foo'));
         $this->assertInternalType('array', PaycardLib::getTenderInfo('GIFT', 'Visa'));
         SQLManager::clear();
+
+        CoreLocal::set('paycard_amount', 'foo');
+        $bad = PaycardLib::validateAmount();
+        $this->assertEquals(false, $bad[0]);
+        CoreLocal::set('paycard_amount', '');
+
+        $overrides = array(
+            'Visa' => 'Visa',
+            'MC' => 'MasterCard',
+            'Discover' => 'Discover',
+            'Amex' => 'American Express',
+        );
+        foreach ($overrides as $abbr => $issuer) {
+            $code = substr(strtoupper($abbr), 0, 2);
+            CoreLocal::set('PaycardsTenderCode' . $abbr, $code);
+            $info = PaycardLib::getTenderInfo('CREDIT', $issuer);
+            CoreLocal::set('PaycardsTenderCode' . $abbr, '');
+        }
     }
 
     public function testLookups()
@@ -750,6 +768,13 @@ class Test extends PHPUnit_Framework_TestCase
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
         FormLib::set('reginput', '1234');
         $this->assertEquals(true, $page->preprocess());
+        ob_start();
+        CoreLocal::set('paycard_amount', 1);
+        $page->body_content();
+        CoreLocal::set('paycard_amount', -1);
+        $page->body_content();
+        CoreLocal::set('paycard_amount', '');
+        ob_end_clean();
         FormLib::clear();
 
         $page = new paycardboxMsgGift();
@@ -936,6 +961,9 @@ class Test extends PHPUnit_Framework_TestCase
             $this->assertEquals(true, $dc->check($input));
             $this->assertInternalType('array', $dc->parse($input));
         }
+        CoreLocal::set('fntlflag', 1);
+            $this->assertInternalType('array', $dc->parse('DATACAPEF'));
+        CoreLocal::set('fntlflag', '');
 
         $p = new PaycardSteering();
         $this->assertEquals(false, $p->check('foo'));
@@ -1025,6 +1053,19 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('BDEC23AAA899006C36843F14E0F6A6472C8CDF81271764E160B455FC55AA5DD05F2AD04769614A91', $info['Block']);
         $this->assertEquals('MagneSafe', $info['Format']);
         $this->assertEquals('9012090B01F8C4000007', $info['Key']);
+        $this->assertEquals('Unknown', $info['Issuer']);
+        $this->assertEquals('TEST/MPS', $info['Name']);
+        $this->assertEquals('6781', $info['Last4']);
+
+        $magtekAlt = '1~FOO'
+                . '|6~%B4003000050006781^TEST/MPS^13050000000000000?'
+                . '|7~;4003000050006781=13050000000000000000?'
+                . '|3~BLOCK'
+                . '|11~KEY';
+        $info = EncBlock::parseEncBlock($magtekAlt);
+        $this->assertEquals('BLOCK', $info['Block']);
+        $this->assertEquals('MagneSafe', $info['Format']);
+        $this->assertEquals('KEY', $info['Key']);
         $this->assertEquals('Unknown', $info['Issuer']);
         $this->assertEquals('TEST/MPS', $info['Name']);
         $this->assertEquals('6781', $info['Last4']);
@@ -1166,6 +1207,35 @@ class Test extends PHPUnit_Framework_TestCase
             'trans_status'=>'',
         );
         $this->assertEquals(true, PaycardDialogs::validateVoid($request, $response, $lineitem, 1));
+
+        $response['httpCode'] = 500;
+        try {
+            PaycardDialogs::validateVoid($request, $response, $lineitem, 1);
+        } catch (Exception $ex) {}
+        $response['httpCode'] = 200;
+        $response['xResponseCode'] = 2;
+        try {
+            PaycardDialogs::validateVoid($request, $response, $lineitem, 1);
+        } catch (Exception $ex) {}
+        $response['xResponseCode'] = 1;
+        $response['xTransactionID'] = 0;
+        try {
+            PaycardDialogs::validateVoid($request, $response, $lineitem, 1);
+        } catch (Exception $ex) {}
+        $response['xTransactionID'] = 1;
+        $lineitem['trans_type'] = 'I';
+        try {
+            PaycardDialogs::validateVoid($request, $response, $lineitem, 1);
+        } catch (Exception $ex) {}
+        $lineitem['trans_type'] = 'T';
+        try {
+            PaycardDialogs::validateVoid($request, $response, $lineitem, 1);
+        } catch (Exception $ex) {}
+        $lineitem['trans_type'] = 'T';
+        $lineitem['voided'] = 1;
+        try {
+            PaycardDialogs::validateVoid($request, $response, $lineitem, 1);
+        } catch (Exception $ex) {}
     }
 
     public function testReqResp()

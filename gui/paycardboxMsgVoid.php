@@ -82,24 +82,17 @@ class paycardboxMsgVoid extends PaycardProcessPage
 
     function body_content()
     {
-        ?>
-        <div class="baseHeight">
-        <?php
+        echo '<div class="baseHeight">';
         // generate message to print
         $type = CoreLocal::get("paycard_type");
-        $mode = CoreLocal::get("paycard_mode");
         $amt = CoreLocal::get("paycard_amount");
-        if( $mode == PaycardLib::PAYCARD_MODE_VOIDITEM) {
-            echo PaycardLib::paycard_msgBox($type,"Void " . PaycardLib::paycard_moneyFormat($amt) . " Gift Card?","","[enter] to continue voiding<br>[clear] to cancel the void");
-        } else if( $amt > 0) {
+        if ($amt > 0) {
             echo PaycardLib::paycard_msgBox($type,"Void " . PaycardLib::paycard_moneyFormat($amt) . " Payment?","Please enter password then","[enter] to continue voiding or<br>[clear] to cancel the void");
         } else {
             echo PaycardLib::paycard_msgBox($type,"Void " . PaycardLib::paycard_moneyFormat($amt) . " Refund?","Please enter password then","[enter] to continue voiding or<br>[clear] to cancel the void");
         }
         CoreLocal::set("msgrepeat",2);
-        ?>
-        </div>
-        <?php
+        echo '</div>';
     }
 }
 

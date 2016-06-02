@@ -102,7 +102,6 @@ class Valutec extends BasicCCModule
         PaycardLib::PAYCARD_MODE_ADDVALUE => 'send_auth',
         PaycardLib::PAYCARD_MODE_AUTH => 'send_auth',
         PaycardLib::PAYCARD_MODE_VOID => 'send_void',
-        PaycardLib::PAYCARD_MODE_VOIDITEM => 'send_void',
         PaycardLib::PAYCARD_MODE_BALANCE => 'send_balance',
     );
 
@@ -153,7 +152,6 @@ class Valutec extends BasicCCModule
                 );
                 break;
             case PaycardLib::PAYCARD_MODE_VOID:
-            case PaycardLib::PAYCARD_MODE_VOIDITEM:
                 CoreLocal::set("autoReprint",1);
                 $void = new Void();
                 $void->voidid(CoreLocal::get("paycard_id"), array());
@@ -344,7 +342,6 @@ class Valutec extends BasicCCModule
         PaycardLib::PAYCARD_MODE_ADDVALUE => 'handleResponseAuth',
         PaycardLib::PAYCARD_MODE_AUTH => 'handleResponseAuth',
         PaycardLib::PAYCARD_MODE_VOID => 'handleResponseVoid',
-        PaycardLib::PAYCARD_MODE_VOIDITEM => 'handleResponseVoid',
         PaycardLib::PAYCARD_MODE_BALANCE => 'handleResponseBalance',
     );
 
