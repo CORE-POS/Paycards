@@ -71,7 +71,27 @@ class Test extends PHPUnit_Framework_TestCase
         BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/adn.auth.approved.xml'));
         $a->setPAN(array('pan'=>'4111111111111111', 'tr1'=>'', 'tr2'=>'', 'tr3'=>''));
         $this->assertEquals(PaycardLib::PAYCARD_ERR_NOSEND, $a->doSend(PaycardLib::PAYCARD_MODE_VOID));
+        $a->setPAN(array('pan'=>'4111111111111111', 'tr1'=>'', 'tr2'=>'', 'tr3'=>''));
+        SQLManager::addResult(array('xTransactionID'=>1));
+        CoreLocal::set('paycard_trans', '1-1-1');
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_OK, $a->doSend(PaycardLib::PAYCARD_MODE_VOID));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/adn.auth.declined.xml'));
+        $a->setPAN(array('pan'=>'4111111111111111', 'tr1'=>'', 'tr2'=>'', 'tr3'=>''));
+        SQLManager::addResult(array('xTransactionID'=>1));
+        CoreLocal::set('paycard_trans', '1-1-1');
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $a->doSend(PaycardLib::PAYCARD_MODE_VOID));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/adn.auth.declined.xml'));
+        $a->setPAN(array('pan'=>'4111111111111111', 'tr1'=>'', 'tr2'=>'', 'tr3'=>''));
+        SQLManager::addResult(array('xTransactionID'=>1));
+        CoreLocal::set('paycard_trans', '1-1-1');
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $a->doSend(PaycardLib::PAYCARD_MODE_VOID));
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
         $a->cleanup(array());
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_BALANCE);
+        $this->assertEquals(null, $a->handleResponse(array()));
+        $this->assertEquals(0, $a->doSend(PaycardLib::PAYCARD_MODE_BALANCE));
 
         $f = new FirstData();
         $this->assertEquals(true, $f->handlesType(PaycardLib::PAYCARD_TYPE_CREDIT));
@@ -83,11 +103,24 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $f->handleResponse($httpErr));
         BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/fd.auth.approved.xml'));
         $this->assertEquals(PaycardLib::PAYCARD_ERR_OK, $f->doSend(PaycardLib::PAYCARD_MODE_AUTH));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/fd.auth.declined.xml'));
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $f->doSend(PaycardLib::PAYCARD_MODE_AUTH));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/fd.auth.error.xml'));
+        CoreLocal::set('training', 1);
+        $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $f->doSend(PaycardLib::PAYCARD_MODE_AUTH));
+        CoreLocal::set('training', '');
         $f->cleanup(array());
         try {
             CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
+            $f->cleanup(array());
             $this->assertEquals(PaycardLib::PAYCARD_ERR_PROC, $f->handleResponse($httpErr));
         } catch (Exception $ex){}
+        try {
+            $f->doSend(PaycardLib::PAYCARD_MODE_VOID);
+        } catch (Exception $ex){}
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_BALANCE);
+        $this->assertEquals(null, $f->handleResponse(array()));
+        $this->assertEquals(0, $f->doSend(PaycardLib::PAYCARD_MODE_BALANCE));
 
         $g = new GoEMerchant();
         $this->assertEquals(true, $g->handlesType(PaycardLib::PAYCARD_TYPE_CREDIT));

@@ -179,7 +179,7 @@ class AuthorizeDotNet extends BasicCCModule {
             default:
                 CoreLocal::set("boxMsg","An unknown error occurred<br />at the gateway");
         }
-        return PaycardLib::PAYCARD_ERROR_PROC;
+        return PaycardLib::PAYCARD_ERR_PROC;
     }
 
     function cleanup($json)

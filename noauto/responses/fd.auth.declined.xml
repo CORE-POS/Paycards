@@ -1,0 +1,7 @@
+<SOAP-ENV:Body><?xml version="1.0"?>
+<Response>
+    <fdggwsapi:TransactionResult>Declined</fdggwsapi:TransactionResult>
+    <fdggwsapi:ProcessorReferenceNumber>1</fdggwsapi:ProcessorReferenceNumber>
+    <fdggwsapi:ApprovalCode>1</fdggwsapi:ApprovalCode>
+    <fdggwsapi:ProcessorResponseMessage></fdggwsapi:ProcessorResponseMessage>
+</Response></SOAP-ENV:Body>
