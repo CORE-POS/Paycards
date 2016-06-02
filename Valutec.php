@@ -77,6 +77,7 @@ class Valutec extends BasicCCModule
         }
 
         // other modes
+        $plugin_info = new Paycards();
         switch (CoreLocal::get("paycard_mode")) {
             case PaycardLib::PAYCARD_MODE_AUTH:
                 return PaycardLib::setupAuthJson($json);
@@ -84,7 +85,6 @@ class Valutec extends BasicCCModule
             case PaycardLib::PAYCARD_MODE_ADDVALUE:
                 CoreLocal::set("paycard_amount",0);
                 CoreLocal::set("paycard_id",CoreLocal::get("LastID")+1); // kind of a hack to anticipate it this way..
-                $plugin_info = new Paycards();
                 $json['main_frame'] = $plugin_info->pluginUrl().'/gui/paycardboxMsgGift.php';
                 return $json;
             case PaycardLib::PAYCARD_MODE_BALANCE:
@@ -618,15 +618,6 @@ class Valutec extends BasicCCModule
             return "7018525936200000012";
         } else {
             return CoreLocal::get("paycard_PAN");
-        }
-    }
-
-    private function isLive()
-    {
-        if (CoreLocal::get("training") == 1) {
-            return 0;
-        } else {
-            return 1;
         }
     }
 
