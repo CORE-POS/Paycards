@@ -680,10 +680,11 @@ class MercuryE2E extends BasicCCModule
                     $tran_code = ($prev['mode'] == 'Sale') ? 'ReturnByRecordNo' : 'SaleByRecordNo';
                     $tran_type = 'Debit';
                     break;
-                case 'EBT':
+                case 'EBTFOOD':
+                case 'EBTCASH':
                     $tran_code = ($prev['mode'] == 'Sale') ? 'ReturnByRecordNo' : 'SaleByRecordNo';
                     $tran_type = 'EBT';
-                    $card_type = $prev['issuer'];
+                    $card_type = ($prev['cardType'] === 'EBTFOOD') ? 'Foodstamp' : 'Cash';
                     break;
             }
         }

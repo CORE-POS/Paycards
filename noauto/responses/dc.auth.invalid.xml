@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<RStream>
+    <CmdResponse>
+        <CmdStatus>Invalid</CmdStatus>
+        <DSIXReturnCode>1</DSIXReturnCode>
+        <TextResponse>Mock</TextResponse>
+    </CmdResponse>
+    <TranResponse>
+        <AuthCode>1</AuthCode>
+        <TranCode>MockTC</TranCode>
+        <RefNo>1</RefNo>
+        <CardType>MockCT</CardType>
+        <TranType>MockTT</TranType>
+        <Amount>
+            <Balance>10</Balance>
+            <Authorize>5</Authorize>
+        </Amount>
+        <RecordNo>Mock</RecordNo>
+        <ProcessData>Mock</ProcessData>
+        <AcqRefData>Mock</AcqRefData>
+        <CardholderName>Mock</CardholderName>
+    </TranResponse>
+    <PrintData>
+        <Line>Foo</Line>
+        <Line>Bar</Line>
+    </PrintData>
+</RStream>
