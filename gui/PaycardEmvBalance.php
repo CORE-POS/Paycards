@@ -37,7 +37,7 @@ class PaycardEmvBalance extends PaycardProcessPage
             $input = strtoupper(trim(FormLib::get('reginput')));
             // CL always exits
             if ($input == "CL") {
-                PaycardLib::paycard_reset();
+                $this->conf->reset();
                 $this->change_page($this->page_url."gui-modules/pos2.php");
                 return false;
             } elseif ($input == "" || $input == 'MANUAL') {

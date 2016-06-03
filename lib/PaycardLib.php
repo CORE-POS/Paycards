@@ -71,32 +71,6 @@ static public function paycard_live($type = self::PAYCARD_TYPE_UNKNOWN)
     return 1;
 } // paycard_live()
 
-
-/**
-  Clear paycard variables from session
-*/
-static public function paycard_reset() 
-{
-
-    // make sure this matches session.php!!!
-    CoreLocal::set("paycard_manual",0);
-    CoreLocal::set("paycard_amount",0.00);
-    CoreLocal::set("paycard_mode",0);
-    CoreLocal::set("paycard_id",0);
-    CoreLocal::set("paycard_PAN",'');
-    CoreLocal::set("paycard_exp",'');
-    CoreLocal::set("paycard_name",'Customer');
-    CoreLocal::set("paycard_tr1",false);
-    CoreLocal::set("paycard_tr2",false);
-    CoreLocal::set("paycard_tr3",false);
-    CoreLocal::set("paycard_type",0);
-    CoreLocal::set("paycard_issuer",'Unknown');
-    CoreLocal::set("paycard_response",array());
-    CoreLocal::set("paycard_trans",'');
-    CoreLocal::set("paycard_cvv2",'');
-    CoreLocal::set('PaycardRetryBalanceLimit', 0);
-} // paycard_reset()
-
 /**
   Clear card data variables from session
 

@@ -35,7 +35,7 @@ class paycardboxMsgVoid extends PaycardProcessPage
             $input = strtoupper(trim(FormLib::get('reginput')));
             // CL always exits
             if ($input == "CL") {
-                PaycardLib::paycard_reset();
+                $this->conf->reset();
                 $this->conf->set("toggletax",0);
                 $this->conf->set("togglefoodstamp",0);
                 $this->change_page($this->page_url."gui-modules/pos2.php?reginput=TO&repeat=1");

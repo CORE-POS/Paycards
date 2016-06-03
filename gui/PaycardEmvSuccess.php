@@ -105,7 +105,7 @@ class PaycardEmvSuccess extends BasicCorePage
                     $this->conf->set('ccTermState','swipe');
                     $this->conf->set("CacheCardType","");
                 }
-                PaycardLib::paycard_reset();
+                $this->conf->reset();
 
                 $this->change_page($this->page_url."gui-modules/pos2.php" . $qstr);
 

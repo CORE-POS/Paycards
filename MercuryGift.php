@@ -112,7 +112,7 @@ class MercuryGift extends BasicCCModule
         } // switch mode
     
         // if we're still here, it's an error
-        PaycardLib::paycard_reset();
+        $this->conf->reset();
         $json['output'] = $this->dialogs->invalidMode();
 
         return $json;

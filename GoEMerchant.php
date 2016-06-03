@@ -329,7 +329,7 @@ class GoEMerchant extends BasicCCModule
             case PaycardLib::PAYCARD_MODE_VOID: 
                 return $this->send_void(); 
             default:
-                PaycardLib::paycard_reset();
+                $this->conf->reset();
                 return $this->setErrorMsg(0);
         }
     }    
@@ -339,7 +339,7 @@ class GoEMerchant extends BasicCCModule
         // initialize
         $dbTrans = PaycardLib::paycard_db();
         if (!$dbTrans) {
-            PaycardLib::paycard_reset();
+            $this->conf->reset();
             // database error, nothing sent (ok to retry)
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND); 
         }
@@ -430,7 +430,7 @@ class GoEMerchant extends BasicCCModule
         if ($insR) {
             $this->last_paycard_transaction_id = $dbTrans->insertID();
         } else {
-            PaycardLib::paycard_reset();
+            $this->conf->reset();
             // internal error, nothing sent (ok to retry)
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND);
         }
@@ -471,7 +471,7 @@ class GoEMerchant extends BasicCCModule
         // initialize
         $dbTrans = PaycardLib::paycard_db();
         if (!$dbTrans) {
-            PaycardLib::paycard_reset();
+            $this->conf->reset();
 
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND);
         }
@@ -531,7 +531,7 @@ class GoEMerchant extends BasicCCModule
                     AND transID=' . $transID;
         $result = $dbTrans->query($sql);
         if (!$result || $dbTrans->numRows($result) != 1) {
-            PaycardLib::paycard_reset();
+            $this->conf->reset();
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND); 
         }
         $res = $dbTrans->fetchRow($result);
@@ -734,7 +734,7 @@ class GoEMerchant extends BasicCCModule
                     $resp['cancel_dest'] = $url_stem . '/gui/paycardSuccess.php';
                     $directions = 'Press [enter] to continue';
                 } else {
-                    PaycardLib::paycard_reset();
+                    $this->conf->reset();
                 }
             } // end verification record update
         } // end found result

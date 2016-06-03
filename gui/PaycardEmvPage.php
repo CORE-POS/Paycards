@@ -40,7 +40,7 @@ class PaycardEmvPage extends PaycardProcessPage
                 $this->conf->set("msgrepeat",0);
                 $this->conf->set("toggletax",0);
                 $this->conf->set("togglefoodstamp",0);
-                PaycardLib::paycard_reset();
+                $this->conf->reset();
                 $this->conf->set("CachePanEncBlock","");
                 $this->conf->set("CachePinEncBlock","");
                 $this->conf->set("CacheCardType","");

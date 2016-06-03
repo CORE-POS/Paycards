@@ -77,7 +77,7 @@ class MercuryE2E extends BasicCCModule
         if ($this->conf->get('paycard_mode') == PaycardLib::PAYCARD_MODE_AUTH) {
             $e2e = $this->encBlock->parseEncBlock($this->conf->get('paycard_PAN'));
             if (empty($e2e['Block']) || empty($e2e['Key'])){
-                PaycardLib::paycard_reset();
+                $this->conf->reset();
                 $json['output'] = PaycardLib::paycard_msgBox(PaycardLib::PAYCARD_TYPE_CREDIT,
                                                              "Swipe Error",
                                                              "Error reading card. Swipe again.",
@@ -430,7 +430,7 @@ class MercuryE2E extends BasicCCModule
             case PaycardLib::PAYCARD_MODE_VOID: 
                 return $this->send_void(); 
             default:
-                PaycardLib::paycard_reset();
+                $this->conf->reset();
                 return $this->setErrorMsg(0);
         }
     }
@@ -444,7 +444,7 @@ class MercuryE2E extends BasicCCModule
         // initialize
         $dbTrans = PaycardLib::paycard_db();
         if (!$dbTrans) {
-            PaycardLib::paycard_reset();
+            $this->conf->reset();
             // database error, nothing sent (ok to retry)
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND); 
         }
@@ -471,7 +471,7 @@ class MercuryE2E extends BasicCCModule
         try {
             $request->saveRequest();
         } catch (Exception $ex) {
-            PaycardLib::paycard_reset();
+            $this->conf->reset();
             // internal error, nothing sent (ok to retry)
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND);
         }
@@ -1093,7 +1093,7 @@ class MercuryE2E extends BasicCCModule
         // initialize
         $dbTrans = PaycardLib::paycard_db();
         if (!$dbTrans){
-            PaycardLib::paycard_reset();
+            $this->conf->reset();
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND);
         }
 
@@ -1115,7 +1115,7 @@ class MercuryE2E extends BasicCCModule
         try {
             $res = $request->findOriginal();
         } catch (Exception $ex) {
-            PaycardLib::paycard_reset();
+            $this->conf->reset();
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND); 
         }
 
@@ -1289,17 +1289,17 @@ class MercuryE2E extends BasicCCModule
                 $resp['cancel_dest'] = $url_stem . '/gui/paycardSuccess.php';
                 $directions = 'Press [enter] to continue';
             } else if ($status == 'Declined') {
-                PaycardLib::paycard_reset();
+                $this->conf->reset();
                 $responseCode = 2;
                 $normalized = 2;
             } else if ($status == 'Error') {
-                PaycardLib::paycard_reset();
+                $this->conf->reset();
                 $responseCode = 0;
                 $resultCode = -1; // CTranDetail does not provide this value
                 $normalized = 3;
             } else {
                 // Unknown status; clear any data
-                PaycardLib::paycard_reset();
+                $this->conf->reset();
             }
 
             $apprNumber = $xml->get_first('authcode');

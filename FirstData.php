@@ -185,7 +185,7 @@ class FirstData extends BasicCCModule
         case PaycardLib::PAYCARD_MODE_VOID: 
             return $this->sendVoid(); 
         default:
-            PaycardLib::paycard_reset();
+            $this->conf->reset();
             return $this->setErrorMsg(0);
         }
     }    
@@ -194,7 +194,7 @@ class FirstData extends BasicCCModule
     {
         $dbTrans = PaycardLib::paycard_db();
         if( !$dbTrans){
-            PaycardLib::paycard_reset();
+            $this->conf->reset();
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND); // database error, nothing sent (ok to retry)
         }
 
@@ -242,7 +242,7 @@ class FirstData extends BasicCCModule
         try {
             $request->saveRequest();
         } catch (Exception $ex) {
-            PaycardLib::paycard_reset();
+            $this->conf->reset();
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND); // internal error, nothing sent (ok to retry)
         }
 

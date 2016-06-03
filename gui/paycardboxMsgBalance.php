@@ -36,7 +36,7 @@ class paycardboxMsgBalance extends PaycardProcessPage {
                 $this->conf->set("msgrepeat",0);
                 $this->conf->set("toggletax",0);
                 $this->conf->set("togglefoodstamp",0);
-                PaycardLib::paycard_reset();
+                $this->conf->reset();
                 $this->change_page($this->page_url."gui-modules/pos2.php");
                 return False;
             }

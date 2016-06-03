@@ -228,7 +228,7 @@ class AuthorizeDotNet extends BasicCCModule
         case PaycardLib::PAYCARD_MODE_AUTH: return $this->send_auth();
         case PaycardLib::PAYCARD_MODE_VOID: return $this->send_void(); 
         default:
-            PaycardLib::paycard_reset();
+            $this->conf->reset();
             return $this->setErrorMsg(0);
         }
     }    
@@ -238,7 +238,7 @@ class AuthorizeDotNet extends BasicCCModule
         // initialize
         $dbTrans = PaycardLib::paycard_db();
         if( !$dbTrans){
-            PaycardLib::paycard_reset();
+            $this->conf->reset();
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND); // database error, nothing sent (ok to retry)
         }
 
@@ -304,7 +304,7 @@ class AuthorizeDotNet extends BasicCCModule
         // initialize
         $dbTrans = PaycardLib::paycard_db();
         if( !$dbTrans){
-            PaycardLib::paycard_reset();
+            $this->conf->reset();
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND);
         }
 
