@@ -477,10 +477,10 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertInternalType('array', $reader->magstripe($stripe));
         $tr2 = ';1234567890123445=99011200XXXX00000000?';
         $this->assertInternalType('array', $reader->magstripe($tr2));
-        PaycardLib::paycard_info('02E60080asaf');
-        PaycardLib::paycard_info('02***03');
-        PaycardLib::paycard_info('6008900'. str_repeat('0', 11));
-        PaycardLib::paycard_info('6008750'. str_repeat('0', 11));
+        $reader->cardInfo('02E60080asaf');
+        $reader->cardInfo('02***03');
+        $reader->cardInfo('6008900'. str_repeat('0', 11));
+        $reader->cardInfo('6008750'. str_repeat('0', 11));
 
         $this->assertEquals(1, $reader->accepted('6008750'. str_repeat('0', 11)));
 
