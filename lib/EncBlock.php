@@ -46,7 +46,7 @@ class EncBlock
         );
         if (strstr($str,"|")) {
             return $this->magtekBlock($str, $ret);
-        } else if (strlen($str)>2 && substr($str,0,2)=="02") {
+        } elseif (strlen($str)>2 && substr($str,0,2)=="02") {
             return $this->idtechBlock($str, $ret);
         } elseif (strlen($str) > 4 && substr($str, 0, 4) == "23.0") {
             return $this->ingenicoBlock($str, $ret);
@@ -72,16 +72,16 @@ class EncBlock
             } elseif ($str[0] === ';') {
                 $tr2 = $parts[0];
             }
-        } else if ($str[0] == "1") {
+        } elseif ($str[0] == "1") {
             /* numbered format */
             foreach($parts as $p) {
                 if (strlen($p) > 2 && substr($p,0,2)=="3~") {
                     $ret['Block'] = substr($p,2);    
-                } else if (strlen($p) > 3 && substr($p,0,3)=="11~") {
+                } elseif (strlen($p) > 3 && substr($p,0,3)=="11~") {
                     $ret['Key'] = substr($p,3);    
-                } else if (strlen($p) > 2 && substr($p,0,2)=="6~") {
+                } elseif (strlen($p) > 2 && substr($p,0,2)=="6~") {
                     $tr1 = substr($p,2);
-                } else if (strlen($p) > 2 && substr($p,0,2)=="7~") {
+                } elseif (strlen($p) > 2 && substr($p,0,2)=="7~") {
                     $tr2 = substr($p,2);
                 }
             }
@@ -96,7 +96,7 @@ class EncBlock
             }
             $ret['Last4'] = substr($pan,-4);
             $ret['Issuer'] = PaycardLib::paycard_issuer($pan);
-        } else if($tr2 && $tr2[0] == ";") {
+        } elseif ($tr2 && $tr2[0] == ";") {
             $tr2 = substr($tr2,1);
             $pan = substr($tr2,0,strpos($tr2, "="));
             $ret['Last4'] = substr($pan,-4);
@@ -177,17 +177,9 @@ class EncBlock
         // move through masked track data
         foreach ($trackLength as $num=>$keyLen) {
             if ($num == 1 && $keyLen > 0) {
-                if ($decoded) {
-                    $ret = $this->parseTrack1($str, $pos, $keyLen, $ret);
-                } else {
-                    $ret = $this->decodeTrack1($str, $pos, $keyLen, $ret);
-                }
+                $ret = $decoded ? $this->parseTrack1($str, $pos, $keyLen, $ret) : $this->decodeTrack1($str, $pos, $keyLen, $ret);
             } elseif ($num == 2 && $keyLen > 0) {
-                if ($decoded) {
-                    $ret = $this->parseTrack2($str, $pos, $keyLen, $ret);
-                } else {
-                    $ret = $this->decodeTrack2($str, $pos, $ret);
-                }
+                $ret = $decoded ? $this->parseTrack2($str, $pos, $keyLen, $ret) : $this->decodeTrack2($str, $pos, $ret);
             }
             $pos += ($decoded ? $keyLen : $keyLen*2);
         }
@@ -221,9 +213,8 @@ class EncBlock
         return $ret;
     }
 
-    private function ingenicoBlock($str, $ret)
+    private function ingenicoTracks($data)
     {
-        $data = substr($str, 4);
         $tracks = explode('@@', $data);
         $track1 = false;
         $track2 = false;
@@ -236,6 +227,13 @@ class EncBlock
         if ($track2 === false && $tracks[1][0] == ';') {
             $track2 = $tracks[1];
         }
+
+        return array($track1, $track2, $track3);
+    }
+    private function ingenicoBlock($str, $ret)
+    {
+        $data = substr($str, 4);
+        list($track1, $track2, $track3) = $this->ingenicoTracks($data);
 
         if ($track1 !== false) {
             $pieces = explode('^', $track1);
@@ -276,7 +274,7 @@ class EncBlock
             // idtech
             $ret['key'] = substr($str,4,16);
             $ret['block'] = substr($str,-16);
-        } else {
+        } elseif (strlen($str) >= 36) {
             // ingenico
             $ret['key'] = substr($str, -20);
             $ret['block'] = substr($str, 0, 16);

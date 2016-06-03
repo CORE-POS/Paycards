@@ -42,20 +42,28 @@ class PaycardRequest
         $this->transNo = CoreLocal::get("transno");
         $this->transID = CoreLocal::get("paycard_id");
         $this->setType(CoreLocal::get('CacheCardType'));
-        $this->amount = CoreLocal::get("paycard_amount");
-        if (($this->type == "Debit" || $this->type == "EBTCASH") && $this->amount > CoreLocal::get("amtdue")) {
-            $this->cashback = $this->amount - CoreLocal::get("amtdue");
-            $this->amount = CoreLocal::get("amtdue");
-        } else {
-            $this->cashback = 0;
-        }
+        list($this->amount, $this->cashback) = $this->initAmounts();
         $this->mode = (($this->amount < 0) ? 'Return' : 'Sale');
         $this->manual = (CoreLocal::get("paycard_keyed")===True ? 1 : 0);
-        $this->live = 1;
-        if (CoreLocal::get("training") != 0 || CoreLocal::get("CashierNo") == 9999) {
-            $this->live = 0;
-        }
+        $this->live = $this->isLive();
         $this->cardholder = 'Cardholder';
+    }
+
+    private function initAmounts()
+    {
+        $amount = CoreLocal::get("paycard_amount");
+        if (($this->type == "Debit" || $this->type == "EBTCASH") && $amount > CoreLocal::get("amtdue")) {
+            $cashback = $amount - CoreLocal::get("amtdue");
+            $amount = CoreLocal::get("amtdue");
+            return array($amount, $cashback);
+        }
+
+        return array($amount, 0);
+    }
+
+    private function isLive()
+    {
+        return (CoreLocal::get("training") != 0 || CoreLocal::get("CashierNo") == 9999) ? 1 : 0;
     }
 
     public function formattedAmount()
@@ -76,9 +84,9 @@ class PaycardRequest
         else $this->type = $type;
     }
 
-    public function setManual($m)
+    public function setManual($man)
     {
-        $this->manual = $m;
+        $this->manual = $man;
     }
 
     public function setRefNum($ref)
@@ -91,9 +99,9 @@ class PaycardRequest
         $this->mode = $mode;
     }
 
-    public function setAmount($a)
+    public function setAmount($amt)
     {
-        $this->amount = $a;
+        $this->amount = $amt;
     }
 
     public function setCardholder($name)
@@ -149,11 +157,10 @@ class PaycardRequest
         );
         $insP = $dbTrans->prepare($insQ);
         $insR = $dbTrans->execute($insP, $ptArgs);
-        if ($insR) {
-            $this->last_paycard_transaction_id = $dbTrans->insertID();
-        } else {
+        if ($insR === false) {
             throw new Exception('Error saving PaycardTransactions');
         }
+        $this->last_paycard_transaction_id = $dbTrans->insertID();
     }
 
     public function changeAmount($amt)
