@@ -464,23 +464,25 @@ class Test extends PHPUnit_Framework_TestCase
 
     public function testLib()
     {
+        $reader = new CardReader();
+
         PaycardLib::paycard_wipe_pan();
         PaycardLib::paycard_live();
-        $this->assertEquals(PaycardLib::PAYCARD_TYPE_CREDIT, PaycardLib::paycard_type('4111111111111111'));
+        $this->assertEquals(PaycardLib::PAYCARD_TYPE_CREDIT, $reader->type('4111111111111111'));
 
         // from: http://www.gae.ucm.es/~padilla/extrawork/magexam1.html
         $stripe = '%B1234567890123445^PADILLA/L.                ^99011200000000000000**XXX******?'
             . ';1234567890123445=99011200XXXX00000000?'
             . ';011234567890123445=724724100000000000030300XXXX040400099010=************************==1=0000000000000000?';
-        $this->assertInternalType('array', PaycardLib::paycard_magstripe($stripe));
+        $this->assertInternalType('array', $reader->magstripe($stripe));
         $tr2 = ';1234567890123445=99011200XXXX00000000?';
-        $this->assertInternalType('array', PaycardLib::paycard_magstripe($tr2));
+        $this->assertInternalType('array', $reader->magstripe($tr2));
         PaycardLib::paycard_info('02E60080asaf');
         PaycardLib::paycard_info('02***03');
         PaycardLib::paycard_info('6008900'. str_repeat('0', 11));
         PaycardLib::paycard_info('6008750'. str_repeat('0', 11));
 
-        $this->assertEquals(0, PaycardLib::paycard_accepted('6008750'. str_repeat('0', 11), false));
+        $this->assertEquals(1, $reader->accepted('6008750'. str_repeat('0', 11)));
 
         CoreLocal::set('training', '');
         CoreLocal::set('CashierNo', '');

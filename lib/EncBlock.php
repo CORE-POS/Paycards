@@ -23,6 +23,10 @@
 
 class EncBlock 
 {
+    public function __construct()
+    {
+        $this->reader = new CardReader();
+    }
     /**
       In theory parses output produced by MagTek and ID tech
       devices (based on spec / examples)
@@ -95,12 +99,12 @@ class EncBlock
                 $ret['Name'] = $split[1];
             }
             $ret['Last4'] = substr($pan,-4);
-            $ret['Issuer'] = PaycardLib::paycard_issuer($pan);
+            $ret['Issuer'] = $this->reader->issuer($pan);
         } elseif ($tr2 && $tr2[0] == ";") {
             $tr2 = substr($tr2,1);
             $pan = substr($tr2,0,strpos($tr2, "="));
             $ret['Last4'] = substr($pan,-4);
-            $ret['Issuer'] = PaycardLib::paycard_issuer($pan);
+            $ret['Issuer'] = $this->reader->issuer($pan);
         }
 
         return $ret;
@@ -119,7 +123,7 @@ class EncBlock
         }
         $pan = $this->dehexify($pan);
         $ret['Last4'] = substr($pan,-4);
-        $ret['Issuer'] = PaycardLib::paycard_issuer(str_replace("*","0",$pan));
+        $ret['Issuer'] = $this->reader->issuer(str_replace("*","0",$pan));
 
         return $ret;
     }
@@ -131,7 +135,7 @@ class EncBlock
         $pan = substr($pan,2); // remove leading ;
         $pan = $this->dehexify($pan);
         $ret['Last4'] = substr($pan,-4);
-        $ret['Issuer'] = PaycardLib::paycard_issuer(str_replace("*",0,$pan));
+        $ret['Issuer'] = $this->reader->issuer(str_replace("*",0,$pan));
 
         return $ret;
     }
@@ -145,7 +149,7 @@ class EncBlock
         }
         $pan = str_replace('*', '0', substr($pieces[0],2));
         $ret['Last4'] = substr($pan,-4);
-        $ret['Issuer'] = PaycardLib::paycard_issuer(str_replace("*","0",$pan));
+        $ret['Issuer'] = $this->reader->issuer(str_replace("*","0",$pan));
 
         return $ret;
     }
@@ -156,7 +160,7 @@ class EncBlock
         $pieces = explode('=', $tr2);
         $pan = str_replace('*', '0', substr($pieces[0],1));
         $ret['Last4'] = substr($pan,-4);
-        $ret['Issuer'] = PaycardLib::paycard_issuer(str_replace("*","0",$pan));
+        $ret['Issuer'] = $this->reader->issuer(str_replace("*","0",$pan));
 
         return $ret;
     }
@@ -238,7 +242,7 @@ class EncBlock
         if ($track1 !== false) {
             $pieces = explode('^', $track1);
             $masked = ltrim($pieces[0], '%');
-            $ret['Issuer'] = PaycardLib::paycard_issuer($masked);
+            $ret['Issuer'] = $this->reader->issuer($masked);
             $ret['Last4'] = substr($masked, -4);
             if (count($pieces) >= 3) {
                 $ret['Name'] = $pieces[1];
@@ -246,7 +250,7 @@ class EncBlock
         } elseif ($track2 !== false) {
             list($start, ) = explode('=', $track2, 2);
             $masked = ltrim($start, ';');
-            $ret['Issuer'] = PaycardLib::paycard_issuer($masked);
+            $ret['Issuer'] = $this->reader->issuer($masked);
             $ret['Last4'] = substr($masked, -4);
         }
 

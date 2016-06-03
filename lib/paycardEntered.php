@@ -121,6 +121,7 @@ class paycardEntered extends Parser
         $ret = $this->default_json();
         // initialize
         $validate = true; // run Luhn's on PAN, check expiration date
+        $reader = new CardReader();
         PaycardLib::paycard_reset();
         CoreLocal::set("paycard_mode",$mode);
         CoreLocal::set("paycard_manual",($manual ? 1 : 0));
@@ -137,7 +138,7 @@ class paycardEntered extends Parser
                 }
                 // split up input (and check for the Concord test card)
                 if ($type == PaycardLib::PAYCARD_TYPE_UNKNOWN){
-                    $type = PaycardLib::paycard_type($card);
+                    $type = $reader->type($card);
                 }
                 if( $type == PaycardLib::PAYCARD_TYPE_GIFT) {
                     CoreLocal::set("paycard_PAN",$card); // our gift cards have no expiration date or conf code
@@ -152,7 +153,7 @@ class paycardEntered extends Parser
                 CoreLocal::set("paycard_PAN",$card);
             } else {
                 // swiped magstripe (reference to ISO format at end of this file)
-                $stripe = PaycardLib::paycard_magstripe($card);
+                $stripe = $reader->magstripe($card);
                 if (!is_array($stripe)) {
                     throw new Exception(PaycardLib::paycard_errBox($type,CoreLocal::get("paycard_manual")."Card Data Invalid","Please swipe again or type in manually","[clear] to cancel"));
                 }
@@ -165,8 +166,8 @@ class paycardEntered extends Parser
             } // manual/swiped
 
             // determine card issuer and type
-            CoreLocal::set("paycard_type",PaycardLib::paycard_type(CoreLocal::get("paycard_PAN")));
-            CoreLocal::set("paycard_issuer",PaycardLib::paycard_issuer(CoreLocal::get("paycard_PAN")));
+            CoreLocal::set("paycard_type",$reader->type(CoreLocal::get("paycard_PAN")));
+            CoreLocal::set("paycard_issuer",$reader->issuer(CoreLocal::get("paycard_PAN")));
 
             /* check card type. Credit is default. */
             $type = CoreLocal::get("CacheCardType");

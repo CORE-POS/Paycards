@@ -26,6 +26,7 @@ class PaycardDialogs
     public function __construct()
     {
         $this->conf = new PaycardConf();
+        $this->reader = new CardReader();
     }
 
     public function enabledCheck()
@@ -44,19 +45,20 @@ class PaycardDialogs
 
     public function validateCard($pan, $expirable=true, $luhn=true)
     {
-        if ($luhn && PaycardLib::paycard_validNumber($pan) != 1) {
+        $validator = new CardValidator();
+        if ($luhn && $validator->validNumber($pan) != 1) {
             PaycardLib::paycard_reset();
             throw new Exception(PaycardLib::paycard_errBox(PaycardLib::PAYCARD_TYPE_CREDIT,
                 "Invalid Card Number",
                 "Swipe again or type in manually",
                 "[clear] to cancel"));
-        } elseif (!PaycardLib::paycard_accepted($pan)) {
+        } elseif (!$this->reader->accepted($pan)) {
             PaycardLib::paycard_reset();
             throw new Exception(PaycardLib::paycard_msgBox(PaycardLib::PAYCARD_TYPE_CREDIT,
                 "Unsupported Card Type",
                 "We cannot process " . $this->conf->get("paycard_issuer") . " cards",
                 "[clear] to cancel"));
-        } elseif ($expirable && PaycardLib::paycard_validExpiration($this->conf->get("paycard_exp")) != 1) {
+        } elseif ($expirable && $validator->validExpiration($this->conf->get("paycard_exp")) != 1) {
             PaycardLib::paycard_reset();
             throw new Exception(PaycardLib::paycard_errBox(PaycardLib::PAYCARD_TYPE_CREDIT,
                 "Invalid Expiration Date",
