@@ -23,22 +23,29 @@
 
 class PaycardModule
 {
-    public static function ccEntered($pan, $validate, $json)
+    private $dialogs;
+    public function setDialogs($d)
+    {
+        $this->dialogs = $d;
+    }
+
+    public function ccEntered($pan, $validate, $json)
     {
         try {
-            $enabled = PaycardDialogs::enabledCheck();
+            if ($this->dialogs === null) var_dump(debug_backtrace());
+            $enabled = $this->dialogs->enabledCheck();
             // error checks based on processing mode
             switch (CoreLocal::get("paycard_mode")) {
                 case PaycardLib::PAYCARD_MODE_VOID:
                     // use the card number to find the trans_id
                     $pan4 = substr($pan,-4);
                     $trans = array(CoreLocal::get('CashierNo'), CoreLocal::get('laneno'), CoreLocal::get('transno'));
-                    $result = PaycardDialogs::voidableCheck($pan4, $trans);
-                    return self::ccVoid($result,$trans[1],$trans[2],$json);
+                    $result = $this->dialogs->voidableCheck($pan4, $trans);
+                    return $this->ccVoid($result,$trans[1],$trans[2],$json);
 
                 case PaycardLib::PAYCARD_MODE_AUTH:
                     if ($validate) {
-                        $valid = PaycardDialogs::validateCard($pan);
+                        $valid = $this->dialogs->validateCard($pan);
                     }
                     return PaycardLib::setupAuthJson($json);
             } // switch mode
@@ -49,11 +56,11 @@ class PaycardModule
 
         // if we're still here, it's an error
         PaycardLib::paycard_reset();
-        $json['output'] = PaycardDialogs::invalidMode();
+        $json['output'] = $this->dialogs->invalidMode();
         return $json;
     }
 
-    public static function ccVoid($transID,$laneNo=-1,$transNo=-1,$json=array()) 
+    public function ccVoid($transID,$laneNo=-1,$transNo=-1,$json=array()) 
     {
         // initialize
         $cashier = CoreLocal::get("CashierNo");
@@ -62,20 +69,20 @@ class PaycardModule
         if ($laneNo != -1) $lane = $laneNo;
         if ($transNo != -1) $trans = $transNo;
         try {
-            $enabled = PaycardDialogs::enabledCheck();
-            $request = PaycardDialogs::getRequest(array($cashier, $lane, $trans), $transID);
-            $response = PaycardDialogs::getResponse(array($cashier, $lane, $trans), $transID);
-            $lineitem = PaycardDialogs::getTenderLine(array($cashier, $lane, $trans), $transID);
-            $valid = PaycardDialogs::validateVoid($request, $response, $lineitem, $transID);
+            $enabled = $this->dialogs->enabledCheck();
+            $request = $this->dialogs->getRequest(array($cashier, $lane, $trans), $transID);
+            $response = $this->dialogs->getResponse(array($cashier, $lane, $trans), $transID);
+            $lineitem = $this->dialogs->getTenderLine(array($cashier, $lane, $trans), $transID);
+            $valid = $this->dialogs->validateVoid($request, $response, $lineitem, $transID);
             // look up any previous successful voids
-            $eligible = PaycardDialogs::notVoided(array($cashier, $lane, $trans), $transID);
+            $eligible = $this->dialogs->notVoided(array($cashier, $lane, $trans), $transID);
         } catch (Exception $ex) {
             $json['output'] = $ex->getMessage();
             return $json;
         }
     
         // save the details
-        CoreLocal::set("paycard_amount",self::isReturn($request['mode']) ? -1*$request['amount'] :  $request['amount']);
+        CoreLocal::set("paycard_amount", $this->isReturn($request['mode']) ? -1*$request['amount'] :  $request['amount']);
         CoreLocal::set("paycard_id",$transID);
         CoreLocal::set("paycard_trans",$cashier."-".$lane."-".$trans);
         CoreLocal::set("paycard_type",PaycardLib::PAYCARD_TYPE_CREDIT);
@@ -90,7 +97,7 @@ class PaycardModule
         return $json;
     }
 
-    public static function isReturn($mode)
+    public function isReturn($mode)
     {
         switch (strtolower($mode)) {
             case 'refund':
@@ -102,7 +109,7 @@ class PaycardModule
         }
     }
 
-    public static function commError($authResult)
+    public function commError($authResult)
     {
         if ($authResult['curlErr'] != CURLE_OK || $authResult['curlHTTP'] != 200){
             if ($authResult['curlHTTP'] == '0'){

@@ -42,6 +42,12 @@ class GoEMerchant extends BasicCCModule
 
     private $voidTrans;
     private $voidRef;
+    private $pmod;
+    public function __construct()
+    {
+        $this->pmod = new PaycardModule();
+        $this->pmod->setDialogs(new PaycardDialogs());
+    }
 
     public function handlesType($type)
     {
@@ -55,14 +61,14 @@ class GoEMerchant extends BasicCCModule
     public function entered($validate,$json)
     {
         $this->trans_pan['pan'] = CoreLocal::get("paycard_PAN");
-        return PaycardModule::ccEntered($this->trans_pan['pan'], $validate, $json);
+        return $this->pmod->ccEntered($this->trans_pan['pan'], $validate, $json);
     }
 
     public function paycard_void($transID,$laneNo=-1,$transNo=-1,$json=array()) 
     {
         $this->voidTrans = "";
         $this->voidRef = "";
-        return PaycardModule::ccVoid($transID, $laneNo, $transNo, $json);
+        return $this->pmod->ccVoid($transID, $laneNo, $transNo, $json);
     }
 
     public function handleResponse($authResult)
@@ -148,7 +154,7 @@ class GoEMerchant extends BasicCCModule
         );
         $dbTrans->query($finishQ);
 
-        $comm = PaycardModule::commError($authResult);
+        $comm = $this->pmod->commError($authResult);
         if ($comm !== false) {
             TransRecord::addcomment('');
             return $comm === true ? $this->setErrorMsg(PaycardLib::PAYCARD_ERR_COMM) : $comm;

@@ -21,7 +21,7 @@
 
 *********************************************************************************/
 
-class EncBlock extends LibraryClass
+class EncBlock 
 {
     /**
       In theory parses output produced by MagTek and ID tech
@@ -34,7 +34,7 @@ class EncBlock extends LibraryClass
        - Last4 is last four PAN digits
        - Name is cardholder name (if available)
     */
-    public static function parseEncBlock($str)
+    public function parseEncBlock($str)
     {
         $ret = array(
             'Format'=>'MagneSafe',
@@ -45,17 +45,17 @@ class EncBlock extends LibraryClass
             'Name'=>'Cardholder'
         );
         if (strstr($str,"|")) {
-            return self::magtekBlock($str, $ret);
+            return $this->magtekBlock($str, $ret);
         } else if (strlen($str)>2 && substr($str,0,2)=="02") {
-            return self::idtechBlock($str, $ret);
+            return $this->idtechBlock($str, $ret);
         } elseif (strlen($str) > 4 && substr($str, 0, 4) == "23.0") {
-            return self::ingenicoBlock($str, $ret);
+            return $this->ingenicoBlock($str, $ret);
         }
 
         return $ret;
     }
 
-    private static function magtekBlock($str, $ret)
+    private function magtekBlock($str, $ret)
     {
         $parts = explode("|",$str);
         $tr1 = False;
@@ -106,7 +106,7 @@ class EncBlock extends LibraryClass
         return $ret;
     }
 
-    private static function decodeTrack1($str, $pos, $kl, $ret)
+    private function decodeTrack1($str, $pos, $kl, $ret)
     {
         // read name and masked PAN from track 1
         $caret = strpos($str,"5E",$pos);
@@ -115,28 +115,28 @@ class EncBlock extends LibraryClass
         $caret2 = strpos($str,"5E",$caret+2);
         if ($caret2 < ($pos + ($kl*2))) { // still in track 1
             $name = substr($str,$caret+2,$caret2-$caret-2);
-            $ret['Name'] = self::dehexify($name);    
+            $ret['Name'] = $this->dehexify($name);    
         }
-        $pan = self::dehexify($pan);
+        $pan = $this->dehexify($pan);
         $ret['Last4'] = substr($pan,-4);
         $ret['Issuer'] = PaycardLib::paycard_issuer(str_replace("*","0",$pan));
 
         return $ret;
     }
 
-    private static function decodeTrack2($str, $pos, $kl, $ret)
+    private function decodeTrack2($str, $pos, $kl, $ret)
     {
         $equal = strpos($str,"3D",$pos);
         $pan = substr($str,$pos,$equal-$pos);
         $pan = substr($pan,2); // remove leading ;
-        $pan = self::dehexify($pan);
+        $pan = $this->dehexify($pan);
         $ret['Last4'] = substr($pan,-4);
         $ret['Issuer'] = PaycardLib::paycard_issuer(str_replace("*",0,$pan));
 
         return $ret;
     }
 
-    private static function parseTrack1($str, $pos, $kl, $ret)
+    private function parseTrack1($str, $pos, $kl, $ret)
     {
         $tr1 = substr($str, $pos, $kl);
         $pieces = explode('^', $tr1);
@@ -150,7 +150,7 @@ class EncBlock extends LibraryClass
         return $ret;
     }
 
-    private static function parseTrack2($str, $pos, $kl, $ret)
+    private function parseTrack2($str, $pos, $kl, $ret)
     {
         $tr2 = substr($str, $pos, $kl);
         $pieces = explode('=', $tr2);
@@ -161,7 +161,7 @@ class EncBlock extends LibraryClass
         return $ret;
     }
 
-    private static function idtechBlock($str, $ret)
+    private function idtechBlock($str, $ret)
     {
         // read track length from block
         $track_length = array(
@@ -178,15 +178,15 @@ class EncBlock extends LibraryClass
         foreach ($track_length as $num=>$kl) {
             if ($num == 1 && $kl > 0) {
                 if ($decoded) {
-                    $ret = self::parseTrack1($str, $pos, $kl, $ret);
+                    $ret = $this->parseTrack1($str, $pos, $kl, $ret);
                 } else {
-                    $ret = self::decodeTrack1($str, $pos, $kl, $ret);
+                    $ret = $this->decodeTrack1($str, $pos, $kl, $ret);
                 }
             } elseif ($num == 2 && $kl > 0) {
                 if ($decoded) {
-                    $ret = self::parseTrack2($str, $pos, $kl, $ret);
+                    $ret = $this->parseTrack2($str, $pos, $kl, $ret);
                 } else {
-                    $ret = self::decodeTrack2($str, $pos, $kl, $ret);
+                    $ret = $this->decodeTrack2($str, $pos, $kl, $ret);
                 }
             }
             $pos += ($decoded ? $kl : $kl*2);
@@ -221,7 +221,7 @@ class EncBlock extends LibraryClass
         return $ret;
     }
 
-    private static function ingenicoBlock($str, $ret)
+    private function ingenicoBlock($str, $ret)
     {
         $data = substr($str, 4);
         $tracks = explode('@@', $data);
@@ -269,7 +269,7 @@ class EncBlock extends LibraryClass
         return $ret;
     }
 
-    public static function parsePinBlock($str)
+    public function parsePinBlock($str)
     {
         $ret = array('block'=>'', 'key'=>'');
         if (strlen($str) == 36 && substr($str,0,2) == "FF") {
@@ -288,7 +288,7 @@ class EncBlock extends LibraryClass
     /*
       Utility. Convert hex string to ascii characters
     */
-    private static function dehexify($in)
+    private function dehexify($in)
     {
         // must be two characters per digit
         if (strlen($in) % 2 != 0) {

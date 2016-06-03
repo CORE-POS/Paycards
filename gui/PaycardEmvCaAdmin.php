@@ -48,6 +48,7 @@ class PaycardEmvCaAdmin extends NoInputCorePage
     
     function preprocess()
     {
+        $caAdmin = new DatacapCaAdmin();
         if (FormLib::get("selectlist", false) !== false) {
             /** generate XML based on menu choice **/
             switch (FormLib::get('selectlist')) {
@@ -60,7 +61,7 @@ class PaycardEmvCaAdmin extends NoInputCorePage
                 case 'DR':
                 case 'PR':
                     $method = $this->map[FormLib::get('selectlist')];
-                    $this->xml = DatacapCaAdmin::$method();
+                    $this->xml = $caAdmin->$method();
                     break;
                 case 'CL':
                 default:
@@ -72,7 +73,7 @@ class PaycardEmvCaAdmin extends NoInputCorePage
                 or print a receipt **/
             $xml = FormLib::get('xml-resp');
             $output = FormLib::get('output-method');
-            $resp = DatacapCaAdmin::parseResponse($xml);
+            $resp = $caAdmin->parseResponse($xml);
             if ($output == 'display' || $resp['receipt'] === false) {
                 CoreLocal::set('boxMsg', '<strong>' . $resp['status'] . '</strong><br />' . $resp['msg-text']);
                 CoreLocal::set('strRemembered', '');

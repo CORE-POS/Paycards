@@ -40,6 +40,15 @@ class MercuryGift extends BasicCCModule
     private $second_try;
     // BEGIN INTERFACE METHODS
 
+    private $pmod;
+    private $dialogs;
+    public function __construct()
+    {
+        $this->pmod = new PaycardModule();
+        $this->dialogs = new PaycardDialogs();
+        $this->pmod->setDialogs($this->dialogs);
+    }
+
     /* handlesType($type)
      * $type is a constant as defined in paycardLib.php.
      * If you class can handle the given type, return
@@ -63,19 +72,19 @@ class MercuryGift extends BasicCCModule
     public function entered($validate,$json)
     {
         try {
-            $enabled = PaycardDialogs::enabledCheck();
+            $enabled = $this->dialogs->enabledCheck();
 
             // error checks based on processing mode
             if (CoreLocal::get("paycard_mode") == PaycardLib::PAYCARD_MODE_VOID) {
                 $pan4 = substr($this->getPAN(), -4);
                 $trans = array(CoreLocal::get('CashierNo'), CoreLocal::get('laneno'), CoreLocal::get('transno'));
-                $result = PaycardDialogs::voidableCheck($pan4, $trans);
+                $result = $this->dialogs->voidableCheck($pan4, $trans);
                 return $this->paycard_void($result,-1,-1,$json);
             }
 
             // check card data for anything else
             if ($validate) {
-                $valid = PaycardDialogs::validateCard(CoreLocal::get('paycard_PAN'), false, false);
+                $valid = $this->dialogs->validateCard(CoreLocal::get('paycard_PAN'), false, false);
             }
         } catch (Exception $ex) {
             $json['output'] = $ex->getMessage();
@@ -103,7 +112,7 @@ class MercuryGift extends BasicCCModule
     
         // if we're still here, it's an error
         PaycardLib::paycard_reset();
-        $json['output'] = PaycardDialogs::invalidMode();
+        $json['output'] = $this->dialogs->invalidMode();
 
         return $json;
     }
@@ -206,7 +215,7 @@ class MercuryGift extends BasicCCModule
     {
         $this->voidTrans = "";
         $this->voidRef = "";
-        $ret = PaycardModule::ccVoid($transID, $laneNo, $transNo, $json);
+        $ret = $this->pmod->ccVoid($transID, $laneNo, $transNo, $json);
 
         // save the details
         CoreLocal::set("paycard_type",PaycardLib::PAYCARD_TYPE_GIFT);

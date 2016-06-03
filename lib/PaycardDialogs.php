@@ -23,7 +23,7 @@
 
 class PaycardDialogs
 {
-    public static function enabledCheck()
+    public function enabledCheck()
     {
         if (CoreLocal::get('CCintegrate') != 1) {
             PaycardLib::paycard_reset();
@@ -37,7 +37,7 @@ class PaycardDialogs
         }
     }
 
-    public static function validateCard($pan, $expirable=true, $luhn=true)
+    public function validateCard($pan, $expirable=true, $luhn=true)
     {
         if ($luhn && PaycardLib::paycard_validNumber($pan) != 1) {
             PaycardLib::paycard_reset();
@@ -62,7 +62,7 @@ class PaycardDialogs
         return true;
     }
 
-    public static function voidableCheck($pan4, $trans)
+    public function voidableCheck($pan4, $trans)
     {
         $dbTrans = PaycardLib::paycard_db();
         $today = date('Ymd');
@@ -94,7 +94,7 @@ class PaycardDialogs
         return $payment['transID'];
     }
 
-    public static function invalidMode()
+    public function invalidMode()
     {
         return PaycardLib::paycard_errBox(PaycardLib::PAYCARD_TYPE_GIFT,
                                                      "Invalid Mode",
@@ -103,7 +103,7 @@ class PaycardDialogs
         );
     }
 
-    public static function getRequest($trans, $id)
+    public function getRequest($trans, $id)
     {
         $dbTrans = PaycardLib::paycard_db();
         $today = date('Ymd');
@@ -141,7 +141,7 @@ class PaycardDialogs
         return $request;
     }
 
-    public static function getResponse($trans, $id)
+    public function getResponse($trans, $id)
     {
         $dbTrans = PaycardLib::paycard_db();
         $today = date('Ymd');
@@ -178,7 +178,7 @@ class PaycardDialogs
         return $response;
     }
 
-    public static function getTenderLine($trans, $id)
+    public function getTenderLine($trans, $id)
     {
         $dbTrans = PaycardLib::paycard_db();
         $today = date('Ymd');
@@ -217,7 +217,7 @@ class PaycardDialogs
         return $lineitem;
     }
 
-    public static function notVoided($trans, $id)
+    public function notVoided($trans, $id)
     {
         $dbTrans = PaycardLib::paycard_db();
         $today = date('Ymd');
@@ -244,7 +244,7 @@ class PaycardDialogs
         }
     }
 
-    private static function voidReqResp($request, $response)
+    private function voidReqResp($request, $response)
     {
         $error = false;
         if ($response['commErr'] != 0 || $response['httpCode'] != 200 || $response['validResponse'] != 1) {
@@ -262,7 +262,7 @@ class PaycardDialogs
         return $error;
     }
 
-    private static function voidLineItem($lineitem, $id)
+    private function voidLineItem($lineitem, $id)
     {
         $error = false;
         if ($lineitem['trans_type'] != "T" || ($lineitem['trans_subtype'] != "CC" && $lineitem['trans_subtype'] != 'DC'
@@ -275,14 +275,14 @@ class PaycardDialogs
         return $error;
     }
 
-    public static function validateVoid($request, $response, $lineitem, $id)
+    public function validateVoid($request, $response, $lineitem, $id)
     {
         // make sure the payment is applicable to void
         $err_header = _('Unable to Void');
         $buttons = _('[clear] to cancel');
-        $error = self::voidReqResp($request, $response);
+        $error = $this->voidReqResp($request, $response);
         if ($error === false) {
-            $error = self::voidLineItem($lineitem, $id);
+            $error = $this->voidLineItem($lineitem, $id);
         }
 
         if ($error !== false) {

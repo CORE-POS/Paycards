@@ -38,7 +38,15 @@ define('FD_KEY_PASSWD','');
 
 */
 
-class FirstData extends BasicCCModule {
+class FirstData extends BasicCCModule 
+{
+    
+    private $pmod;
+    public function __construct()
+    {
+        $this->pmod = new PaycardModule();
+        $this->pmod->setDialogs(new PaycardDialogs());
+    }
 
     function handlesType($type){
         if ($type == PaycardLib::PAYCARD_TYPE_CREDIT) return True;
@@ -58,14 +66,14 @@ class FirstData extends BasicCCModule {
     function entered($validate,$json)
     {
         $this->trans_pan['pan'] = CoreLocal::get("paycard_PAN");
-        return PaycardModule::ccEntered($this->trans_pan['pan'], $validate, $json);
+        return $this->pmod->ccEntered($this->trans_pan['pan'], $validate, $json);
     }
 
     function paycard_void($transID,$laneNo=-1,$transNo=-1,$json=array()) 
     {
         $this->voidTrans = "";
         $this->voidRef = "";
-        return PaycardModule::ccVoid($transID, $laneNo, $transNo, $json);
+        return $this->pmod->ccVoid($transID, $laneNo, $transNo, $json);
     }
 
     function handleResponseAuth($authResult)
@@ -109,7 +117,7 @@ class FirstData extends BasicCCModule {
             $response->saveResponse();
         } catch (Exception $ex) { }
 
-        $comm = PaycardModule::commError($authResult);
+        $comm = $this->pmod->commError($authResult);
         if ($comm !== false) {
             TransRecord::addcomment('');
             return $comm;

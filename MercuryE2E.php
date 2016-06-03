@@ -44,6 +44,16 @@ class MercuryE2E extends BasicCCModule
     protected $SOAPACTION = "http://www.mercurypay.com/CreditTransaction";
     private $second_try;
 
+    private $encBlock;
+    private $pmod;
+
+    public function __construct()
+    {
+        $this->encBlock = new EncBlock();
+        $this->pmod = new PaycardModule();
+        $this->pmod->setDialogs(new PaycardDialogs());
+    }
+
     const PRIMARY_URL = 'w1.mercurypay.com';
     const BACKUP_URL = 'w2.backuppay.com';
 
@@ -64,7 +74,7 @@ class MercuryE2E extends BasicCCModule
     {
         $pan = CoreLocal::get('paycard_PAN');
         if (CoreLocal::get('paycard_mode') == PaycardLib::PAYCARD_MODE_AUTH) {
-            $e2e = EncBlock::parseEncBlock(CoreLocal::get('paycard_PAN'));
+            $e2e = $this->encBlock->parseEncBlock(CoreLocal::get('paycard_PAN'));
             if (empty($e2e['Block']) || empty($e2e['Key'])){
                 PaycardLib::paycard_reset();
                 $json['output'] = PaycardLib::paycard_msgBox(PaycardLib::PAYCARD_TYPE_CREDIT,
@@ -79,7 +89,7 @@ class MercuryE2E extends BasicCCModule
             $pan = str_repeat('*', 12) . $e2e['Last4'];
         }
 
-        return PaycardModule::ccEntered($pan, false, $json);
+        return $this->pmod->ccEntered($pan, false, $json);
     }
 
     /**
@@ -89,7 +99,7 @@ class MercuryE2E extends BasicCCModule
     {
         $this->voidTrans = "";
         $this->voidRef = "";
-        $json = PaycardModule::ccVoid($transID, $laneNo, $transNo, $json);
+        $json = $this->pmod->ccVoid($transID, $laneNo, $transNo, $json);
         CoreLocal::set("paycard_type",PaycardLib::PAYCARD_TYPE_ENCRYPTED);
     
         return $json;
@@ -447,8 +457,8 @@ class MercuryE2E extends BasicCCModule
             $request->setMode("Voucher");
         }
         $password = $this->getPw();
-        $e2e = EncBlock::parseEncBlock(CoreLocal::get("paycard_PAN"));
-        $pin = EncBlock::parsePinBlock(CoreLocal::get("CachePinEncBlock"));
+        $e2e = $this->encBlock->parseEncBlock(CoreLocal::get("paycard_PAN"));
+        $pin = $this->encBlock->parsePinBlock(CoreLocal::get("CachePinEncBlock"));
         $request->setIssuer($e2e['Issuer']);
         CoreLocal::set('paycard_issuer',$e2e['Issuer']);
         $request->setCardholder($e2e['Name']);

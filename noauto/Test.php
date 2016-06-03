@@ -445,18 +445,20 @@ class Test extends PHPUnit_Framework_TestCase
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_ADDVALUE);
         $v->cleanup(array());
 
-        $this->assertEquals(true, PaycardModule::isReturn('refund'));
-        $this->assertEquals(false, PaycardModule::isReturn('foo'));
+        $pmod = new PaycardModule();
+        $pmod->setDialogs(new PaycardDialogs());
+        $this->assertEquals(true, $pmod->isReturn('refund'));
+        $this->assertEquals(false, $pmod->isReturn('foo'));
         CoreLocal::set('CCintegrate', 1);
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_BALANCE);
-        $this->assertInternalType('array', PaycardModule::ccEntered('4111111111111111', true, array()));
+        $this->assertInternalType('array', $pmod->ccEntered('4111111111111111', true, array()));
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
-        $this->assertInternalType('array', PaycardModule::ccEntered('4111111111111111', true, array()));
+        $this->assertInternalType('array', $pmod->ccEntered('4111111111111111', true, array()));
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
-        $this->assertInternalType('array', PaycardModule::ccEntered('4111111111111111', false, array()));
+        $this->assertInternalType('array', $pmod->ccEntered('4111111111111111', false, array()));
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
-        $this->assertInternalType('array', PaycardModule::ccEntered('4111111111111111', true, array()));
-        $this->assertEquals(true, PaycardModule::commError(array('curlErr'=>CURLE_OK, 'curlHTTP'=>500)));
+        $this->assertInternalType('array', $pmod->ccEntered('4111111111111111', true, array()));
+        $this->assertEquals(true, $pmod->commError(array('curlErr'=>CURLE_OK, 'curlHTTP'=>500)));
         CoreLocal::set('CCintegrate', '');
     }
 
@@ -915,11 +917,12 @@ class Test extends PHPUnit_Framework_TestCase
 
     public function testCaAdmin()
     {
-        DatacapCaAdmin::caLanguage();
+        $dca = new DatacapCaAdmin();
+        $dca->caLanguage();
         CoreLocal::set('PaycardsDatacapMode', 2);
-        DatacapCaAdmin::caLanguage();
+        $dca->caLanguage();
         CoreLocal::set('PaycardsDatacapMode', 3);
-        DatacapCaAdmin::caLanguage();
+        $dca->caLanguage();
         $funcs = array(
             'keyChange',
             'paramDownload',
@@ -929,10 +932,10 @@ class Test extends PHPUnit_Framework_TestCase
             'paramReport',
         );
         foreach ($funcs as $func) {
-            $this->assertInternalType('string', DatacapCaAdmin::$func());
+            $this->assertInternalType('string', $dca->$func());
         }
         $xml = file_get_contents(__DIR__ . '/responses/dc.auth.approved.xml');
-        $this->assertInternalType('array', DatacapCaAdmin::parseResponse($xml));
+        $this->assertInternalType('array', $dca->parseResponse($xml));
     }
 
     public function testParsers()
@@ -1011,9 +1014,10 @@ class Test extends PHPUnit_Framework_TestCase
 
     public function testEnc()
     {
+        $enc = new EncBlock();
         // source: Visa Test Card using Sign&Pay w/ test keys
         $pan = '02E600801F2E2700039B25423430303330302A2A2A2A2A2A363738315E544553542F4D50535E313531322A2A2A2A2A2A2A2A2A2A2A2A2A3F3B3430303330302A2A2A2A2A2A363738313D313531322A2A2A2A2A2A2A2A2A2A2A2A2A2A2A2A3FA7284186B3E8E1A3E2AD8548E732DBB5B33285117FB1B0CDBA6D732E5DF031DE3CB590DE2E02BDEF6182373B7401A3E3D304013C85D3BEFDEBF552A3C30914246B0145538F2E5856885CAA06FF64E201CB974CD506ADDCB22C9F3BF500C62310C9C88B56FD2BDF6E59481BC4B6C4F034264B2C38F8FF6F4405D563AA7D49B82221111010000000E001BFXXXX03';
-        $info = EncBlock::parseEncBlock($pan);
+        $info = $enc->parseEncBlock($pan);
         $this->assertEquals('D304013C85D3BEFDEBF552A3C30914246B0145538F2E5856885CAA06FF64E201CB974CD506ADDCB2', $info['Block']);
         $this->assertEquals('MagneSafe', $info['Format']);
         $this->assertEquals('21111010000000E001BF', $info['Key']);
@@ -1022,7 +1026,7 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('6781', $info['Last4']);
 
         $idtech = '027901801F2F2800439B%*4003********6781^TEST/MPS^****************?*;4003********6781=********************?*D52F87101668584959DCB691AAD2222776085780319725F2281A56EAA2B44F93A63BC8D8B35DB1017D870B1E21CF6066A1FAFB4948F26010F6B7AEB8A317186DA064F37F71FF3573A4CA056242361E786DB5A2463624DF4E84968EBC368AEE8A77EE8C87AAA196FE9E0E4BB78A08C116348E92D1C02CF2A2FCEA99DE13E4C1218120510070265E060295B6F03';
-        $info = EncBlock::parseEncBlock($idtech);
+        $info = $enc->parseEncBlock($idtech);
         $this->assertEquals('1FAFB4948F26010F6B7AEB8A317186DA064F37F71FF3573A4CA056242361E786DB5A2463624DF4E8', $info['Block']);
         $this->assertEquals('MagneSafe', $info['Format']);
         $this->assertEquals('120510070265E060295B', $info['Key']);
@@ -1031,7 +1035,7 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('6781', $info['Last4']);
 
         $magtek = '%B4003000050006781^TEST/MPS^13050000000000000?;4003000050006781=13050000000000000000?|0600|96F7CCEB8461264BB3CB3F4539163C8C59E87F2B16F1E876C778A3A15CF840422FAFF02FA2E27FD4DBC29B38535069B9|BDEC23AAA899006C36843F14E0F6A6472C8CDF81271764E160B455FC55AA5DD05F2AD04769614A91||61402200|B54A267EAAEB5B9A85212421B09BEA3B6F4AC894DBDE5A246E2780F461E63C6175C92D0F62703CAC551A206D66760744172CF7E14A223605|B01F8C4072210AA|BF6325ABD6A63EE7|9012090B01F8C4000007|F7D7||0000';
-        $info = EncBlock::parseEncBlock($magtek);
+        $info = $enc->parseEncBlock($magtek);
         $this->assertEquals('BDEC23AAA899006C36843F14E0F6A6472C8CDF81271764E160B455FC55AA5DD05F2AD04769614A91', $info['Block']);
         $this->assertEquals('MagneSafe', $info['Format']);
         $this->assertEquals('9012090B01F8C4000007', $info['Key']);
@@ -1040,7 +1044,7 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('6781', $info['Last4']);
 
         $magtek = ';4003000050006781=13050000000000000000?|0600|96F7CCEB8461264BB3CB3F4539163C8C59E87F2B16F1E876C778A3A15CF840422FAFF02FA2E27FD4DBC29B38535069B9|BDEC23AAA899006C36843F14E0F6A6472C8CDF81271764E160B455FC55AA5DD05F2AD04769614A91||61402200|B54A267EAAEB5B9A85212421B09BEA3B6F4AC894DBDE5A246E2780F461E63C6175C92D0F62703CAC551A206D66760744172CF7E14A223605|B01F8C4072210AA|BF6325ABD6A63EE7|9012090B01F8C4000007|F7D7||0000';
-        $info = EncBlock::parseEncBlock($magtek);
+        $info = $enc->parseEncBlock($magtek);
         $this->assertEquals('BDEC23AAA899006C36843F14E0F6A6472C8CDF81271764E160B455FC55AA5DD05F2AD04769614A91', $info['Block']);
         $this->assertEquals('MagneSafe', $info['Format']);
         $this->assertEquals('9012090B01F8C4000007', $info['Key']);
@@ -1049,7 +1053,7 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('6781', $info['Last4']);
 
         $magtek = '%B4003000050006781^TEST/MPS^13050000000000000?|0600|96F7CCEB8461264BB3CB3F4539163C8C59E87F2B16F1E876C778A3A15CF840422FAFF02FA2E27FD4DBC29B38535069B9|BDEC23AAA899006C36843F14E0F6A6472C8CDF81271764E160B455FC55AA5DD05F2AD04769614A91||61402200|B54A267EAAEB5B9A85212421B09BEA3B6F4AC894DBDE5A246E2780F461E63C6175C92D0F62703CAC551A206D66760744172CF7E14A223605|B01F8C4072210AA|BF6325ABD6A63EE7|9012090B01F8C4000007|F7D7||0000';
-        $info = EncBlock::parseEncBlock($magtek);
+        $info = $enc->parseEncBlock($magtek);
         $this->assertEquals('BDEC23AAA899006C36843F14E0F6A6472C8CDF81271764E160B455FC55AA5DD05F2AD04769614A91', $info['Block']);
         $this->assertEquals('MagneSafe', $info['Format']);
         $this->assertEquals('9012090B01F8C4000007', $info['Key']);
@@ -1062,7 +1066,7 @@ class Test extends PHPUnit_Framework_TestCase
                 . '|7~;4003000050006781=13050000000000000000?'
                 . '|3~BLOCK'
                 . '|11~KEY';
-        $info = EncBlock::parseEncBlock($magtekAlt);
+        $info = $enc->parseEncBlock($magtekAlt);
         $this->assertEquals('BLOCK', $info['Block']);
         $this->assertEquals('MagneSafe', $info['Format']);
         $this->assertEquals('KEY', $info['Key']);
@@ -1071,7 +1075,7 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('6781', $info['Last4']);
 
         $ingenico = '23.0%B4003000000006781^TEST/MPS^15120000000000000?@@;4003000000006781=15120000000000000000?@@956959220A1B34705735A3035B017D4B3C5DD67575DC0BFEB85A02A71E3F8C6A67160D720F37CBCE16E061D14D520EAC:21111010000002600182:320D3C963EF3A21D730A9B467C8AE43022DDC9241BB3D2FEBD936773191B55BE6F2948589ABBA829:21111010000002600183';
-        $info = EncBlock::parseEncBlock($ingenico);
+        $info = $enc->parseEncBlock($ingenico);
         $this->assertEquals('320D3C963EF3A21D730A9B467C8AE43022DDC9241BB3D2FEBD936773191B55BE6F2948589ABBA829', $info['Block']);
         $this->assertEquals('MagneSafe', $info['Format']);
         $this->assertEquals('21111010000002600183', $info['Key']);
@@ -1080,7 +1084,7 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('6781', $info['Last4']);
 
         $ingenico = '23.0;4003000000006781=15120000000000000000?@@320D3C963EF3A21D730A9B467C8AE43022DDC9241BB3D2FEBD936773191B55BE6F2948589ABBA829:21111010000002600183';
-        $info = EncBlock::parseEncBlock($ingenico);
+        $info = $enc->parseEncBlock($ingenico);
         $this->assertEquals('320D3C963EF3A21D730A9B467C8AE43022DDC9241BB3D2FEBD936773191B55BE6F2948589ABBA829', $info['Block']);
         $this->assertEquals('MagneSafe', $info['Format']);
         $this->assertEquals('21111010000002600183', $info['Key']);
@@ -1089,9 +1093,9 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('6781', $info['Last4']);
 
         $pin = str_repeat('F', 36);
-        EncBlock::parsePinBlock($pin);
+        $enc->parsePinBlock($pin);
         $pin .= '0';
-        EncBlock::parsePinBlock($pin);
+        $enc->parsePinBlock($pin);
     }
 
     public function testNotifier()
@@ -1119,77 +1123,78 @@ class Test extends PHPUnit_Framework_TestCase
 
     public function testDialogs()
     {
+        $d = new PaycardDialogs();
         try {
-            PaycardDialogs::enabledCheck();
+            $d->enabledCheck();
         } catch (Exception $ex) {}
         CoreLocal::set('CCintegrate', 1);
-        $this->assertEquals(true, PaycardDialogs::enabledCheck());
+        $this->assertEquals(true, $d->enabledCheck());
         CoreLocal::set('CCintegrate', '');
 
         CoreLocal::set('paycard_exp', date('my'));
-        $this->assertEquals(true, PaycardDialogs::validateCard('4111111111111111'));
+        $this->assertEquals(true, $d->validateCard('4111111111111111'));
         CoreLocal::set('paycard_exp', date('0101'));
         try {
-            PaycardDialogs::validateCard('4111111111111111');
+            $d->validateCard('4111111111111111');
         } catch (Exception $ex) {}
         try {
-            PaycardDialogs::validateCard('4111111111111112'); // bad luhn checksum
+            $d->validateCard('4111111111111112'); // bad luhn checksum
         } catch (Exception $ex) {}
 
         try {
-            PaycardDialogs::voidableCheck('1111', array(1,1,1));
+            $d->voidableCheck('1111', array(1,1,1));
         } catch (Exception $ex) {}
         SQLManager::addResult(array('transID'=>1));
         SQLManager::addResult(array('transID'=>1));
         try {
-            PaycardDialogs::voidableCheck('1111', array(1,1,1)); // too many results
+            $d->voidableCheck('1111', array(1,1,1)); // too many results
         } catch (Exception $ex) {}
         SQLManager::clear();
         SQLManager::addResult(array('transID'=>1));
-        $this->assertEquals(1, PaycardDialogs::voidableCheck('1111', array(1,1,1)));
+        $this->assertEquals(1, $d->voidableCheck('1111', array(1,1,1)));
 
-        $this->assertInternalType('string', PaycardDialogs::invalidMode());
+        $this->assertInternalType('string', $d->invalidMode());
 
         try {
-            PaycardDialogs::getRequest('1-1-1', 1);
+            $d->getRequest('1-1-1', 1);
         } catch (Exception $ex) {}
         SQLManager::addResult(array(0=>1));
         SQLManager::addResult(array(0=>1));
         try {
-            PaycardDialogs::getRequest('1-1-1', 1);
+            $d->getRequest('1-1-1', 1);
         } catch (Exception $ex) {}
         SQLManager::clear();
         SQLManager::addResult(array(0=>1));
-        $this->assertEquals(array(0=>1), PaycardDialogs::getRequest('1-1-1', 1));
+        $this->assertEquals(array(0=>1), $d->getRequest('1-1-1', 1));
 
         try {
-            PaycardDialogs::getResponse('1-1-1', 1);
+            $d->getResponse('1-1-1', 1);
         } catch (Exception $ex) {}
         SQLManager::addResult(array(0=>1));
         SQLManager::addResult(array(0=>1));
         try {
-            PaycardDialogs::getResponse('1-1-1', 1);
+            $d->getResponse('1-1-1', 1);
         } catch (Exception $ex) {}
         SQLManager::clear();
         SQLManager::addResult(array(0=>1));
-        $this->assertEquals(array(0=>1), PaycardDialogs::getResponse('1-1-1', 1));
+        $this->assertEquals(array(0=>1), $d->getResponse('1-1-1', 1));
 
         try {
-            PaycardDialogs::getTenderLine('1-1-1', 1);
+            $d->getTenderLine('1-1-1', 1);
         } catch (Exception $ex) {}
         SQLManager::addResult(array(0=>1));
         SQLManager::addResult(array(0=>1));
         try {
-            PaycardDialogs::getTenderLine('1-1-1', 1);
+            $d->getTenderLine('1-1-1', 1);
         } catch (Exception $ex) {}
         SQLManager::clear();
         SQLManager::addResult(array(0=>1));
-        $this->assertEquals(array(0=>1), PaycardDialogs::getTenderLine('1-1-1', 1));
+        $this->assertEquals(array(0=>1), $d->getTenderLine('1-1-1', 1));
 
-        $this->assertEquals(true, PaycardDialogs::notVoided('1-1-1', 1));
+        $this->assertEquals(true, $d->notVoided('1-1-1', 1));
         try {
             SQLManager::addResult(array(0=>1, 'transID'=>1));
-            PaycardDialogs::notVoided('1-1-1', 1);
+            $d->notVoided('1-1-1', 1);
         } catch (Exception $ex) {}
 
         $response = array(
@@ -1206,35 +1211,35 @@ class Test extends PHPUnit_Framework_TestCase
             'voided'=>0,
             'trans_status'=>'',
         );
-        $this->assertEquals(true, PaycardDialogs::validateVoid($request, $response, $lineitem, 1));
+        $this->assertEquals(true, $d->validateVoid($request, $response, $lineitem, 1));
 
         $response['httpCode'] = 500;
         try {
-            PaycardDialogs::validateVoid($request, $response, $lineitem, 1);
+            $d->validateVoid($request, $response, $lineitem, 1);
         } catch (Exception $ex) {}
         $response['httpCode'] = 200;
         $response['xResponseCode'] = 2;
         try {
-            PaycardDialogs::validateVoid($request, $response, $lineitem, 1);
+            $d->validateVoid($request, $response, $lineitem, 1);
         } catch (Exception $ex) {}
         $response['xResponseCode'] = 1;
         $response['xTransactionID'] = 0;
         try {
-            PaycardDialogs::validateVoid($request, $response, $lineitem, 1);
+            $d->validateVoid($request, $response, $lineitem, 1);
         } catch (Exception $ex) {}
         $response['xTransactionID'] = 1;
         $lineitem['trans_type'] = 'I';
         try {
-            PaycardDialogs::validateVoid($request, $response, $lineitem, 1);
+            $d->validateVoid($request, $response, $lineitem, 1);
         } catch (Exception $ex) {}
         $lineitem['trans_type'] = 'T';
         try {
-            PaycardDialogs::validateVoid($request, $response, $lineitem, 1);
+            $d->validateVoid($request, $response, $lineitem, 1);
         } catch (Exception $ex) {}
         $lineitem['trans_type'] = 'T';
         $lineitem['voided'] = 1;
         try {
-            PaycardDialogs::validateVoid($request, $response, $lineitem, 1);
+            $d->validateVoid($request, $response, $lineitem, 1);
         } catch (Exception $ex) {}
     }
 

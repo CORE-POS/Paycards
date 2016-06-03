@@ -30,7 +30,15 @@ if (!class_exists("AutoLoader")) include_once(realpath(dirname(__FILE__).'/../..
 define('AUTHDOTNET_LOGIN','6Jc5c8QcB');
 define('AUTHDOTNET_TRANS_KEY','68j46u5S3RL4CCbX');
 
-class AuthorizeDotNet extends BasicCCModule {
+class AuthorizeDotNet extends BasicCCModule 
+{
+
+    private $pmod;
+    public function __construct()
+    {
+        $this->pmod = new PaycardModule();
+        $this->pmod->setDialogs(new PaycardDialogs());
+    }
 
     function handlesType($type){
         if ($type == PaycardLib::PAYCARD_TYPE_CREDIT) return True;
@@ -40,14 +48,14 @@ class AuthorizeDotNet extends BasicCCModule {
     function entered($validate,$json)
     {
         $this->trans_pan['pan'] = CoreLocal::get("paycard_PAN");
-        return PaycardModule::ccEntered($this->trans_pan['pan'], $validate, $json);
+        return $this->pmod->ccEntered($this->trans_pan['pan'], $validate, $json);
     }
 
     function paycard_void($transID,$laneNo=-1,$transNo=-1,$json=array()) 
     {
         $this->voidTrans = "";
         $this->voidRef = "";
-        return PaycardModule::ccVoid($transID, $laneNo, $transNo, $json);
+        return $this->pmod->ccVoid($transID, $laneNo, $transNo, $json);
     }
 
     function handleResponse($authResult)
@@ -93,7 +101,7 @@ class AuthorizeDotNet extends BasicCCModule {
             $response->saveResponse();
         } catch (Exception $ex) { }
 
-        $comm = PaycardModule::commError($authResult);
+        $comm = $this->pmod->commError($authResult);
         if ($comm !== false) {
             TransRecord::addcomment('');
             return $comm;
