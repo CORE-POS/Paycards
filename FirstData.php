@@ -76,6 +76,22 @@ class FirstData extends BasicCCModule
         return $this->pmod->ccVoid($transID, $laneNo, $transNo, $json);
     }
 
+    private function statusToCode($statusMsg)
+    {
+        switch (strtoupper($statusMsg)) {
+            case 'APPROVED':
+                return 1;
+            case 'DECLINED':
+            case 'FRAUD':
+                return 2;
+            case 'FAILED':
+            case 'DUPLICATE':
+                return 0;
+        } 
+
+        return 4;
+    }
+
     protected function handleResponseAuth($authResult)
     {
         $innerXml = $this->desoapify("SOAP-ENV:Body",$authResult['response']);
@@ -85,17 +101,7 @@ class FirstData extends BasicCCModule
         $response = new PaycardResponse($request, $authResult);
 
         $statusMsg = $xml->get("fdggwsapi:TransactionResult");
-        $responseCode = 4;
-        switch(strtoupper($statusMsg)){
-        case 'APPROVED':
-            $responseCode=1; break;
-        case 'DECLINED':
-        case 'FRAUD':
-            $responseCode=2; break;
-        case 'FAILED':
-        case 'DUPLICATE':
-            $responseCode=0; break;
-        }
+        $responseCode = $this->statusToCode($statusMsg);
         $response->setResponseCode($responseCode);
         // aren't two separate codes from goemerchant
         $resultCode = $responseCode;
@@ -119,7 +125,7 @@ class FirstData extends BasicCCModule
             return $comm;
         }
 
-        switch ($responseCode){
+        switch ($responseCode) {
             case 1: // APPROVED
                 return PaycardLib::PAYCARD_ERR_OK;
             case 2: // DECLINED
@@ -200,15 +206,12 @@ class FirstData extends BasicCCModule
         $cardExY = substr(CoreLocal::get("paycard_exp"),2,2);
         $cardTr1 = CoreLocal::get("paycard_tr1");
         $cardTr2 = CoreLocal::get("paycard_tr2");
-        $cardTr3 = CoreLocal::get("paycard_tr3");
         $request->setCardholder(CoreLocal::get("paycard_name"));
-        $cvv2 = CoreLocal::get("paycard_cvv2");
 
         if (CoreLocal::get("training") == 1){
             $cardPAN = "4111111111111111";
             $cardIssuer = "Visa";
-            $cardTr1 = False;
-            $cardTr2 = False;
+            $cardTr1 = $cardTr2 = false;
             $request->setCardholder("Just Testing");
             $nextyear = mktime(0,0,0,date("m"),date("d"),date("Y")+1);
             $cardExM = date("m",$nextyear);
@@ -234,10 +237,6 @@ class FirstData extends BasicCCModule
             $sendTr2 = 1;
             $magstripe .= ";".$cardTr2."?";
         }
-        if ($cardTr2 && $cardTr3){
-            $sendPAN = 1;
-            $magstripe .= ";".$cardTr3."?";
-        }
         $request->setSent($sendPAN, $sendExp, $sendTr1, $sendTr2);
 
         try {
@@ -252,26 +251,24 @@ class FirstData extends BasicCCModule
         $xml = '<fdggwsapi:FDGGWSApiOrderRequest  
              xmlns:v1="http://secure.linkpt.net/fdggwsapi/schemas_us/v1" 
               xmlns:fdggwsapi="http://secure.linkpt.net/fdggwsapi/schemas_us/fdggwsapi"> 
-             <v1:Transaction>';
-
-        $xml .= "<v1:CreditCardTxType> 
-               <v1:Type>$mode</v1:Type> 
-              </v1:CreditCardTxType>";
-          $xml .= "<v1:CreditCardData> 
-               <v1:CardNumber>$cardPAN</v1:CardNumber> 
-               <v1:ExpMonth>$cardExM</v1:ExpMonth> 
-               <v1:ExpYear>$cardExY</v1:ExpYear> 
-               <v1:CardCodeValue>$cvv2</v1:CardCodeValue>
-              </v1:CreditCardData>";
-        $xml .= "<v1:Payment>
-            <v1:ChargeTotal>" . $request->formattedAmount() . "</v1:ChargeTotal> 
-            </v1:Payment>";
-        $xml .= "<v1:TransactionDetails>
-            <v1:OrderId>" . $request->refNum . "</v1:OrderId>
-            <v1:Ip>" . filter_input(INPUT_SERVER, 'REMOTE_ADDR') . "</v1:Ip>
-            </v1:TransactionDetails>";
-        $xml .= '</v1:Transaction> 
-            </fdggwsapi:FDGGWSApiOrderRequest>';
+<v1:Transaction>
+    <v1:CreditCardTxType> 
+        <v1:Type>$mode</v1:Type> 
+    </v1:CreditCardTxType>
+    <v1:CreditCardData> 
+        <v1:CardNumber>' . $cardPAN . '</v1:CardNumber> 
+        <v1:ExpMonth>' . $cardExM . '</v1:ExpMonth> 
+        <v1:ExpYear>' . $cardExY . '</v1:ExpYear> 
+    </v1:CreditCardData>
+    <v1:Payment>
+        <v1:ChargeTotal>' . $request->formattedAmount() . '</v1:ChargeTotal> 
+    </v1:Payment>
+    <v1:TransactionDetails>
+        <v1:OrderId>' . $request->refNum . '</v1:OrderId>
+        <v1:Ip>' . filter_input(INPUT_SERVER, 'REMOTE_ADDR') . '</v1:Ip>
+    </v1:TransactionDetails>
+</v1:Transaction> 
+</fdggwsapi:FDGGWSApiOrderRequest>';
 
         $this->GATEWAY = "https://ws.firstdataglobalgateway.com/fdggwsapi/services/order.wsdl";
         if (CoreLocal::get("training") == 1) {
