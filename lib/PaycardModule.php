@@ -24,16 +24,15 @@
 class PaycardModule
 {
     private $dialogs;
-    public function setDialogs($d)
+    public function setDialogs($dialogs)
     {
-        $this->dialogs = $d;
+        $this->dialogs = $dialogs;
     }
 
     public function ccEntered($pan, $validate, $json)
     {
         try {
-            if ($this->dialogs === null) var_dump(debug_backtrace());
-            $enabled = $this->dialogs->enabledCheck();
+            $this->dialogs->enabledCheck();
             // error checks based on processing mode
             switch (CoreLocal::get("paycard_mode")) {
                 case PaycardLib::PAYCARD_MODE_VOID:
@@ -45,7 +44,7 @@ class PaycardModule
 
                 case PaycardLib::PAYCARD_MODE_AUTH:
                     if ($validate) {
-                        $valid = $this->dialogs->validateCard($pan);
+                        $this->dialogs->validateCard($pan);
                     }
                     return PaycardLib::setupAuthJson($json);
             } // switch mode
@@ -69,13 +68,13 @@ class PaycardModule
         if ($laneNo != -1) $lane = $laneNo;
         if ($transNo != -1) $trans = $transNo;
         try {
-            $enabled = $this->dialogs->enabledCheck();
+            $this->dialogs->enabledCheck();
             $request = $this->dialogs->getRequest(array($cashier, $lane, $trans), $transID);
             $response = $this->dialogs->getResponse(array($cashier, $lane, $trans), $transID);
             $lineitem = $this->dialogs->getTenderLine(array($cashier, $lane, $trans), $transID);
-            $valid = $this->dialogs->validateVoid($request, $response, $lineitem, $transID);
+            $this->dialogs->validateVoid($request, $response, $lineitem);
             // look up any previous successful voids
-            $eligible = $this->dialogs->notVoided(array($cashier, $lane, $trans), $transID);
+            $this->dialogs->notVoided(array($cashier, $lane, $trans), $transID);
         } catch (Exception $ex) {
             $json['output'] = $ex->getMessage();
             return $json;
@@ -91,8 +90,8 @@ class PaycardModule
     
         // display FEC code box
         CoreLocal::set("inputMasked",1);
-        $plugin_info = new Paycards();
-        $json['main_frame'] = $plugin_info->pluginUrl().'/gui/paycardboxMsgVoid.php';
+        $pluginInfo = new Paycards();
+        $json['main_frame'] = $pluginInfo->pluginUrl().'/gui/paycardboxMsgVoid.php';
 
         return $json;
     }

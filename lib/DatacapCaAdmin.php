@@ -29,9 +29,9 @@ class DatacapCaAdmin
             return 'English';
         } elseif (CoreLocal::get('PaycardsDatacapMode') == 3) {
             return 'French';
-        } else {
-            return 'English';
         }
+
+        return 'English';
     }
 
     private function basicAdminXml()
@@ -41,14 +41,14 @@ class DatacapCaAdmin
         $operatorID = CoreLocal::get("CashierNo");
         $mcTerminalID = CoreLocal::get('PaycardsTerminalID');
         $refNum = $e2e->refnum(CoreLocal::get('LastID'));
-        $dc_host = CoreLocal::get('PaycardsDatacapLanHost');
-        if (empty($dc_host)) {
-            $dc_host = '127.0.0.1';
+        $dcHost = CoreLocal::get('PaycardsDatacapLanHost');
+        if (empty($dcHost)) {
+            $dcHost = '127.0.0.1';
         }
         $msgXml = '<?xml version="1.0"?'.'>
             <TStream>
             <Transaction>
-            <HostOrIP>'.$dc_host.'</HostOrIP>
+            <HostOrIP>'.$dcHost.'</HostOrIP>
             <MerchantID>'.$termID.'</MerchantID>
             <TerminalID>'.$mcTerminalID.'</TerminalID>
             <OperatorID>'.$operatorID.'</OperatorID>
@@ -100,12 +100,12 @@ class DatacapCaAdmin
         $xml = new BetterXmlData($xml);
 
         $status = $xml->query('/RStream/CmdResponse/CmdStatus');
-        $msg_text = $xml->query('/RStream/CmdResponse/TextResponse');
+        $msgText = $xml->query('/RStream/CmdResponse/TextResponse');
         $printData = $xml->query('/RStream/PrintData/*', true);
 
         $ret = array(
             'status' => $status,
-            'msg-text' => $msg_text,
+            'msg-text' => $msgText,
             'receipt' => $printData,
         );
 

@@ -1211,35 +1211,35 @@ class Test extends PHPUnit_Framework_TestCase
             'voided'=>0,
             'trans_status'=>'',
         );
-        $this->assertEquals(true, $d->validateVoid($request, $response, $lineitem, 1));
+        $this->assertEquals(true, $d->validateVoid($request, $response, $lineitem));
 
         $response['httpCode'] = 500;
         try {
-            $d->validateVoid($request, $response, $lineitem, 1);
+            $d->validateVoid($request, $response, $lineitem);
         } catch (Exception $ex) {}
         $response['httpCode'] = 200;
         $response['xResponseCode'] = 2;
         try {
-            $d->validateVoid($request, $response, $lineitem, 1);
+            $d->validateVoid($request, $response, $lineitem);
         } catch (Exception $ex) {}
         $response['xResponseCode'] = 1;
         $response['xTransactionID'] = 0;
         try {
-            $d->validateVoid($request, $response, $lineitem, 1);
+            $d->validateVoid($request, $response, $lineitem);
         } catch (Exception $ex) {}
         $response['xTransactionID'] = 1;
         $lineitem['trans_type'] = 'I';
         try {
-            $d->validateVoid($request, $response, $lineitem, 1);
+            $d->validateVoid($request, $response, $lineitem);
         } catch (Exception $ex) {}
         $lineitem['trans_type'] = 'T';
         try {
-            $d->validateVoid($request, $response, $lineitem, 1);
+            $d->validateVoid($request, $response, $lineitem);
         } catch (Exception $ex) {}
         $lineitem['trans_type'] = 'T';
         $lineitem['voided'] = 1;
         try {
-            $d->validateVoid($request, $response, $lineitem, 1);
+            $d->validateVoid($request, $response, $lineitem);
         } catch (Exception $ex) {}
     }
 

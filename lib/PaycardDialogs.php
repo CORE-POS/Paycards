@@ -32,9 +32,9 @@ class PaycardDialogs
                                              "Please process credit cards in standalone",
                                              "[clear] to cancel"
             ));
-        } else {
-            return true;
         }
+
+        return true;
     }
 
     public function validateCard($pan, $expirable=true, $luhn=true)
@@ -103,7 +103,7 @@ class PaycardDialogs
         );
     }
 
-    public function getRequest($trans, $id)
+    public function getRequest($trans, $transID)
     {
         $dbTrans = PaycardLib::paycard_db();
         $today = date('Ymd');
@@ -118,7 +118,7 @@ class PaycardDialogs
                     AND empNo=" . $trans[0] . "
                     AND registerNo=" . $trans[1] . "
                     AND transNo=" . $trans[2] . " 
-                    AND transID=" . $id;
+                    AND transID=" . $transID;
         $search = PaycardLib::paycard_db_query($sql, $dbTrans);
         $num = PaycardLib::paycard_db_num_rows($search);
         if ($num < 1) {
@@ -141,7 +141,7 @@ class PaycardDialogs
         return $request;
     }
 
-    public function getResponse($trans, $id)
+    public function getResponse($trans, $transID)
     {
         $dbTrans = PaycardLib::paycard_db();
         $today = date('Ymd');
@@ -155,7 +155,7 @@ class PaycardDialogs
                     AND empNo=" . $trans[0] . "
                     AND registerNo=" . $trans[1] ."
                     AND transNo=" . $trans[2] . "
-                    AND transID=" . $id;
+                    AND transID=" . $transID;
         $search = PaycardLib::paycard_db_query($sql, $dbTrans);
         $num = PaycardLib::paycard_db_num_rows($search);
 
@@ -178,21 +178,20 @@ class PaycardDialogs
         return $response;
     }
 
-    public function getTenderLine($trans, $id)
+    public function getTenderLine($trans, $transID)
     {
         $dbTrans = PaycardLib::paycard_db();
-        $today = date('Ymd');
         // look up the transaction tender line-item
         $sql = "SELECT trans_type,
                     trans_subtype,
                     trans_status,
                     voided
                 FROM localtemptrans 
-                WHERE trans_id=" . $id;
+                WHERE trans_id=" . $transID;
         $search = PaycardLib::paycard_db_query($sql, $dbTrans);
         $num = PaycardLib::paycard_db_num_rows($search);
         if ($num < 1) {
-            $sql = "SELECT * FROM localtranstoday WHERE trans_id=".$id." and emp_no=".$trans[0]
+            $sql = "SELECT * FROM localtranstoday WHERE trans_id=".$transID." and emp_no=".$trans[0]
                 ." and register_no=".$trans[1]." and trans_no=".$trans[2]
                 ." AND datetime >= " . $dbTrans->curdate();
             $search = PaycardLib::paycard_db_query($sql, $dbTrans);
@@ -217,7 +216,7 @@ class PaycardDialogs
         return $lineitem;
     }
 
-    public function notVoided($trans, $id)
+    public function notVoided($trans, $transID)
     {
         $dbTrans = PaycardLib::paycard_db();
         $today = date('Ymd');
@@ -227,7 +226,7 @@ class PaycardDialogs
                     AND empNo=" . $trans[0] . "
                     AND registerNo=" . $trans[1] . "
                     AND transNo=" . $trans[2] . "
-                    AND transID=" . $id . "
+                    AND transID=" . $transID . "
                     AND transType='VOID'
                     AND xResultCode=1";
         $search = PaycardLib::paycard_db_query($sql, $dbTrans);
@@ -239,9 +238,9 @@ class PaycardDialogs
                                                          "Card transaction already voided",
                                                          "[clear] to cancel"
             ));
-        } else {
-            return true;
         }
+
+        return true;
     }
 
     private function voidReqResp($request, $response)
@@ -262,12 +261,12 @@ class PaycardDialogs
         return $error;
     }
 
-    private function voidLineItem($lineitem, $id)
+    private function voidLineItem($lineitem)
     {
         $error = false;
         if ($lineitem['trans_type'] != "T" || ($lineitem['trans_subtype'] != "CC" && $lineitem['trans_subtype'] != 'DC'
             && $lineitem['trans_subtype'] != 'EF' && $lineitem['trans_subtype'] != 'EC' && $lineitem['trans_subtype'] != 'AX') ) {
-            $error = _("Authorization and tender records do not match ") . $id;
+            $error = _("Authorization and tender records do not match ");
         } elseif ($lineitem['trans_status'] == "V" || $lineitem['voided'] != 0) {
             $error = _("Void records do not match");
         }
@@ -275,22 +274,22 @@ class PaycardDialogs
         return $error;
     }
 
-    public function validateVoid($request, $response, $lineitem, $id)
+    public function validateVoid($request, $response, $lineitem)
     {
         // make sure the payment is applicable to void
-        $err_header = _('Unable to Void');
+        $errHeader = _('Unable to Void');
         $buttons = _('[clear] to cancel');
         $error = $this->voidReqResp($request, $response);
         if ($error === false) {
-            $error = $this->voidLineItem($lineitem, $id);
+            $error = $this->voidLineItem($lineitem);
         }
 
         if ($error !== false) {
             throw new Exception(PaycardLib::paycard_errBox(PaycardLib::PAYCARD_TYPE_CREDIT,
-                              $err_header, $error, $buttons));
-        } else {
-            return true;
+                              $errHeader, $error, $buttons));
         }
+
+        return true;
     }
 }
 

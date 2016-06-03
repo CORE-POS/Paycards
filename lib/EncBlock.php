@@ -106,14 +106,14 @@ class EncBlock
         return $ret;
     }
 
-    private function decodeTrack1($str, $pos, $kl, $ret)
+    private function decodeTrack1($str, $pos, $keyLen, $ret)
     {
         // read name and masked PAN from track 1
         $caret = strpos($str,"5E",$pos);
         $pan = substr($str,$pos,$caret-$pos);
         $pan = substr($pan,4); // remove leading %*
         $caret2 = strpos($str,"5E",$caret+2);
-        if ($caret2 < ($pos + ($kl*2))) { // still in track 1
+        if ($caret2 < ($pos + ($keyLen*2))) { // still in track 1
             $name = substr($str,$caret+2,$caret2-$caret-2);
             $ret['Name'] = $this->dehexify($name);    
         }
@@ -124,7 +124,7 @@ class EncBlock
         return $ret;
     }
 
-    private function decodeTrack2($str, $pos, $kl, $ret)
+    private function decodeTrack2($str, $pos, $ret)
     {
         $equal = strpos($str,"3D",$pos);
         $pan = substr($str,$pos,$equal-$pos);
@@ -136,9 +136,9 @@ class EncBlock
         return $ret;
     }
 
-    private function parseTrack1($str, $pos, $kl, $ret)
+    private function parseTrack1($str, $pos, $keyLen, $ret)
     {
-        $tr1 = substr($str, $pos, $kl);
+        $tr1 = substr($str, $pos, $keyLen);
         $pieces = explode('^', $tr1);
         if (isset($pieces[1])) {
             $ret['Name'] = $pieces[1];
@@ -150,9 +150,9 @@ class EncBlock
         return $ret;
     }
 
-    private function parseTrack2($str, $pos, $kl, $ret)
+    private function parseTrack2($str, $pos, $keyLen, $ret)
     {
-        $tr2 = substr($str, $pos, $kl);
+        $tr2 = substr($str, $pos, $keyLen);
         $pieces = explode('=', $tr2);
         $pan = str_replace('*', '0', substr($pieces[0],1));
         $ret['Last4'] = substr($pan,-4);
@@ -164,7 +164,7 @@ class EncBlock
     private function idtechBlock($str, $ret)
     {
         // read track length from block
-        $track_length = array(
+        $trackLength = array(
             1 => hexdec(substr($str,10,2)),
             2 => hexdec(substr($str,12,2)),
             3 => hexdec(substr($str,14,2))
@@ -175,43 +175,43 @@ class EncBlock
         // skip to track data start point
         $pos = 20;
         // move through masked track data
-        foreach ($track_length as $num=>$kl) {
-            if ($num == 1 && $kl > 0) {
+        foreach ($trackLength as $num=>$keyLen) {
+            if ($num == 1 && $keyLen > 0) {
                 if ($decoded) {
-                    $ret = $this->parseTrack1($str, $pos, $kl, $ret);
+                    $ret = $this->parseTrack1($str, $pos, $keyLen, $ret);
                 } else {
-                    $ret = $this->decodeTrack1($str, $pos, $kl, $ret);
+                    $ret = $this->decodeTrack1($str, $pos, $keyLen, $ret);
                 }
-            } elseif ($num == 2 && $kl > 0) {
+            } elseif ($num == 2 && $keyLen > 0) {
                 if ($decoded) {
-                    $ret = $this->parseTrack2($str, $pos, $kl, $ret);
+                    $ret = $this->parseTrack2($str, $pos, $keyLen, $ret);
                 } else {
-                    $ret = $this->decodeTrack2($str, $pos, $kl, $ret);
+                    $ret = $this->decodeTrack2($str, $pos, $ret);
                 }
             }
-            $pos += ($decoded ? $kl : $kl*2);
+            $pos += ($decoded ? $keyLen : $keyLen*2);
         }
 
         // mercury rejects track 1
-        if ($track_length[1] > 0) {
-            while($track_length[1] % 8 != 0) $track_length[1]++;
+        if ($trackLength[1] > 0) {
+            while($trackLength[1] % 8 != 0) $trackLength[1]++;
             // cannot send back track 1
-            //$ret['Block'] = substr($str,$pos,$track_length[1]*2);
-            $pos += ($track_length[1]*2);
+            //$ret['Block'] = substr($str,$pos,$trackLength[1]*2);
+            $pos += ($trackLength[1]*2);
         }
 
         // read encrypted track 2
-        if ($track_length[2] > 0) {
-            while($track_length[2] % 8 != 0) $track_length[2]++;
-            $ret['Block'] = substr($str,$pos,$track_length[2]*2);
-            $pos += ($track_length[2]*2);
+        if ($trackLength[2] > 0) {
+            while($trackLength[2] % 8 != 0) $trackLength[2]++;
+            $ret['Block'] = substr($str,$pos,$trackLength[2]*2);
+            $pos += ($trackLength[2]*2);
         }
 
         // move past hash 1 if present, hash 2 if present
-        if ($track_length[1] > 0) {
+        if ($trackLength[1] > 0) {
             $pos += (20*2);
         }
-        if ($track_length[2] > 0) {
+        if ($trackLength[2] > 0) {
             $pos += (20*2);
         }
 
@@ -246,14 +246,14 @@ class EncBlock
                 $ret['Name'] = $pieces[1];
             }
         } elseif ($track2 !== false) {
-            list($start, $end) = explode('=', $track2, 2);
+            list($start, ) = explode('=', $track2, 2);
             $masked = ltrim($start, ';');
             $ret['Issuer'] = PaycardLib::paycard_issuer($masked);
             $ret['Last4'] = substr($masked, -4);
         }
 
         if (strstr($track3, ';')) {
-            list($e2e, $actual_track3) = explode(';', $track3, 2);
+            list($e2e, ) = explode(';', $track3, 2);
             $track3 = $e2e;
         }
 
@@ -288,15 +288,15 @@ class EncBlock
     /*
       Utility. Convert hex string to ascii characters
     */
-    private function dehexify($in)
+    private function dehexify($input)
     {
         // must be two characters per digit
-        if (strlen($in) % 2 != 0) {
+        if (strlen($input) % 2 != 0) {
             return false;
         }
         $ret = "";
-        for ($i=0;$i<strlen($in);$i+=2) {
-            $ret .= chr(hexdec(substr($in,$i,2)));
+        for ($i=0;$i<strlen($input);$i+=2) {
+            $ret .= chr(hexdec(substr($input,$i,2)));
         }
 
         return $ret;
