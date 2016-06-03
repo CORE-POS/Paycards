@@ -76,18 +76,14 @@ class FirstData extends BasicCCModule
         return $this->pmod->ccVoid($transID, $laneNo, $transNo, $json);
     }
 
-    function handleResponseAuth($authResult)
+    protected function handleResponseAuth($authResult)
     {
-        $inner_xml = $this->desoapify("SOAP-ENV:Body",$authResult['response']);
-        $xml = new xmlData($inner_xml);
+        $innerXml = $this->desoapify("SOAP-ENV:Body",$authResult['response']);
+        $xml = new xmlData($innerXml);
         $request = $this->last_request;
         $this->last_paycard_transaction_id = $request->last_paycard_transaction_id;
         $response = new PaycardResponse($request, $authResult);
-        $dbTrans = PaycardLib::paycard_db();
 
-        $cvv2 = CoreLocal::get("paycard_cvv2");
-
-        $validResponse = ($xml->isValid()) ? 1 : 0;
         $statusMsg = $xml->get("fdggwsapi:TransactionResult");
         $responseCode = 4;
         switch(strtoupper($statusMsg)){
@@ -139,7 +135,7 @@ class FirstData extends BasicCCModule
         return PaycardLib::PAYCARD_ERR_PROC;
     }
 
-    function handleResponseVoid($authResult){
+    protected function handleResponseVoid($authResult){
         throw new Exception('Void not implemented');
     }
 
@@ -150,14 +146,14 @@ class FirstData extends BasicCCModule
             // cast to string. tender function expects string input
             // numeric input screws up parsing on negative values > $0.99
             $amt = "".(-1*(CoreLocal::get("paycard_amount")));
-            $t_type = 'CC';
+            $tType = 'CC';
             if (CoreLocal::get('paycard_issuer') == 'American Express')
-                $t_type = 'AX';
+                $tType = 'AX';
             // if the transaction has a non-zero PaycardTransactionID,
             // include it in the tender line
-            $record_id = $this->last_paycard_transaction_id;
-            $charflag = ($record_id != 0) ? 'PT' : '';
-            TransRecord::addFlaggedTender("Credit Card", $t_type, $amt, $record_id, $charflag);
+            $recordID = $this->last_paycard_transaction_id;
+            $charflag = ($recordID != 0) ? 'PT' : '';
+            TransRecord::addFlaggedTender("Credit Card", $tType, $amt, $recordID, $charflag);
             CoreLocal::set("boxMsg","<b>Approved</b><font size=-1><p>Please verify cardholder signature<p>[enter] to continue<br>\"rp\" to reprint slip<br>[void] to cancel and void</font>");
             if (CoreLocal::get("paycard_amount") <= CoreLocal::get("CCSigLimit") && CoreLocal::get("paycard_amount") >= 0){
                 CoreLocal::set("boxMsg","<b>Approved</b><font size=-1><p>No signature required<p>[enter] to continue<br>[void] to cancel and void</font>");
@@ -178,16 +174,16 @@ class FirstData extends BasicCCModule
     {
         switch($type){
         case PaycardLib::PAYCARD_MODE_AUTH: 
-            return $this->send_auth();
+            return $this->sendAuth();
         case PaycardLib::PAYCARD_MODE_VOID: 
-            return $this->send_void(); 
+            return $this->sendVoid(); 
         default:
             PaycardLib::paycard_reset();
             return $this->setErrorMsg(0);
         }
     }    
 
-    function send_auth()
+    protected function sendAuth()
     {
         $dbTrans = PaycardLib::paycard_db();
         if( !$dbTrans){
@@ -210,7 +206,6 @@ class FirstData extends BasicCCModule
 
         if (CoreLocal::get("training") == 1){
             $cardPAN = "4111111111111111";
-            $cardPANmasked = "xxxxxxxxxxxxTEST";
             $cardIssuer = "Visa";
             $cardTr1 = False;
             $cardTr2 = False;
@@ -295,13 +290,12 @@ class FirstData extends BasicCCModule
         return $this->curlSend($soaptext,'SOAP',True,$extraCurlSetup);
     }
 
-    var $void_trans;
-    var $void_ref;
-    function send_void($amt,$pan,$exp){
+    protected function sendVoid()
+    {
         throw new Exception('Void not implemented');
     }
 
-    function refnum($transID)
+    public function refnum($transID)
     {
         $transNo   = (int)CoreLocal::get("transno");
         $cashierNo = (int)CoreLocal::get("CashierNo");
@@ -329,7 +323,7 @@ class FirstData extends BasicCCModule
       @param $namespace include an xmlns attribute
       @return soap string
     */
-    function soapify($action,$objs,$namespace="",$encode_tags=True){
+    public function soapify($action,$objs,$namespace="",$encode_tags=True){
         $ret = "<?xml version=\"1.0\"?>
             <SOAP-ENV:Envelope";
         foreach ($this->SOAP_ENVELOPE_ATTRS as $attr){

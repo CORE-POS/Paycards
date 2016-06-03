@@ -136,9 +136,9 @@ class BasicCCModule
         if (isset($this->sendByType[$type])) {
             $method = $this->sendByType[$type];
             return $this->$method();
-        } else {
-            return $this->setErrorMsg(0);
         }
+
+        return $this->setErrorMsg(0);
     }
 
     /**
@@ -244,24 +244,24 @@ class BasicCCModule
      This function calls the handleResponse method
      and returns the result of that call.
      */
-    function curlSend($data=False,$type='POST',$xml=False, $extraOpts=array(), $auto_handle=true)
+    function curlSend($data=False,$type='POST',$xml=False, $extraOpts=array(), $autoHandle=true)
     {
         if($data && $type == 'GET') {
             $this->GATEWAY .= $data;
         }
 
-        $curl_handle = curl_init($this->GATEWAY);
+        $curlObj = curl_init($this->GATEWAY);
 
-        curl_setopt($curl_handle, CURLOPT_HEADER, 0);
-        curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($curl_handle, CURLOPT_CONNECTTIMEOUT,15);
-        curl_setopt($curl_handle, CURLOPT_FAILONERROR,false);
-        curl_setopt($curl_handle, CURLOPT_FOLLOWLOCATION,false);
-        curl_setopt($curl_handle, CURLOPT_FRESH_CONNECT,true);
-        curl_setopt($curl_handle, CURLOPT_TIMEOUT,30);
-        curl_setopt($curl_handle, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($curlObj, CURLOPT_HEADER, 0);
+        curl_setopt($curlObj, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($curlObj, CURLOPT_CONNECTTIMEOUT,15);
+        curl_setopt($curlObj, CURLOPT_FAILONERROR,false);
+        curl_setopt($curlObj, CURLOPT_FOLLOWLOCATION,false);
+        curl_setopt($curlObj, CURLOPT_FRESH_CONNECT,true);
+        curl_setopt($curlObj, CURLOPT_TIMEOUT,30);
+        curl_setopt($curlObj, CURLOPT_SSL_VERIFYPEER, 0);
         if (MiscLib::win32()) {
-            curl_setopt($curl_handle, CURLOPT_CAINFO, LOCAL_CERT_PATH);
+            curl_setopt($curlObj, CURLOPT_CAINFO, LOCAL_CERT_PATH);
         }
 
         if ($type == 'SOAP') {
@@ -270,24 +270,24 @@ class BasicCCModule
                 $headers[] = "SOAPAction: ".$this->SOAPACTION;
             }
             $headers[] = "Content-type: text/xml";
-            curl_setopt($curl_handle, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($curlObj, CURLOPT_HTTPHEADER, $headers);
         } elseif ($xml) {
-            curl_setopt($curl_handle, CURLOPT_HTTPHEADER,
+            curl_setopt($curlObj, CURLOPT_HTTPHEADER,
                 array("Content-type: text/xml"));
         }
 
         foreach ($extraOpts as $opt => $value) {
-            curl_setopt($curl_handle, $opt, $value);
+            curl_setopt($curlObj, $opt, $value);
         }
 
         if ($data && ($type == 'POST' || $type == 'SOAP')) {
-            curl_setopt($curl_handle, CURLOPT_POSTFIELDS, $data);
+            curl_setopt($curlObj, CURLOPT_POSTFIELDS, $data);
         }
 
         set_time_limit(60);
 
         if (!defined('MOCK_ALL_REQUESTS')) {
-            $response = curl_exec($curl_handle);
+            $response = curl_exec($curlObj);
 
             if ($type == "SOAP") {
                 $response = str_replace("&lt;","<",$response);
@@ -295,11 +295,11 @@ class BasicCCModule
             }
 
             $funcReturn = array(
-                'curlErr' => curl_errno($curl_handle),
-                'curlErrText' => curl_error($curl_handle),
-                'curlTime' => curl_getinfo($curl_handle,
+                'curlErr' => curl_errno($curlObj),
+                'curlErrText' => curl_error($curlObj),
+                'curlTime' => curl_getinfo($curlObj,
                         CURLINFO_TOTAL_TIME),
-                'curlHTTP' => curl_getinfo($curl_handle,
+                'curlHTTP' => curl_getinfo($curlObj,
                         CURLINFO_HTTP_CODE),
                 'response' => $response
             );
@@ -309,26 +309,26 @@ class BasicCCModule
                 'curlErrText' => '',
                 'curlTime' => 0,
                 'curlHTTP' => 200,
-                'response' => self::$mock_response,
+                'response' => self::$mockResponse,
             );
         }
 
         // request sent; get rid of PAN info
         $this->setPAN(array());
 
-        curl_close($curl_handle);
+        curl_close($curlObj);
 
-        if ($auto_handle) {
+        if ($autoHandle) {
             return $this->handleResponse($funcReturn);
-        } else {
-            return $funcReturn;
         }
+
+        return $funcReturn;
     }
 
-    private static $mock_response = '';
-    public static function mockResponse($m)
+    private static $mockResponse = '';
+    public static function mockResponse($mock)
     {
-        self::$mock_response = $m;
+        self::$mockResponse = $mock;
     }
 
     /** 
@@ -349,9 +349,9 @@ class BasicCCModule
         if (isset($this->respondByType[$mode])) {
             $method = $this->respondByType[$mode];
             return $this->$method($response);
-        } else {
-            return false;
         }
+
+        return false;
     }
 
     /**
@@ -551,9 +551,9 @@ class BasicCCModule
       before calling doSend and expunged again once
       the request has been submitted to the gateway.
     */
-    public function setPAN($in)
+    public function setPAN($input)
     {
-        $this->trans_pan = $in;
+        $this->trans_pan = $input;
     }
 }
 
