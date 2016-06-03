@@ -2,7 +2,7 @@
 
 class CardReader
 {
-    private $bin_ranges = array(
+    private $binRanges = array(
         array('min' => 3000000, 'max' => 3099999, 'issuer'=> "Diners Club", 'accepted'=>false),
         array('min'=>3400000, 'max'=>3499999, 'issuer'=>"American Express",'accepted'=>true),
         array('min'=>3528000, 'max'=>3589999, 'issuer'=>"JCB",       'accepted'=>true), // Japan Credit Bureau, accepted via Discover
@@ -82,16 +82,16 @@ class CardReader
         array('min'=>6100980, 'max'=>6100989,  'issuer'=>"EBT (TX)",   'accepted'=>'ebt'),
     );
 
-    private function identifyBin($bin_range, $iin, $ebt_accept)
+    private function identifyBin($binRange, $iin, $ebtAccept)
     {
         $accepted = true;
         $issuer = 'Unknown';
-        foreach ($bin_range as $range) {
+        foreach ($binRange as $range) {
             if ($iin >= $range['min'] && $iin <= $range['max']) {
                 $issuer = $range['issuer'];
                 $accepted = $range['accepted'];
                 if ($accepted === 'ebt') {
-                    $accepted = $ebt_accept;
+                    $accepted = $ebtAccept;
                 }
                 break;
             }
@@ -133,17 +133,17 @@ class CardReader
         $issuer = "Unknown";
         $type = PaycardLib::PAYCARD_TYPE_UNKNOWN;
         $accepted = false;
-        $ebt_accept = true;
+        $ebtAccept = true;
         $test = false;
         if ($len >= 13 && $len <= 16) {
             $type = PaycardLib::PAYCARD_TYPE_CREDIT;
-            list($accepted, $issuer) = $this->identifyBin($this->bin_ranges, $iin, $ebt_accept);
+            list($accepted, $issuer) = $this->identifyBin($this->binRanges, $iin, $ebtAccept);
         } elseif ($len == 18) {
-            if(      $iin>=6008900 && $iin<=6008909) { $issuer="EBT (CT)";   $accepted=$ebt_accept; }
-            else if( $iin>=6008750 && $iin<=6008759) { $issuer="EBT (MA)";   $accepted=$ebt_accept; }
+            if(      $iin>=6008900 && $iin<=6008909) { $issuer="EBT (CT)";   $accepted=$ebtAccept; }
+            elseif( $iin>=6008750 && $iin<=6008759) { $issuer="EBT (MA)";   $accepted=$ebtAccept; }
         } elseif ($len == 19) {
             $type = PaycardLib::PAYCARD_TYPE_GIFT;
-            list($accepted, $issuer) = $this->identifyBin($this->bin19s, $iin, $ebt_accept);
+            list($accepted, $issuer) = $this->identifyBin($this->bin19s, $iin, $ebtAccept);
         } elseif (substr($pan,0,8) == "02E60080" || substr($pan, 0, 5) == "23.0%" || substr($pan, 0, 5) == "23.0;") {
             $type = PaycardLib::PAYCARD_TYPE_ENCRYPTED;
             $accepted = true;
@@ -207,15 +207,15 @@ class CardReader
                 if (substr($track,1,1) != 'B') {  // payment cards must have format code 'B'
                     $weirdTr1 = substr($track,1);
                     //return -1; // unknown track1 format code
-                } else if( $tr1 === false) {
+                } elseif ($tr1 === false) {
                     $tr1 = substr($track,1);
                 } else {
                     throw new Exception(-2); // there should only be one track with the track1 start-sentinel
                 }
-            } else if( substr($track,0,1) == ';') {  // track2/3 start sentinel
-                if( $tr2 === false) {
+            } elseif (substr($track,0,1) == ';') {  // track2/3 start sentinel
+                if ($tr2 === false) {
                     $tr2 = substr($track,1);
-                } else if( $tr3 === false) {
+                } elseif ($tr3 === false) {
                     $tr3 = substr($track,1);
                 } else {
                     throw new Exception(-3); // there should only be one or two tracks with the track2/3 start-sentinel
@@ -240,9 +240,9 @@ class CardReader
         $pan = substr($tr1a[0],1);
         $exp = substr($tr1a[2],2,2) . substr($tr1a[2],0,2); // month and year are reversed on the track data
         $tr1name = explode('/', $tr1a[1]);
-        if( count($tr1name) == 1) {
+        if (count($tr1name) == 1) {
             $name = trim($tr1a[1]);
-        } else {
+        } elseif (count($tr1name) > 1) {
             $name = "";
             for( $x=1; isset($tr1name[$x]); $x++)
                 $name .= trim($tr1name[$x]) . " ";
