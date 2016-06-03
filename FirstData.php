@@ -211,7 +211,6 @@ class FirstData extends BasicCCModule
 
         if ($this->conf->get("training") == 1){
             $cardPAN = "4111111111111111";
-            $cardIssuer = "Visa";
             $cardTr1 = $cardTr2 = false;
             $request->setCardholder("Just Testing");
             $nextyear = mktime(0,0,0,date("m"),date("d"),date("Y")+1);
@@ -254,7 +253,7 @@ class FirstData extends BasicCCModule
               xmlns:fdggwsapi="http://secure.linkpt.net/fdggwsapi/schemas_us/fdggwsapi"> 
 <v1:Transaction>
     <v1:CreditCardTxType> 
-        <v1:Type>$mode</v1:Type> 
+        <v1:Type>' . $mode . '</v1:Type> 
     </v1:CreditCardTxType>
     <v1:CreditCardData> 
         <v1:CardNumber>' . $cardPAN . '</v1:CardNumber> 
