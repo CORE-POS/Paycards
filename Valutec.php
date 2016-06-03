@@ -31,7 +31,6 @@ if (!class_exists("PaycardLib")) include_once(realpath(dirname(__FILE__)."/lib/P
 
 class Valutec extends BasicCCModule 
 {
-    private $temp;
     private $pmod;
     private $dialogs;
     public function __construct()
@@ -52,9 +51,8 @@ class Valutec extends BasicCCModule
     {
         if ($type == PaycardLib::PAYCARD_TYPE_GIFT) {
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     /* entered($validate)
@@ -66,19 +64,19 @@ class Valutec extends BasicCCModule
     public function entered($validate,$json)
     {
         try {
-            $enabled = $this->dialogs->enabledCheck();
+            $this->dialogs->enabledCheck();
             // error checks based on processing mode
             if ($this->conf->get("paycard_mode") == PaycardLib::PAYCARD_MODE_VOID) {
                 // use the card number to find the trans_id
                 $pan4 = substr($this->getPAN(), -4);
                 $trans = array($this->conf->get('CashierNo'), $this->conf->get('laneno'), $this->conf->get('transno'));
                 $result = $this->dialogs->voidableCheck($pan4, $trans);
-                return $this->paycard_void($result,-1,-1,$json);
+                return $this->paycardVoid($result,-1,-1,$json);
             }
 
             // check card data for anything else
             if ($validate) {
-                $valid = $this->dialogs->validateCard($this->conf->get('paycard_PAN'), false);
+                $this->dialogs->validateCard($this->conf->get('paycard_PAN'), false);
             }
         } catch (Exception $ex) {
             $json['output'] = $ex->getMessage();
@@ -107,11 +105,11 @@ class Valutec extends BasicCCModule
     }
 
     protected $sendByType = array(
-        PaycardLib::PAYCARD_MODE_ACTIVATE => 'send_auth',
-        PaycardLib::PAYCARD_MODE_ADDVALUE => 'send_auth',
-        PaycardLib::PAYCARD_MODE_AUTH => 'send_auth',
-        PaycardLib::PAYCARD_MODE_VOID => 'send_void',
-        PaycardLib::PAYCARD_MODE_BALANCE => 'send_balance',
+        PaycardLib::PAYCARD_MODE_ACTIVATE => 'sendAuth',
+        PaycardLib::PAYCARD_MODE_ADDVALUE => 'sendAuth',
+        PaycardLib::PAYCARD_MODE_AUTH => 'sendAuth',
+        PaycardLib::PAYCARD_MODE_VOID => 'sendVoid',
+        PaycardLib::PAYCARD_MODE_BALANCE => 'sendBalance',
     );
 
     /* cleanup()
@@ -176,12 +174,12 @@ class Valutec extends BasicCCModule
         return $json;
     }
 
-    /* paycard_void($transID)
+    /* paycardVoid($transID)
      * Argument is trans_id to be voided
      * Again, this is for removing type-specific
      * code from paycard*.php files.
      */
-    public function paycard_void($transID,$laneNo=-1,$transNo=-1,$json=array()) 
+    public function paycardVoid($transID,$laneNo=-1,$transNo=-1,$json=array()) 
     {
         $this->voidTrans = "";
         $this->voidRef = "";
@@ -196,7 +194,7 @@ class Valutec extends BasicCCModule
 
     // END INTERFACE METHODS
     
-    protected function send_auth()
+    protected function sendAuth()
     {
         // initialize
         $dbTrans = Database::tDataConnect();
@@ -235,10 +233,9 @@ class Valutec extends BasicCCModule
         $request->setIssuer('Valutec');
         $request->setProcessor('Valutec');
         $request->setMode($logged_mode);
+        $request->setSent(1, 0, 0, 0);
         if ($cardTr2) {
             $request->setSent(0, 0, 0, 1);
-        } else {
-            $request->setSent(1, 0, 0, 0);
         }
         
         try {
@@ -268,7 +265,7 @@ class Valutec extends BasicCCModule
         return $this->curlSend($getData,'GET');
     }
 
-    protected function send_void()
+    protected function sendVoid()
     {
         // initialize
         $dbTrans = Database::tDataConnect();
@@ -278,9 +275,7 @@ class Valutec extends BasicCCModule
         $request = new PaycardVoidRequest($this->valutecIdentifier($this->conf->get('paycard_id')), $dbTrans);
 
         $program = 'Gift'; // valutec also has 'Loyalty' cards which store arbitrary point values
-        $mode = 'void';
         $cardPAN = $this->getPAN();
-        $identifier = date('mdHis'); // the void itself needs a unique identifier, so just use a timestamp minus the year (10 digits only)
         $termID = $this->getTermID();
 
         try {
@@ -291,7 +286,6 @@ class Valutec extends BasicCCModule
         }
         $log = $dbTrans->fetchRow($search);
         $authcode = $log['xAuthorizationCode'];
-        $this->temp = $authcode;
 
         // assemble and send void request
         $vdMethod = 'Void';
@@ -316,7 +310,7 @@ class Valutec extends BasicCCModule
         return $this->curlSend($getData,'GET');
     }
 
-    protected function send_balance()
+    protected function sendBalance()
     {
         // prepare data for the request
         $cashierNo = $this->conf->get("CashierNo");
@@ -390,19 +384,18 @@ class Valutec extends BasicCCModule
                             $balance = trim(urldecode(substr($rawOutput,$begin+9,($end-$begin)-9)));
                         }
                     }       
-                } else if ($balance && $balance !== "") {
+                } elseif ($balance && $balance !== "") {
                     $errorMsg = "NSF, BAL: ".PaycardLib::paycard_moneyFormat($balance);    
                 }
             }
 
             // verify that echo'd fields match our request
+            $validResponse = 4; // response was parsed as XML but fields didn't match
             if ($xml->get('TRANSACTIONTYPE') && $xml->get('TRANSACTIONTYPE') == $program
                 && $xml->get('IDENTIFIER') && $xml->get('IDENTIFIER') == $identifier
                 && $xml->get('AUTHORIZED')
             ) {
                 $validResponse = 1; // response was parsed normally, echo'd fields match, and other required fields are present
-            } else {
-                $validResponse = 4; // response was parsed as XML but fields didn't match
             }
         }
 
@@ -411,13 +404,11 @@ class Valutec extends BasicCCModule
         $resultCode = 0;
         $apprNumber = $xml->get('AUTHORIZATIONCODE');
         $response->setApprovalNum($apprNumber);
-        $rMsg = '';
+        $rMsg = substr($xml->get_first('ERRORMSG'), 0, 100);
         if ($apprNumber != '' && $xml->get('AUTHORIZED') == 'true') {
             $validResponse = 1;
             $resultCode = 1;
             $rMsg = 'Approved';
-        } else {
-            $rMsg = substr($xml->get_first('ERRORMSG'), 0, 100);
         }
         $response->setResultMsg($rMsg);
         $response->setResultCode($resultCode);
@@ -480,11 +471,9 @@ class Valutec extends BasicCCModule
         $this->last_paycard_transaction_id = $request->last_paycard_transaction_id;
         $response = new PaycardResponse($request, $vdResult, PaycardLib::paycard_db());
 
-        $mode = 'void';
-        $authcode = $this->temp;
         $program = "Gift";
 
-        $validResponse = 0;
+        $validResponse = 4; // response was parsed as XML but fields didn't match
         // verify that echo'd fields match our request
         if ($xml->get('TRANSACTIONTYPE') && $xml->get('TRANSACTIONTYPE') == $program
                 && $xml->get('AUTHORIZED')
@@ -492,20 +481,16 @@ class Valutec extends BasicCCModule
                 && $xml->get('BALANCE')
         ) {
             $validResponse = 1; // response was parsed normally, echo'd fields match, and other required fields are present
-        } else {
-            $validResponse = 4; // response was parsed as XML but fields didn't match
         }
 
         $resultCode = 0;
         $apprNumber = $xml->get('AUTHORIZATIONCODE');
         $response->setApprovalNum($apprNumber);
-        $rMsg = '';
+        $rMsg = substr($xml->get_first('ERRORMSG'), 0, 100);
         if ($apprNumber != '' && $xml->get('AUTHORIZED') == 'true') {
             $validResponse = 1;
             $resultCode = 1;
             $rMsg = 'Voided';
-        } else {
-            $rMsg = substr($xml->get_first('ERRORMSG'), 0, 100);
         }
         $response->setResultMsg($rMsg);
         $response->setResultCode($resultCode);
@@ -613,27 +598,24 @@ class Valutec extends BasicCCModule
     {
         if ($this->conf->get("training") == 1) {
             return "45095";
-        } else {
-            return $this->conf->get("gcTermID");
         }
+        return $this->conf->get("gcTermID");
     }
 
     private function getPAN()
     {
         if ($this->conf->get("training") == 1) {
             return "7018525936200000012";
-        } else {
-            return $this->conf->get("paycard_PAN");
         }
+        return $this->conf->get("paycard_PAN");
     }
 
     private function getTrack2()
     {
         if ($this->conf->get("training") == 1) {
             return "7018525936200000012=68893620";
-        } else {
-            return $this->conf->get("paycard_tr2");
         }
+        return $this->conf->get("paycard_tr2");
     }
 }
 

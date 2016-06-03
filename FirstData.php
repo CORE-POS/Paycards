@@ -70,7 +70,7 @@ class FirstData extends BasicCCModule
         return $this->pmod->ccEntered($this->trans_pan['pan'], $validate, $json);
     }
 
-    function paycard_void($transID,$laneNo=-1,$transNo=-1,$json=array()) 
+    function paycardVoid($transID,$laneNo=-1,$transNo=-1,$json=array()) 
     {
         $this->voidTrans = "";
         $this->voidRef = "";

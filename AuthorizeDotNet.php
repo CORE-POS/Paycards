@@ -52,7 +52,7 @@ class AuthorizeDotNet extends BasicCCModule
         return $this->pmod->ccEntered($this->trans_pan['pan'], $validate, $json);
     }
 
-    public function paycard_void($transID,$laneNo=-1,$transNo=-1,$json=array()) 
+    public function paycardVoid($transID,$laneNo=-1,$transNo=-1,$json=array()) 
     {
         $this->voidTrans = "";
         $this->voidRef = "";
@@ -246,13 +246,10 @@ class AuthorizeDotNet extends BasicCCModule
         "x_amount"    => $request->formattedAmount(),
         "x_user_ref"    => $request->refNum
         );
-        if ($this->conf->get("training") == 1)
+        if ($this->conf->get("training") == 1) {
             $postValues["x_test_request"] = "1";
-
-        if ($mode == "refund")
-            $postValues["x_type"] = "CREDIT";
-        else
-            $postValues["x_type"] = "AUTH_CAPTURE";
+        }
+        $postValues["x_type"] = $mode === 'refund' ? "CREDIT" : 'AUTH_CAPTURE';
 
         if ((!$cardTr1 && !$cardTr2) || $mode == "refund"){
             $postValues["x_card_num"] = $cardPAN;
@@ -291,7 +288,6 @@ class AuthorizeDotNet extends BasicCCModule
         $request = new PaycardVoidRequest($this->refnum($this->conf->get('paycard_id')), $dbTrans);
         $request->setProcessor('AuthDotNot');
 
-        $mode = 'void';
         $cardPAN = $this->trans_pan['pan'];
         $request->setPAN($cardPAN);
         $request->setIssuer($this->conf->get("paycard_issuer"));

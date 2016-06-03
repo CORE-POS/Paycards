@@ -67,7 +67,7 @@ class paycardboxMsgVoid extends PaycardProcessPage
             foreach($this->conf->get("RegisteredPaycardClasses") as $rpc){
                 $myObj = new $rpc();
                 if ($myObj->handlesType($this->conf->get("paycard_type"))){
-                    $ret = $myObj->paycard_void($trans_id);
+                    $ret = $myObj->paycardVoid($trans_id);
                     if (isset($ret['output']) && !empty($ret['output'])){
                         $this->conf->set("boxMsg",$ret['output']);
                         $this->change_page($this->page_url."gui-modules/boxMsg2.php");

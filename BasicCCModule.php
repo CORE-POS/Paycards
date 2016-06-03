@@ -35,7 +35,7 @@
   omitted in the subclass, it is strongly 
   recommended that module implement its own:
    - entered()
-   - paycard_void()
+   - paycardVoid()
 
   The rest is utility methods that are often helpful.
  */
@@ -169,7 +169,7 @@ class BasicCCModule
      check the status of the original transaction before
      proceeding.
     */
-    public function paycard_void($transID, $laneNo=-1, $transNo=-1, $json=array())
+    public function paycardVoid($transID, $laneNo=-1, $transNo=-1, $json=array())
     {
         if (!isset($json['output'])) {
             $json['output'] = '';

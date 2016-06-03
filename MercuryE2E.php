@@ -62,9 +62,8 @@ class MercuryE2E extends BasicCCModule
     {
         if ($type == PaycardLib::PAYCARD_TYPE_ENCRYPTED) {
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     /**
@@ -95,7 +94,7 @@ class MercuryE2E extends BasicCCModule
     /**
       Updated for E2E
     */
-    public function paycard_void($transID,$laneNo=-1,$transNo=-1,$json=array()) 
+    public function paycardVoid($transID,$laneNo=-1,$transNo=-1,$json=array()) 
     {
         $this->voidTrans = "";
         $this->voidRef = "";
@@ -1190,14 +1189,12 @@ class MercuryE2E extends BasicCCModule
         if ($this->conf->get("training") == 1) {
             if ($this->conf->get('CacheCardType') == 'EMV') {
                 return '337234005'; // emv
-            } else {
-                return '019588466313922';
-                return '118725340908147'; // newer
             }
+            return '019588466313922';
+            //return '118725340908147'; // newer
             //return "395347308=E2ETKN"; // old test ID
-        } else {
-            return $this->conf->get('MercuryE2ETerminalID');
         }
+        return $this->conf->get('MercuryE2ETerminalID');
     }
 
     /**
@@ -1208,19 +1205,17 @@ class MercuryE2E extends BasicCCModule
     {
         if ($this->conf->get("training") == 1) {
             return 'xyz';
-            return "123E2ETKN";
-        } else {
-            return $this->conf->get('MercuryE2EPassword');
+            //return "123E2ETKN";
         }
+        return $this->conf->get('MercuryE2EPassword');
     }
 
     public function myRefNum($ref)
     {
         if (strlen($ref) == 16 && preg_match('/^[0-9]+$/', $ref)) {
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     public function lookupTransaction($ref, $local, $mode)
@@ -1492,16 +1487,14 @@ class MercuryE2E extends BasicCCModule
           to fail every single transaction isn't ideal.
         */
         if ($this->conf->get('MercurySwitchUrls') > 0) {
+            $domain = self::PRIMARY_URL;
             if (!$this->second_try) {
                 $domain = self::BACKUP_URL;    
-            } else {
-                $domain = self::PRIMARY_URL;
             }
         } else {
+            $domain = self::BACKUP_URL;    
             if (!$this->second_try) {
                 $domain = self::PRIMARY_URL;
-            } else {
-                $domain = self::BACKUP_URL;    
             }
         }
 
@@ -1522,9 +1515,8 @@ class MercuryE2E extends BasicCCModule
     {
         if ($this->conf->get("training") == 1) {
             return "https://w1.mercurydev.net/ws/ws.asmx";
-        } else {
-            return "https://$domain/ws/ws.asmx";
         }
+        return "https://$domain/ws/ws.asmx";
     }
 
     private function getAxHost()

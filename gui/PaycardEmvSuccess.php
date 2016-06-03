@@ -26,12 +26,12 @@ if (!class_exists('AutoLoader')) include_once(dirname(__FILE__).'/../../../lib/A
 
 class PaycardEmvSuccess extends BasicCorePage 
 {
-    private $bmp_path;
+    private $bmpPath;
 
     function preprocess()
     {
         $this->conf = new PaycardConf();
-        $this->bmp_path = $this->page_url . 'scale-drivers/drivers/NewMagellan/ss-output/tmp/';
+        $this->bmpPath = $this->page_url . 'scale-drivers/drivers/NewMagellan/ss-output/tmp/';
 
         // check for input
         if (FormLib::get('reginput', false) !== false) {
@@ -43,7 +43,7 @@ class PaycardEmvSuccess extends BasicCorePage
                 if (file_exists(FormLib::get('bmpfile'))) {
                     $bmp = file_get_contents(FormLib::get('bmpfile'));
                     $format = 'BMP';
-                    $img_content = $bmp;
+                    $imgContent = $bmp;
 
                     $dbc = Database::tDataConnect();
                     $capQ = 'INSERT INTO CapturedSignature
@@ -60,9 +60,9 @@ class PaycardEmvSuccess extends BasicCorePage
                         $this->conf->get('transno'),
                         $this->conf->get('paycard_id'),
                         $format,
-                        $img_content,
+                        $imgContent,
                     );
-                    $capR = $dbc->execute($capP, $args);
+                    $dbc->execute($capP, $args);
 
                     unlink(FormLib::get('bmpfile'));
                     // continue to below. finishing transaction is the same
@@ -76,8 +76,6 @@ class PaycardEmvSuccess extends BasicCorePage
             }
 
             $mode = $this->conf->get("paycard_mode");
-            $type = $this->conf->get("paycard_type");
-            $tender_id = $this->conf->get("paycard_id");
             if( $input == "") { // [enter] exits this screen
                 // remember the mode, type and transid before we reset them
                 $this->conf->set("boxMsg","");
@@ -112,8 +110,8 @@ class PaycardEmvSuccess extends BasicCorePage
                 return false;
             } elseif ($mode == PaycardLib::PAYCARD_MODE_AUTH && $input == "VD" 
                 && ($this->conf->get('CacheCardType') == 'CREDIT' || $this->conf->get('CacheCardType') == 'EMV' || $this->conf->get('CacheCardType') == 'GIFT' || $this->conf->get('CacheCardType') == '')) {
-                $plugin_info = new Paycards();
-                $this->change_page($plugin_info->pluginUrl()."/gui/PaycardEmvVoid.php");
+                $pluginInfo = new Paycards();
+                $this->change_page($pluginInfo->pluginUrl()."/gui/PaycardEmvVoid.php");
 
                 return false;
             }
@@ -167,7 +165,7 @@ class PaycardEmvSuccess extends BasicCorePage
         }
         function parseWrapper(str) {
             if (str.substring(0, 7) == 'TERMBMP') {
-                var fn = '<?php echo $this->bmp_path; ?>' + str.substring(7);
+                var fn = '<?php echo $this->bmpPath; ?>' + str.substring(7);
                 $('<input>').attr({
                     type: 'hidden',
                     name: 'bmpfile',
@@ -218,9 +216,10 @@ class PaycardEmvSuccess extends BasicCorePage
 
     function body_content()
     {
-        $this->input_header("onsubmit=\"return submitWrapper();\" action=\"".$_SERVER['PHP_SELF']."\"");
+        $this->input_header("onsubmit=\"return submitWrapper();\" action=\"".filter_input(INPUT_SERVER, 'PHP_SELF')."\"");
         echo '<div class="baseHeight">';
         if ($this->doSigCapture()) {
+            $reginput = FormLib::get('reginput', false);
             echo "<div id=\"boxMsg\" class=\"centeredDisplay\">";
 
             echo "<div class=\"boxMsgAlert coloredArea\">";
@@ -236,11 +235,11 @@ class PaycardEmvSuccess extends BasicCorePage
             echo '<span id="sigInstructions" style="font-size:90%;">';
             echo '[enter] to get re-request signature, [void] ' . _('to reverse the charge');
             echo '<br />';
-            if (isset($_REQUEST['reginput']) && ($_REQUEST['reginput'] == '' || $_REQUEST['reginput'] == 'CL')) {
+            if ($reginput === '' || $reginput === 'CL') {
                 echo '<b>';
             }
             echo '[reprint] to quit &amp; use paper slip';
-            if (isset($_REQUEST['reginput']) && ($_REQUEST['reginput'] == '' || $_REQUEST['reginput'] == 'CL')) {
+            if ($reginput === '' || $reginput === 'CL') {
                 echo '</b>';
             }
             echo '</span>';
@@ -263,14 +262,14 @@ class PaycardEmvSuccess extends BasicCorePage
         echo DisplayLib::printfooter();
         echo "</div>";
 
-        $rp_type = $this->rpType($this->conf->get('paycard_type'));
+        $rpType = $this->rpType($this->conf->get('paycard_type'));
         if (FormLib::get('receipt') !== '') {
-            $rp_type = FormLib::get('receipt');
+            $rpType = FormLib::get('receipt');
             $this->addOnloadCommand("\$('#reginput').val('RP');\n");
             $this->addOnloadCommand("submitWrapper();\n");
         }
-        $rp_type = $this->rpType($this->conf->get('paycard_type'));
-        printf("<input type=\"hidden\" id=\"rp_type\" value=\"%s\" />",$rp_type);
+        $rpType = $this->rpType($this->conf->get('paycard_type'));
+        printf("<input type=\"hidden\" id=\"rp_type\" value=\"%s\" />",$rpType);
     }
 
     private function rpType($type)

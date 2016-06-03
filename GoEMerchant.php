@@ -64,7 +64,7 @@ class GoEMerchant extends BasicCCModule
         return $this->pmod->ccEntered($this->trans_pan['pan'], $validate, $json);
     }
 
-    public function paycard_void($transID,$laneNo=-1,$transNo=-1,$json=array()) 
+    public function paycardVoid($transID,$laneNo=-1,$transNo=-1,$json=array()) 
     {
         $this->voidTrans = "";
         $this->voidRef = "";
@@ -180,7 +180,6 @@ class GoEMerchant extends BasicCCModule
         $xml = new xmlData($authResult['response']);
         // prepare some fields to store the parsed response; we'll add more as we verify it
         $now = date('Y-m-d H:i:s'); // full timestamp
-        $amount = $this->conf->get("paycard_amount");
 
         $dbTrans = PaycardLib::paycard_db();
         // prepare some fields to store the request and the parsed response; we'll add more as we verify it
@@ -666,11 +665,7 @@ class GoEMerchant extends BasicCCModule
                 $status == 'ERROR';
                 $eMsg = $xmlResp->get_first('ERROR1');
                 $normalized = 3;
-                if ($eMsg) {
-                    $rMsg = substr($eMsg, 0, 100);
-                } else {
-                    $rMsg = 'ERROR';
-                }
+                $rMsg = $eMsg ? substr($eMsg, 0, 100) : 'ERROR';
             } else {
                 $responseCode = -3;
                 $normalized = 0;

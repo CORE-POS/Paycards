@@ -35,9 +35,8 @@ define('MERCURY_GPASSWORD',"");
 
 class MercuryGift extends BasicCCModule 
 {
-    private $temp;
     protected $SOAPACTION = "http://www.mercurypay.com/GiftTransaction";
-    private $second_try;
+    private $secondTry;
     // BEGIN INTERFACE METHODS
 
     private $pmod;
@@ -79,7 +78,7 @@ class MercuryGift extends BasicCCModule
                 $pan4 = substr($this->getPAN(), -4);
                 $trans = array($this->conf->get('CashierNo'), $this->conf->get('laneno'), $this->conf->get('transno'));
                 $result = $this->dialogs->voidableCheck($pan4, $trans);
-                return $this->paycard_void($result,-1,-1,$json);
+                return $this->paycardVoid($result,-1,-1,$json);
             }
 
             // check card data for anything else
@@ -99,13 +98,13 @@ class MercuryGift extends BasicCCModule
             case PaycardLib::PAYCARD_MODE_ADDVALUE:
                 $this->conf->set("paycard_amount",0);
                 $this->conf->set("paycard_id",$this->conf->get("LastID")+1); // kind of a hack to anticipate it this way..
-                $plugin_info = new Paycards();
-                $json['main_frame'] = $plugin_info->pluginUrl().'/gui/paycardboxMsgGift.php';
+                $pluginInfo = new Paycards();
+                $json['main_frame'] = $pluginInfo->pluginUrl().'/gui/paycardboxMsgGift.php';
 
                 return $json;
             case PaycardLib::PAYCARD_MODE_BALANCE:
-                $plugin_info = new Paycards();
-                $json['main_frame'] = $plugin_info->pluginUrl().'/gui/paycardboxMsgBalance.php';
+                $pluginInfo = new Paycards();
+                $json['main_frame'] = $pluginInfo->pluginUrl().'/gui/paycardboxMsgBalance.php';
 
                 return $json;
         } // switch mode
@@ -128,7 +127,7 @@ class MercuryGift extends BasicCCModule
      */
     public function doSend($type)
     {
-        $this->second_try = false;
+        $this->secondTry = false;
         switch($type) {
             case PaycardLib::PAYCARD_MODE_ACTIVATE:
             case PaycardLib::PAYCARD_MODE_ADDVALUE:
@@ -177,11 +176,11 @@ class MercuryGift extends BasicCCModule
                 break;
             case PaycardLib::PAYCARD_MODE_AUTH:
                 $amt = "".(-1*($this->conf->get("paycard_amount")));
-                $record_id = $this->last_paycard_transaction_id;
-                $charflag = ($record_id != 0) ? 'PT' : '';
+                $recordID = $this->last_paycard_transaction_id;
+                $charflag = ($recordID != 0) ? 'PT' : '';
                 $tcode = $this->conf->get('PaycardsTenderCodeGift');
                 $tcode = $tcode == '' ? 'GD' : $tcode;
-                TransRecord::addFlaggedTender("Gift Card", $tcode, $amt, $record_id, $charflag);
+                TransRecord::addFlaggedTender("Gift Card", $tcode, $amt, $recordID, $charflag);
                 $resp = $this->conf->get("paycard_response");
                 $this->conf->set("boxMsg","<b>Approved</b><font size=-1>
                                            <p>Used: $" . $this->conf->get("paycard_amount") . "
@@ -192,8 +191,8 @@ class MercuryGift extends BasicCCModule
                 );
                 break;
             case PaycardLib::PAYCARD_MODE_VOID:
-                $v = new Void();
-                $v->voidid($this->conf->get("paycard_id"), array());
+                $void = new Void();
+                $void->voidid($this->conf->get("paycard_id"), array());
                 $resp = $this->conf->get("paycard_response");
                 $this->conf->set("boxMsg","<b>Voided</b><font size=-1>
                                            <p>New balance: $" . $resp["Balance"] . "
@@ -206,12 +205,12 @@ class MercuryGift extends BasicCCModule
         return $json;
     }
 
-    /* paycard_void($transID)
+    /* paycardVoid($transID)
      * Argument is trans_id to be voided
      * Again, this is for removing type-specific
      * code from paycard*.php files.
      */
-    public function paycard_void($transID,$laneNo=-1,$transNo=-1,$json=array()) 
+    public function paycardVoid($transID,$laneNo=-1,$transNo=-1,$json=array()) 
     {
         $this->voidTrans = "";
         $this->voidRef = "";
@@ -245,27 +244,27 @@ class MercuryGift extends BasicCCModule
         $amountText = number_format(abs($amount), 2, '.', '');
         $mode = "";
         $authMethod = "";
-        $logged_mode = $mode;
+        $loggedMode = $mode;
         switch ($this->conf->get("paycard_mode")) {
             case PaycardLib::PAYCARD_MODE_AUTH:
                 $mode = 'tender';
                 $authMethod = 'NoNSFSale';  
-                $logged_mode = 'Sale';
+                $loggedMode = 'Sale';
                 if ($amount < 0) {
                     $mode = 'refund';
                     $authMethod = 'Return';
-                    $logged_mode = 'Return';
+                    $loggedMode = 'Return';
                 }
                 break;
             case PaycardLib::PAYCARD_MODE_ADDVALUE:
                 $mode = 'addvalue';
                 $authMethod = 'Reload';
-                $logged_mode = 'Reload';
+                $loggedMode = 'Reload';
                 break;
             case PaycardLib::PAYCARD_MODE_ACTIVATE:
                 $mode = 'activate';
                 $authMethod = 'Issue';
-                $logged_mode = 'Issue';
+                $loggedMode = 'Issue';
                 break;
             default:
                 return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND);
@@ -290,7 +289,7 @@ class MercuryGift extends BasicCCModule
                     '%s',     '%s',    %d,   '%s',     '%s',
                     %.2f,  '%s', '%s',  '%s',  %d,     '%s')",
                     $today, $cashierNo, $laneNo, $transNo, $transID,
-                    'MercuryGift', $identifier, $live, 'Gift', $logged_mode,
+                    'MercuryGift', $identifier, $live, 'Gift', $loggedMode,
                     $amountText, $cardPAN,
                     'Mercury', 'Cardholder', $manual, $now);
         $insR = $dbTrans->query($insQ);
@@ -369,7 +368,6 @@ class MercuryGift extends BasicCCModule
         }
         $log = $dbTrans->fetchRow($search);
         $authcode = $log['xAuthorizationCode'];
-        $this->temp = $authcode;
         
         // look up original transaction type
         $sql = "SELECT transType AS mode 
@@ -521,7 +519,6 @@ class MercuryGift extends BasicCCModule
         $dbTrans = Database::tDataConnect();
 
         // prepare data for the request
-        $today = date('Ymd'); // numeric date only, it goes in an 'int' field as part of the primary key
         $now = date('Y-m-d H:i:s'); // full timestamp
         $transID = $this->conf->get("paycard_id");
         $identifier = $this->valutecIdentifier($transID); // valutec allows 10 digits; this uses lanenum-transnum-transid since we send cashiernum in another field
@@ -598,8 +595,8 @@ class MercuryGift extends BasicCCModule
         // check for communication errors (any cURL error or any HTTP code besides 200)
         if ($authResult['curlErr'] != CURLE_OK || $authResult['curlHTTP'] != 200) {
             if ($authResult['curlHTTP'] == '0') {
-                if (!$this->second_try) {
-                    $this->second_try = true;
+                if (!$this->secondTry) {
+                    $this->secondTry = true;
 
                     return $this->sendAuth("w2.backuppay.com");
                 } else {
@@ -665,11 +662,7 @@ class MercuryGift extends BasicCCModule
         $dbTrans = Database::tDataConnect();
 
         // prepare data for the void request
-        $today = date('Ymd'); // numeric date only, it goes in an 'int' field as part of the primary key
         $now = date('Y-m-d H:i:s'); // full timestamp
-        $transID = $this->conf->get("paycard_id");
-        $amount = $this->conf->get("paycard_amount");
-        $authcode = $this->temp;
 
         $validResponse = 0;
         // verify that echo'd fields match our request
@@ -732,8 +725,8 @@ class MercuryGift extends BasicCCModule
 
         if ($vdResult['curlErr'] != CURLE_OK || $vdResult['curlHTTP'] != 200) {
             if ($vdResult['curlHTTP'] == '0'){
-                if (!$this->second_try){
-                    $this->second_try = true;
+                if (!$this->secondTry){
+                    $this->secondTry = true;
 
                     return $this->sendVoid("w2.backuppay.com");
                 } else {
@@ -778,8 +771,8 @@ class MercuryGift extends BasicCCModule
 
         if ($balResult['curlErr'] != CURLE_OK || $balResult['curlHTTP'] != 200) {
             if ($balResult['curlHTTP'] == '0'){
-                if (!$this->second_try) {
-                    $this->second_try = true;
+                if (!$this->secondTry) {
+                    $this->secondTry = true;
 
                     return $this->sendBalance("w2.backuppay.com");
                 } else {
