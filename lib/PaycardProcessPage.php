@@ -43,6 +43,13 @@ class PaycardProcessPage extends BasicCorePage
        for format information
     */
     protected $action = '';
+    protected $conf;
+
+    public function __construct()
+    {
+        $this->conf = new PaycardConf();
+        parent::__construct();
+    }
 
     public function getHeader()
     {
@@ -146,14 +153,14 @@ class PaycardProcessPage extends BasicCorePage
         $success = $e2e->$func($xml);
         if ($success === PaycardLib::PAYCARD_ERR_OK) {
             $json = $e2e->cleanup($json);
-            CoreLocal::set("strEntered","");
-            CoreLocal::set("strRemembered","");
-            CoreLocal::set("msgrepeat",0);
+            $this->conf->set("strEntered","");
+            $this->conf->set("strRemembered","");
+            $this->conf->set("msgrepeat",0);
             if ($json['receipt']) {
                 $json['main_frame'] .= '?receipt=' . $json['receipt'];
             }
         } else {
-            CoreLocal::set("msgrepeat",0);
+            $this->conf->set("msgrepeat",0);
             $json['main_frame'] = MiscLib::base_url().'gui-modules/boxMsg2.php';
         }
         $this->change_page($json['main_frame']);

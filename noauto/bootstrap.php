@@ -58,6 +58,7 @@ if (!class_exists('BasicCorePage', false)) {
     {
         protected $page_url = '';
         protected $body_class = '';
+        public function __construct(){}
         public function change_page($url){}
         public function addOnloadCommand($str){}
         public function input_header($action='')

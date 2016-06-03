@@ -23,9 +23,14 @@
 
 class PaycardDialogs
 {
+    public function __construct()
+    {
+        $this->conf = new PaycardConf();
+    }
+
     public function enabledCheck()
     {
-        if (CoreLocal::get('CCintegrate') != 1) {
+        if ($this->conf->get('CCintegrate') != 1) {
             PaycardLib::paycard_reset();
             throw new Exception(PaycardLib::paycard_errBox(PaycardLib::PAYCARD_TYPE_GIFT,
                                              "Card Integration Disabled",
@@ -49,9 +54,9 @@ class PaycardDialogs
             PaycardLib::paycard_reset();
             throw new Exception(PaycardLib::paycard_msgBox(PaycardLib::PAYCARD_TYPE_CREDIT,
                 "Unsupported Card Type",
-                "We cannot process " . CoreLocal::get("paycard_issuer") . " cards",
+                "We cannot process " . $this->conf->get("paycard_issuer") . " cards",
                 "[clear] to cancel"));
-        } elseif ($expirable && PaycardLib::paycard_validExpiration(CoreLocal::get("paycard_exp")) != 1) {
+        } elseif ($expirable && PaycardLib::paycard_validExpiration($this->conf->get("paycard_exp")) != 1) {
             PaycardLib::paycard_reset();
             throw new Exception(PaycardLib::paycard_errBox(PaycardLib::PAYCARD_TYPE_CREDIT,
                 "Invalid Expiration Date",

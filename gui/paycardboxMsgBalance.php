@@ -33,9 +33,9 @@ class paycardboxMsgBalance extends PaycardProcessPage {
             $input = strtoupper(trim(FormLib::get('reginput')));
             // CL always exits
             if( $input == "CL") {
-                CoreLocal::set("msgrepeat",0);
-                CoreLocal::set("toggletax",0);
-                CoreLocal::set("togglefoodstamp",0);
+                $this->conf->set("msgrepeat",0);
+                $this->conf->set("toggletax",0);
+                $this->conf->set("togglefoodstamp",0);
                 PaycardLib::paycard_reset();
                 $this->change_page($this->page_url."gui-modules/pos2.php");
                 return False;
@@ -59,7 +59,7 @@ class paycardboxMsgBalance extends PaycardProcessPage {
         echo PaycardLib::paycard_msgBox(PaycardLib::PAYCARD_TYPE_GIFT,"Check Card Balance?",
             "If you proceed, you <b>cannot void</b> any previous action on this card!",
             "[enter] to continue<br>[clear] to cancel");
-        CoreLocal::set("msgrepeat",2);
+        $this->conf->set("msgrepeat",2);
         ?>
         </div>
         <?php

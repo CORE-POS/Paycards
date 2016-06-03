@@ -38,18 +38,18 @@ class PaycardEmvVoid extends PaycardProcessPage
         $query = '
             SELECT MAX(paycardTransactionID) 
             FROM PaycardTransactions
-            WHERE transID=' . ((int)CoreLocal::get('paycard_id'));
+            WHERE transID=' . ((int)$this->conf->get('paycard_id'));
         $res = $dbc->query($query);
         if ($res && $dbc->numRows($res)) {
             $row = $dbc->fetchRow($res);
             $this->id = $row[0];
         }
         if (!$this->id) {
-            CoreLocal::set('boxMsg', 'Cannot locate transaction to void');
+            $this->conf->set('boxMsg', 'Cannot locate transaction to void');
             $this->change_page(MiscLib::baseURL() . 'gui-modules/boxMsg2.php');
             return false;
         }
-        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
+        $this->conf->set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
 
         // check for posts before drawing anything, so we can redirect
         if (FormLib::get('reginput', false) !== false) {
@@ -57,8 +57,8 @@ class PaycardEmvVoid extends PaycardProcessPage
             // CL always exits
             if ($input == "CL") {
                 PaycardLib::paycard_reset();
-                CoreLocal::set("toggletax",0);
-                CoreLocal::set("togglefoodstamp",0);
+                $this->conf->set("toggletax",0);
+                $this->conf->set("togglefoodstamp",0);
                 $this->change_page($this->page_url."gui-modules/pos2.php?reginput=TO&repeat=1");
                 return false;
             } elseif (Authenticate::checkPassword($input)) {
@@ -106,8 +106,8 @@ function emvSubmit()
         <div class="baseHeight">
         <?php
         // generate message to print
-        $amt = CoreLocal::get("paycard_amount");
-        $type = CoreLocal::get("CacheCardType");
+        $amt = $this->conf->get("paycard_amount");
+        $type = $this->conf->get("CacheCardType");
         if ($amt > 0) {
             echo PaycardLib::paycard_msgBox(
                 $type,

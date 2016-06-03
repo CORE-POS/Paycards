@@ -34,27 +34,28 @@ class PaycardRequest
 
     public function __construct($refNum)
     {
+        $this->conf = new PaycardConf();
         $this->refNum = $refNum;
         $this->today = date('Ymd'); // numeric date only, it goes in an 'int' field as part of the primary key
         $this->now = date('Y-m-d H:i:s'); // full timestamp
-        $this->cashierNo = CoreLocal::get("CashierNo");
-        $this->laneNo = CoreLocal::get("laneno");
-        $this->transNo = CoreLocal::get("transno");
-        $this->transID = CoreLocal::get("paycard_id");
-        $this->setType(CoreLocal::get('CacheCardType'));
+        $this->cashierNo = $this->conf->get("CashierNo");
+        $this->laneNo = $this->conf->get("laneno");
+        $this->transNo = $this->conf->get("transno");
+        $this->transID = $this->conf->get("paycard_id");
+        $this->setType($this->conf->get('CacheCardType'));
         list($this->amount, $this->cashback) = $this->initAmounts();
         $this->mode = (($this->amount < 0) ? 'Return' : 'Sale');
-        $this->manual = (CoreLocal::get("paycard_keyed")===True ? 1 : 0);
+        $this->manual = ($this->conf->get("paycard_keyed")===True ? 1 : 0);
         $this->live = $this->isLive();
         $this->cardholder = 'Cardholder';
     }
 
     private function initAmounts()
     {
-        $amount = CoreLocal::get("paycard_amount");
-        if (($this->type == "Debit" || $this->type == "EBTCASH") && $amount > CoreLocal::get("amtdue")) {
-            $cashback = $amount - CoreLocal::get("amtdue");
-            $amount = CoreLocal::get("amtdue");
+        $amount = $this->conf->get("paycard_amount");
+        if (($this->type == "Debit" || $this->type == "EBTCASH") && $amount > $this->conf->get("amtdue")) {
+            $cashback = $amount - $this->conf->get("amtdue");
+            $amount = $this->conf->get("amtdue");
             return array($amount, $cashback);
         }
 
@@ -63,7 +64,7 @@ class PaycardRequest
 
     private function isLive()
     {
-        return (CoreLocal::get("training") != 0 || CoreLocal::get("CashierNo") == 9999) ? 1 : 0;
+        return ($this->conf->get("training") != 0 || $this->conf->get("CashierNo") == 9999) ? 1 : 0;
     }
 
     public function formattedAmount()

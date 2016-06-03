@@ -26,7 +26,7 @@ class PaycardVoidRequest extends PaycardRequest
     public function __construct($refnum)
     {
         parent::__construct($refnum);
-        $original = CoreLocal::get('paycard_trans');
+        $original = $this->conf->get('paycard_trans');
         $this->original = explode('-', $original);
     }
 

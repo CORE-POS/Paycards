@@ -24,6 +24,11 @@
 class PaycardModule
 {
     private $dialogs;
+    private $conf;
+    public function __construct()
+    {
+        $this->conf = new PaycardConf();
+    }
     public function setDialogs($dialogs)
     {
         $this->dialogs = $dialogs;
@@ -34,11 +39,11 @@ class PaycardModule
         try {
             $this->dialogs->enabledCheck();
             // error checks based on processing mode
-            switch (CoreLocal::get("paycard_mode")) {
+            switch ($this->conf->get("paycard_mode")) {
                 case PaycardLib::PAYCARD_MODE_VOID:
                     // use the card number to find the trans_id
                     $pan4 = substr($pan,-4);
-                    $trans = array(CoreLocal::get('CashierNo'), CoreLocal::get('laneno'), CoreLocal::get('transno'));
+                    $trans = array($this->conf->get('CashierNo'), $this->conf->get('laneno'), $this->conf->get('transno'));
                     $result = $this->dialogs->voidableCheck($pan4, $trans);
                     return $this->ccVoid($result,$trans[1],$trans[2],$json);
 
@@ -62,9 +67,9 @@ class PaycardModule
     public function ccVoid($transID,$laneNo=-1,$transNo=-1,$json=array()) 
     {
         // initialize
-        $cashier = CoreLocal::get("CashierNo");
-        $lane = CoreLocal::get("laneno");
-        $trans = CoreLocal::get("transno");
+        $cashier = $this->conf->get("CashierNo");
+        $lane = $this->conf->get("laneno");
+        $trans = $this->conf->get("transno");
         if ($laneNo != -1) $lane = $laneNo;
         if ($transNo != -1) $trans = $transNo;
         try {
@@ -81,15 +86,15 @@ class PaycardModule
         }
     
         // save the details
-        CoreLocal::set("paycard_amount", $this->isReturn($request['mode']) ? -1*$request['amount'] :  $request['amount']);
-        CoreLocal::set("paycard_id",$transID);
-        CoreLocal::set("paycard_trans",$cashier."-".$lane."-".$trans);
-        CoreLocal::set("paycard_type",PaycardLib::PAYCARD_TYPE_CREDIT);
-        CoreLocal::set("paycard_mode",PaycardLib::PAYCARD_MODE_VOID);
-        CoreLocal::set("paycard_name",$request['name']);
+        $this->conf->set("paycard_amount", $this->isReturn($request['mode']) ? -1*$request['amount'] :  $request['amount']);
+        $this->conf->set("paycard_id",$transID);
+        $this->conf->set("paycard_trans",$cashier."-".$lane."-".$trans);
+        $this->conf->set("paycard_type",PaycardLib::PAYCARD_TYPE_CREDIT);
+        $this->conf->set("paycard_mode",PaycardLib::PAYCARD_MODE_VOID);
+        $this->conf->set("paycard_name",$request['name']);
     
         // display FEC code box
-        CoreLocal::set("inputMasked",1);
+        $this->conf->set("inputMasked",1);
         $pluginInfo = new Paycards();
         $json['main_frame'] = $pluginInfo->pluginUrl().'/gui/paycardboxMsgVoid.php';
 
@@ -112,7 +117,7 @@ class PaycardModule
     {
         if ($authResult['curlErr'] != CURLE_OK || $authResult['curlHTTP'] != 200){
             if ($authResult['curlHTTP'] == '0'){
-                CoreLocal::set("boxMsg","No response from processor<br />
+                $this->conf->set("boxMsg","No response from processor<br />
                             The transaction did not go through");
                 return PaycardLib::PAYCARD_ERR_PROC;
             }    

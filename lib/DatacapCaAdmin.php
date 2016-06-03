@@ -23,11 +23,16 @@
 
 class DatacapCaAdmin 
 {
+    public function __construct()
+    {
+        $this->conf = new PaycardConf();
+    }
+
     public function caLanguage()
     {
-        if (CoreLocal::get('PaycardsDatacapMode') == 2) {
+        if ($this->conf->get('PaycardsDatacapMode') == 2) {
             return 'English';
-        } elseif (CoreLocal::get('PaycardsDatacapMode') == 3) {
+        } elseif ($this->conf->get('PaycardsDatacapMode') == 3) {
             return 'French';
         }
 
@@ -38,10 +43,10 @@ class DatacapCaAdmin
     {
         $e2e = new MercuryE2E();
         $termID = $e2e->getTermID();
-        $operatorID = CoreLocal::get("CashierNo");
-        $mcTerminalID = CoreLocal::get('PaycardsTerminalID');
-        $refNum = $e2e->refnum(CoreLocal::get('LastID'));
-        $dcHost = CoreLocal::get('PaycardsDatacapLanHost');
+        $operatorID = $this->conf->get("CashierNo");
+        $mcTerminalID = $this->conf->get('PaycardsTerminalID');
+        $refNum = $e2e->refnum($this->conf->get('LastID'));
+        $dcHost = $this->conf->get('PaycardsDatacapLanHost');
         if (empty($dcHost)) {
             $dcHost = '127.0.0.1';
         }

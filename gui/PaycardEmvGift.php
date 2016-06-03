@@ -38,7 +38,7 @@ class PaycardEmvGift extends PaycardProcessPage
         if (FormLib::get('mode') !== '') {
             $this->mode = FormLib::get('mode');
             if ($this->mode != PaycardLib::PAYCARD_MODE_ACTIVATE && $this->mode != PaycardLib::PAYCARD_MODE_ADDVALUE) {
-                CoreLocal::set('boxMsg', 'Invalid Gift Card Mode');
+                $this->conf->set('boxMsg', 'Invalid Gift Card Mode');
                 $this->change_page(MiscLib::baseURL() . 'gui-modules/boxMsg2.php');
 
                 return false;
@@ -52,15 +52,15 @@ class PaycardEmvGift extends PaycardProcessPage
             $input = strtoupper(trim(FormLib::get('reginput')));
             // CL always exits
             if( $input == "CL") {
-                CoreLocal::set("msgrepeat",0);
-                CoreLocal::set("toggletax",0);
-                CoreLocal::set("togglefoodstamp",0);
+                $this->conf->set("msgrepeat",0);
+                $this->conf->set("toggletax",0);
+                $this->conf->set("togglefoodstamp",0);
                 PaycardLib::paycard_reset();
-                CoreLocal::set("CachePanEncBlock","");
-                CoreLocal::set("CachePinEncBlock","");
-                CoreLocal::set("CacheCardType","");
-                CoreLocal::set("CacheCardCashBack",0);
-                CoreLocal::set('ccTermState','swipe');
+                $this->conf->set("CachePanEncBlock","");
+                $this->conf->set("CachePinEncBlock","");
+                $this->conf->set("CacheCardType","");
+                $this->conf->set("CacheCardCashBack",0);
+                $this->conf->set('ccTermState','swipe');
                 UdpComm::udpSend("termReset");
                 $this->change_page($this->page_url."gui-modules/pos2.php");
                 return False;
