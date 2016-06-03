@@ -47,6 +47,7 @@ class GoEMerchant extends BasicCCModule
     {
         $this->pmod = new PaycardModule();
         $this->pmod->setDialogs(new PaycardDialogs());
+        $this->conf = new PaycardConf();
     }
 
     public function handlesType($type)
@@ -60,7 +61,7 @@ class GoEMerchant extends BasicCCModule
 
     public function entered($validate,$json)
     {
-        $this->trans_pan['pan'] = CoreLocal::get("paycard_PAN");
+        $this->trans_pan['pan'] = $this->conf->get("paycard_PAN");
         return $this->pmod->ccEntered($this->trans_pan['pan'], $validate, $json);
     }
 
@@ -73,7 +74,7 @@ class GoEMerchant extends BasicCCModule
 
     public function handleResponse($authResult)
     {
-        switch (CoreLocal::get("paycard_mode")) {
+        switch ($this->conf->get("paycard_mode")) {
             case PaycardLib::PAYCARD_MODE_AUTH:
                 return $this->handleResponseAuth($authResult);
             case PaycardLib::PAYCARD_MODE_VOID:
@@ -89,10 +90,10 @@ class GoEMerchant extends BasicCCModule
         // prepare some fields to store the parsed response; we'll add more as we verify it
         $today = date('Ymd'); // numeric date only, it goes in an 'int' field as part of the primary key
         $now = date('Y-m-d H:i:s'); // full timestamp
-        $cashierNo = CoreLocal::get("CashierNo");
-        $laneNo = CoreLocal::get("laneno");
-        $transNo = CoreLocal::get("transno");
-        $transID = CoreLocal::get("paycard_id");
+        $cashierNo = $this->conf->get("CashierNo");
+        $laneNo = $this->conf->get("laneno");
+        $transNo = $this->conf->get("transno");
+        $transID = $this->conf->get("paycard_id");
         $validResponse = ($xml->isValid()) ? 1 : 0;
 
         $refNum = $xml->get("ORDER_ID");
@@ -164,18 +165,18 @@ class GoEMerchant extends BasicCCModule
             case 1: // APPROVED
                 return PaycardLib::PAYCARD_ERR_OK;
             case 2: // DECLINED
-                CoreLocal::set("boxMsg",$resultMsg);
+                $this->conf->set("boxMsg",$resultMsg);
                 TransRecord::addcomment("");    
                 break;
             case 0: // ERROR
-                CoreLocal::set("boxMsg","");
+                $this->conf->set("boxMsg","");
                 $texts = $xml->get_first("ERROR");
-                CoreLocal::set("boxMsg","Error: $texts");
+                $this->conf->set("boxMsg","Error: $texts");
                 TransRecord::addcomment("");    
                 break;
             default:
                 TransRecord::addcomment("");    
-                CoreLocal::set("boxMsg","An unknown error occurred<br />at the gateway");
+                $this->conf->set("boxMsg","An unknown error occurred<br />at the gateway");
         }
 
         return PaycardLib::PAYCARD_ERR_PROC;
@@ -187,11 +188,11 @@ class GoEMerchant extends BasicCCModule
         // prepare some fields to store the parsed response; we'll add more as we verify it
         $today = date('Ymd'); // numeric date only, it goes in an 'int' field as part of the primary key
         $now = date('Y-m-d H:i:s'); // full timestamp
-        $cashierNo = CoreLocal::get("CashierNo");
-        $laneNo = CoreLocal::get("laneno");
-        $transNo = CoreLocal::get("transno");
-        $transID = CoreLocal::get("paycard_id");
-        $amount = CoreLocal::get("paycard_amount");
+        $cashierNo = $this->conf->get("CashierNo");
+        $laneNo = $this->conf->get("laneno");
+        $transNo = $this->conf->get("transno");
+        $transID = $this->conf->get("paycard_id");
+        $amount = $this->conf->get("paycard_amount");
         $amountText = number_format(abs($amount), 2, '.', '');
         $refNum = $this->refnum($transID);
 
@@ -245,7 +246,7 @@ class GoEMerchant extends BasicCCModule
 
         if ($authResult['curlErr'] != CURLE_OK || $authResult['curlHTTP'] != 200) {
             if ($authResult['curlHTTP'] == '0') {
-                CoreLocal::set("boxMsg","No response from processor<br />
+                $this->conf->set("boxMsg","No response from processor<br />
                             The transaction did not go through");
 
                 return PaycardLib::PAYCARD_ERR_PROC;
@@ -258,15 +259,15 @@ class GoEMerchant extends BasicCCModule
             case 1: // APPROVED
                 return PaycardLib::PAYCARD_ERR_OK;
             case 2: // DECLINED
-                CoreLocal::set("boxMsg", $resultMsg);
+                $this->conf->set("boxMsg", $resultMsg);
                 break;
             case 0: // ERROR
-                CoreLocal::set("boxMsg","");
+                $this->conf->set("boxMsg","");
                 $texts = $xml->get_first("ERROR1");
-                CoreLocal::set("boxMsg","Error: $texts");
+                $this->conf->set("boxMsg","Error: $texts");
                 break;
             default:
-                CoreLocal::set("boxMsg","An unknown error occurred<br />at the gateway");
+                $this->conf->set("boxMsg","An unknown error occurred<br />at the gateway");
         }
 
         return PaycardLib::PAYCARD_ERR_PROC;
@@ -274,13 +275,13 @@ class GoEMerchant extends BasicCCModule
 
     public function cleanup($json)
     {
-        switch (CoreLocal::get("paycard_mode")) {
+        switch ($this->conf->get("paycard_mode")) {
             case PaycardLib::PAYCARD_MODE_AUTH:
                 // cast to string. tender function expects string input
                 // numeric input screws up parsing on negative values > $0.99
-                $amt = "".(-1*(CoreLocal::get("paycard_amount")));
+                $amt = "".(-1*($this->conf->get("paycard_amount")));
                 $t_type = 'CC';
-                if (CoreLocal::get('paycard_issuer') == 'American Express') {
+                if ($this->conf->get('paycard_issuer') == 'American Express') {
                     $t_type = 'AX';
                 }
                 // if the transaction has a non-zero paycardTransactionID,
@@ -288,7 +289,7 @@ class GoEMerchant extends BasicCCModule
                 $record_id = $this->last_paycard_transaction_id;
                 $charflag = ($record_id != 0) ? 'PT' : '';
                 TransRecord::addFlaggedTender("Credit Card", $t_type, $amt, $record_id, $charflag);
-                CoreLocal::set("boxMsg",
+                $this->conf->set("boxMsg",
                         "<b>Approved</b>
                         <font size=-1>
                         <p>Please verify cardholder signature
@@ -296,22 +297,22 @@ class GoEMerchant extends BasicCCModule
                         <br>\"rp\" to reprint slip
                         <br>[void] " . _('to reverse the charge') . "
                         </font>");
-                if (CoreLocal::get("paycard_amount") <= CoreLocal::get("CCSigLimit") && CoreLocal::get("paycard_amount") >= 0) {
-                    CoreLocal::set("boxMsg",
+                if ($this->conf->get("paycard_amount") <= $this->conf->get("CCSigLimit") && $this->conf->get("paycard_amount") >= 0) {
+                    $this->conf->set("boxMsg",
                             "<b>Approved</b>
                             <font size=-1>
                             <p>No signature required
                             <p>[enter] to continue
                             <br>[void] " . _('to reverse the charge') . "
                             </font>");
-                } else if (CoreLocal::get('PaycardsSigCapture') != 1) {
+                } else if ($this->conf->get('PaycardsSigCapture') != 1) {
                     $json['receipt'] = 'ccSlip';
                 }
                 break;
             case PaycardLib::PAYCARD_MODE_VOID:
                 $v = new Void();
-                $v->voidid(CoreLocal::get("paycard_id"), array());
-                CoreLocal::set("boxMsg","<b>Voided</b>
+                $v->voidid($this->conf->get("paycard_id"), array());
+                $this->conf->set("boxMsg","<b>Voided</b>
                                            <p><font size=-1>[enter] to continue
                                            <br>\"rp\" to reprint slip</font>");
                 break;    
@@ -345,26 +346,26 @@ class GoEMerchant extends BasicCCModule
 
         $today = date('Ymd'); // numeric date only, it goes in an 'int' field as part of the primary key
         $now = date('Y-m-d H:i:s'); // full timestamp
-        $cashierNo = CoreLocal::get("CashierNo");
-        $laneNo = CoreLocal::get("laneno");
-        $transNo = CoreLocal::get("transno");
-        $transID = CoreLocal::get("paycard_id");
-        $amount = CoreLocal::get("paycard_amount");
+        $cashierNo = $this->conf->get("CashierNo");
+        $laneNo = $this->conf->get("laneno");
+        $transNo = $this->conf->get("transno");
+        $transID = $this->conf->get("paycard_id");
+        $amount = $this->conf->get("paycard_amount");
         $amountText = number_format(abs($amount), 2, '.', '');
         $mode = (($amount < 0) ? 'retail_alone_credit' : 'retail_sale');
         // standardize transaction type for PaycardTransactions
         $logged_mode = ($mode == 'retail_sale') ? 'Sale' : 'Return';
-        $manual = (CoreLocal::get("paycard_manual") ? 1 : 0);
-        $this->trans_pan['pan'] = CoreLocal::get("paycard_PAN");
+        $manual = ($this->conf->get("paycard_manual") ? 1 : 0);
+        $this->trans_pan['pan'] = $this->conf->get("paycard_PAN");
         $cardPAN = $this->trans_pan['pan'];
         $cardPANmasked = PaycardLib::paycard_maskPAN($cardPAN,0,4);
-        $cardIssuer = CoreLocal::get("paycard_issuer");
-        $cardExM = substr(CoreLocal::get("paycard_exp"),0,2);
-        $cardExY = substr(CoreLocal::get("paycard_exp"),2,2);
-        $cardTr1 = CoreLocal::get("paycard_tr1");
-        $cardTr2 = CoreLocal::get("paycard_tr2");
-        $cardTr3 = CoreLocal::get("paycard_tr3");
-        $cardName = CoreLocal::get("paycard_name");
+        $cardIssuer = $this->conf->get("paycard_issuer");
+        $cardExM = substr($this->conf->get("paycard_exp"),0,2);
+        $cardExY = substr($this->conf->get("paycard_exp"),2,2);
+        $cardTr1 = $this->conf->get("paycard_tr1");
+        $cardTr2 = $this->conf->get("paycard_tr2");
+        $cardTr3 = $this->conf->get("paycard_tr3");
+        $cardName = $this->conf->get("paycard_name");
         $refNum = $this->refnum($transID);
         $this->last_ref_num = $refNum;
         $live = 1;
@@ -372,7 +373,7 @@ class GoEMerchant extends BasicCCModule
         $merchantID = GOEMERCH_ID;
         $password = GOEMERCH_PASSWD;
         $gatewayID = GOEMERCH_GATEWAY_ID;
-        if (CoreLocal::get("training") == 1) {
+        if ($this->conf->get("training") == 1) {
             $merchantID = "1264";
             $password = "password";
             $gatewayID = "a91c38c3-7d7f-4d29-acc7-927b4dca0dbe";
@@ -478,26 +479,26 @@ class GoEMerchant extends BasicCCModule
         // prepare data for the void request
         $today = date('Ymd'); // numeric date only, it goes in an 'int' field as part of the primary key
         $now = date('Y-m-d H:i:s'); // new timestamp
-        $cashierNo = CoreLocal::get("CashierNo");
-        $laneNo = CoreLocal::get("laneno");
-        $transNo = CoreLocal::get("transno");
-        $transID = CoreLocal::get("paycard_id");
-        $amount = CoreLocal::get("paycard_amount");
+        $cashierNo = $this->conf->get("CashierNo");
+        $laneNo = $this->conf->get("laneno");
+        $transNo = $this->conf->get("transno");
+        $transID = $this->conf->get("paycard_id");
+        $amount = $this->conf->get("paycard_amount");
         $amountText = number_format(abs($amount), 2, '.', '');
         $mode = 'void';
-        $manual = (CoreLocal::get("paycard_manual") ? 1 : 0);
-        $this->trans_pan['pan'] = CoreLocal::get("paycard_PAN");
+        $manual = ($this->conf->get("paycard_manual") ? 1 : 0);
+        $this->trans_pan['pan'] = $this->conf->get("paycard_PAN");
         $cardPAN = $this->trans_pan['pan'];
         $cardPANmasked = PaycardLib::paycard_maskPAN($cardPAN,0,4);
-        $cardIssuer = CoreLocal::get("paycard_issuer");
-        $cardExM = substr(CoreLocal::get("paycard_exp"),0,2);
-        $cardExY = substr(CoreLocal::get("paycard_exp"),2,2);
-        $cardName = CoreLocal::get("paycard_name");
+        $cardIssuer = $this->conf->get("paycard_issuer");
+        $cardExM = substr($this->conf->get("paycard_exp"),0,2);
+        $cardExY = substr($this->conf->get("paycard_exp"),2,2);
+        $cardName = $this->conf->get("paycard_name");
         $refNum = $this->refnum($transID);
         $live = 1;
 
         $this->voidTrans = $transID;
-        $this->voidRef = CoreLocal::get("paycard_trans");
+        $this->voidRef = $this->conf->get("paycard_trans");
         $temp = explode("-",$this->voidRef);
         $laneNo = $temp[1];
         $transNo = $temp[2];
@@ -505,7 +506,7 @@ class GoEMerchant extends BasicCCModule
         $merchantID = GOEMERCH_ID;
         $password = GOEMERCH_PASSWD;
         $gatewayID = GOEMERCH_GATEWAY_ID;
-        if (CoreLocal::get("training") == 1) {
+        if ($this->conf->get("training") == 1) {
             $merchantID = "1264";
             $password = "password";
             $cardPAN = "4111111111111111";
@@ -586,9 +587,9 @@ class GoEMerchant extends BasicCCModule
     // field. requires uniqueness, doesn't seem to cycle daily
     public function refnum($transID)
     {
-        $transNo   = (int)CoreLocal::get("transno");
-        $cashierNo = (int)CoreLocal::get("CashierNo");
-        $laneNo    = (int)CoreLocal::get("laneno");    
+        $transNo   = (int)$this->conf->get("transno");
+        $cashierNo = (int)$this->conf->get("CashierNo");
+        $laneNo    = (int)$this->conf->get("laneno");    
 
         // assemble string
         $ref = "";
@@ -722,7 +723,7 @@ class GoEMerchant extends BasicCCModule
                     $apprNumber,
                     $normalized,
                     $ref,
-                    CoreLocal::get('paycard_id'),
+                    $this->conf->get('paycard_id'),
                 );
                 $upR = $db->execute($upP, $args);
 

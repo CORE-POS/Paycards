@@ -38,6 +38,7 @@ class AuthorizeDotNet extends BasicCCModule
     {
         $this->pmod = new PaycardModule();
         $this->pmod->setDialogs(new PaycardDialogs());
+        $this->conf = new PaycardConf();
     }
 
     function handlesType($type){
@@ -47,7 +48,7 @@ class AuthorizeDotNet extends BasicCCModule
 
     function entered($validate,$json)
     {
-        $this->trans_pan['pan'] = CoreLocal::get("paycard_PAN");
+        $this->trans_pan['pan'] = $this->conf->get("paycard_PAN");
         return $this->pmod->ccEntered($this->trans_pan['pan'], $validate, $json);
     }
 
@@ -60,7 +61,7 @@ class AuthorizeDotNet extends BasicCCModule
 
     function handleResponse($authResult)
     {
-        switch(CoreLocal::get("paycard_mode")){
+        switch($this->conf->get("paycard_mode")){
         case PaycardLib::PAYCARD_MODE_AUTH:
             return $this->handleResponseAuth($authResult);
         case PaycardLib::PAYCARD_MODE_VOID:
@@ -111,26 +112,26 @@ class AuthorizeDotNet extends BasicCCModule
             case 1: // APPROVED
                 return PaycardLib::PAYCARD_ERR_OK;
             case 2: // DECLINED
-                CoreLocal::set("boxMsg","Transaction declined");
+                $this->conf->set("boxMsg","Transaction declined");
                 if ($xml->get_first("ERRORCODE") == 4)
-                    CoreLocal::set("boxMsg",CoreLocal::get("boxMsg")."<br />Pick up card)");
+                    $this->conf->set("boxMsg",$this->conf->get("boxMsg")."<br />Pick up card)");
                 break;
             case 3: // ERROR
-                CoreLocal::set("boxMsg","");
+                $this->conf->set("boxMsg","");
                 $codes = $xml->get("ERRORCODE");
                 $texts = $xml->get("ERRORTEXT");
                 if (!is_array($codes))
-                    CoreLocal::set("boxMsg","EC$codes: $texts");
+                    $this->conf->set("boxMsg","EC$codes: $texts");
                 else{
                     for($i=0; $i<count($codes);$i++){
-                        CoreLocal::set("boxMsg",CoreLocal::get("boxMsg")."EC".$codes[$i].": ".$texts[$i]);
+                        $this->conf->set("boxMsg",$this->conf->get("boxMsg")."EC".$codes[$i].": ".$texts[$i]);
                         if ($i != count($codes)-1) 
-                            CoreLocal::set("boxMsg",CoreLocal::get("boxMsg")."<br />");
+                            $this->conf->set("boxMsg",$this->conf->get("boxMsg")."<br />");
                     }
                 }
                 break;
             default:
-                CoreLocal::set("boxMsg","An unknown error occurred<br />at the gateway");
+                $this->conf->set("boxMsg","An unknown error occurred<br />at the gateway");
         }
         return PaycardLib::PAYCARD_ERR_PROC;
     }
@@ -166,56 +167,56 @@ class AuthorizeDotNet extends BasicCCModule
             case 1: // APPROVED
                 return PaycardLib::PAYCARD_ERR_OK;
             case 2: // DECLINED
-                CoreLocal::set("boxMsg","Transaction declined");
+                $this->conf->set("boxMsg","Transaction declined");
                 if ($xml->get_first("ERRORCODE") == 4)
-                    CoreLocal::set("boxMsg",CoreLocal::get("boxMsg")."<br />Pick up card");
+                    $this->conf->set("boxMsg",$this->conf->get("boxMsg")."<br />Pick up card");
                 break;
             case 3: // ERROR
-                CoreLocal::set("boxMsg","");
+                $this->conf->set("boxMsg","");
                 $codes = $xml->get("ERRORCODE");
                 $texts = $xml->get("ERRORTEXT");
                 if (!is_array($codes))
-                    CoreLocal::set("boxMsg","EC$codes: $texts");
+                    $this->conf->set("boxMsg","EC$codes: $texts");
                 else{
                     for($i=0; $i<count($codes);$i++){
-                        CoreLocal::set("boxMsg",CoreLocal::get("boxMsg")."EC".$codes[$i].": ".$texts[$i]);
+                        $this->conf->set("boxMsg",$this->conf->get("boxMsg")."EC".$codes[$i].": ".$texts[$i]);
                         if ($i != count($codes)-1) 
-                            CoreLocal::set("boxMsg",CoreLocal::get("boxMsg")."<br />");
+                            $this->conf->set("boxMsg",$this->conf->get("boxMsg")."<br />");
                     }
                 }
                 break;
             default:
-                CoreLocal::set("boxMsg","An unknown error occurred<br />at the gateway");
+                $this->conf->set("boxMsg","An unknown error occurred<br />at the gateway");
         }
         return PaycardLib::PAYCARD_ERR_PROC;
     }
 
     function cleanup($json)
     {
-        switch(CoreLocal::get("paycard_mode")){
+        switch($this->conf->get("paycard_mode")){
         case PaycardLib::PAYCARD_MODE_AUTH:
             // cast to string. tender function expects string input
             // numeric input screws up parsing on negative values > $0.99
-            $amt = "".(CoreLocal::get("paycard_amount")*100);
+            $amt = "".($this->conf->get("paycard_amount")*100);
             $t_type = 'CC';
-            if (CoreLocal::get('paycard_issuer') == 'American Express')
+            if ($this->conf->get('paycard_issuer') == 'American Express')
                 $t_type = 'AX';
             // if the transaction has a non-zero PaycardTransactionID,
             // include it in the tender line
             $record_id = $this->last_paycard_transaction_id;
             $charflag = ($record_id != 0) ? 'PT' : '';
             TransRecord::addFlaggedTender("Credit Card", $t_type, $amt, $record_id, $charflag);
-            CoreLocal::set("boxMsg","<b>Approved</b><font size=-1><p>Please verify cardholder signature<p>[enter] to continue<br>\"rp\" to reprint slip<br>[clear] to cancel and void</font>");
-            if (CoreLocal::get("paycard_amount") <= CoreLocal::get("CCSigLimit") && CoreLocal::get("paycard_amount") >= 0) {
-                CoreLocal::set("boxMsg","<b>Approved</b><font size=-1><p>No signature required<p>[enter] to continue<br>[void] to cancel and void</font>");
-            } else if (CoreLocal::get('PaycardsSigCapture') != 1) {
+            $this->conf->set("boxMsg","<b>Approved</b><font size=-1><p>Please verify cardholder signature<p>[enter] to continue<br>\"rp\" to reprint slip<br>[clear] to cancel and void</font>");
+            if ($this->conf->get("paycard_amount") <= $this->conf->get("CCSigLimit") && $this->conf->get("paycard_amount") >= 0) {
+                $this->conf->set("boxMsg","<b>Approved</b><font size=-1><p>No signature required<p>[enter] to continue<br>[void] to cancel and void</font>");
+            } else if ($this->conf->get('PaycardsSigCapture') != 1) {
                 $json['receipt'] = 'ccSlip';
             }
             break;
         case PaycardLib::PAYCARD_MODE_VOID:
             $v = new Void();
-            $v->voidid(CoreLocal::get("paycard_id"), array());
-            CoreLocal::set("boxMsg","<b>Voided</b><p><font size=-1>[enter] to continue<br>\"rp\" to reprint slip</font>");
+            $v->voidid($this->conf->get("paycard_id"), array());
+            $this->conf->set("boxMsg","<b>Voided</b><p><font size=-1>[enter] to continue<br>\"rp\" to reprint slip</font>");
             break;    
         }
 
@@ -241,17 +242,17 @@ class AuthorizeDotNet extends BasicCCModule
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND); // database error, nothing sent (ok to retry)
         }
 
-        $request = new PaycardRequest($this->refnum(CoreLocal::get('paycard_id')), $dbTrans);
+        $request = new PaycardRequest($this->refnum($this->conf->get('paycard_id')), $dbTrans);
         $request->setProcessor('AuthDotNot');
         $mode = (($request->amount < 0) ? 'refund' : 'tender');
         $cardPAN = $this->trans_pan['pan'];
         $request->setPAN($cardPAN);
-        $request->setIssuer(CoreLocal::get("paycard_issuer"));
-        $cardExM = substr(CoreLocal::get("paycard_exp"),0,2);
-        $cardExY = substr(CoreLocal::get("paycard_exp"),2,2);
+        $request->setIssuer($this->conf->get("paycard_issuer"));
+        $cardExM = substr($this->conf->get("paycard_exp"),0,2);
+        $cardExY = substr($this->conf->get("paycard_exp"),2,2);
         $cardTr1 = $this->trans_pan['tr1'];
         $cardTr2 = $this->trans_pan['tr2'];
-        $request->setCardholder(CoreLocal::get("paycard_name"));
+        $request->setCardholder($this->conf->get("paycard_name"));
 
         // x_login & x_tran_key need to be
         // filled in to work
@@ -265,7 +266,7 @@ class AuthorizeDotNet extends BasicCCModule
         "x_amount"    => $request->formattedAmount(),
         "x_user_ref"    => $request->refNum
         );
-        if (CoreLocal::get("training") == 1)
+        if ($this->conf->get("training") == 1)
             $postValues["x_test_request"] = "1";
 
         if ($mode == "refund")
@@ -307,18 +308,18 @@ class AuthorizeDotNet extends BasicCCModule
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND);
         }
 
-        $request = new PaycardVoidRequest($this->refnum(CoreLocal::get('paycard_id')), $dbTrans);
+        $request = new PaycardVoidRequest($this->refnum($this->conf->get('paycard_id')), $dbTrans);
         $request->setProcessor('AuthDotNot');
 
         $mode = 'void';
         $cardPAN = $this->trans_pan['pan'];
         $request->setPAN($cardPAN);
-        $request->setIssuer(CoreLocal::get("paycard_issuer"));
-        $cardExM = substr(CoreLocal::get("paycard_exp"),0,2);
-        $cardExY = substr(CoreLocal::get("paycard_exp"),2,2);
+        $request->setIssuer($this->conf->get("paycard_issuer"));
+        $cardExM = substr($this->conf->get("paycard_exp"),0,2);
+        $cardExY = substr($this->conf->get("paycard_exp"),2,2);
         $cardTr1 = $this->trans_pan['tr1'];
         $cardTr2 = $this->trans_pan['tr2'];
-        $request->setCardholder(CoreLocal::get("paycard_name"));
+        $request->setCardholder($this->conf->get("paycard_name"));
 
         // x_login and x_tran_key need to
         // be filled in to work

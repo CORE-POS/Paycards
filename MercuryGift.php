@@ -47,6 +47,7 @@ class MercuryGift extends BasicCCModule
         $this->pmod = new PaycardModule();
         $this->dialogs = new PaycardDialogs();
         $this->pmod->setDialogs($this->dialogs);
+        $this->conf = new PaycardConf();
     }
 
     /* handlesType($type)
@@ -75,16 +76,16 @@ class MercuryGift extends BasicCCModule
             $enabled = $this->dialogs->enabledCheck();
 
             // error checks based on processing mode
-            if (CoreLocal::get("paycard_mode") == PaycardLib::PAYCARD_MODE_VOID) {
+            if ($this->conf->get("paycard_mode") == PaycardLib::PAYCARD_MODE_VOID) {
                 $pan4 = substr($this->getPAN(), -4);
-                $trans = array(CoreLocal::get('CashierNo'), CoreLocal::get('laneno'), CoreLocal::get('transno'));
+                $trans = array($this->conf->get('CashierNo'), $this->conf->get('laneno'), $this->conf->get('transno'));
                 $result = $this->dialogs->voidableCheck($pan4, $trans);
                 return $this->paycard_void($result,-1,-1,$json);
             }
 
             // check card data for anything else
             if ($validate) {
-                $valid = $this->dialogs->validateCard(CoreLocal::get('paycard_PAN'), false, false);
+                $valid = $this->dialogs->validateCard($this->conf->get('paycard_PAN'), false, false);
             }
         } catch (Exception $ex) {
             $json['output'] = $ex->getMessage();
@@ -92,13 +93,13 @@ class MercuryGift extends BasicCCModule
         }
 
         // other modes
-        switch (CoreLocal::get("paycard_mode")) {
+        switch ($this->conf->get("paycard_mode")) {
             case PaycardLib::PAYCARD_MODE_AUTH:
                 return PaycardLib::setupAuthJson($json);
             case PaycardLib::PAYCARD_MODE_ACTIVATE:
             case PaycardLib::PAYCARD_MODE_ADDVALUE:
-                CoreLocal::set("paycard_amount",0);
-                CoreLocal::set("paycard_id",CoreLocal::get("LastID")+1); // kind of a hack to anticipate it this way..
+                $this->conf->set("paycard_amount",0);
+                $this->conf->set("paycard_id",$this->conf->get("LastID")+1); // kind of a hack to anticipate it this way..
                 $plugin_info = new Paycards();
                 $json['main_frame'] = $plugin_info->pluginUrl().'/gui/paycardboxMsgGift.php';
 
@@ -124,7 +125,7 @@ class MercuryGift extends BasicCCModule
      * On success, return PaycardLib::PAYCARD_ERR_OK.
      * On failure, return anything else and set any
      * error messages to be displayed in
-     * CoreLocal::["boxMsg"].
+     * $this->conf->["boxMsg"].
      */
     public function doSend($type)
     {
@@ -153,10 +154,10 @@ class MercuryGift extends BasicCCModule
      */
     public function cleanup($json)
     {
-        switch (CoreLocal::get("paycard_mode")) {
+        switch ($this->conf->get("paycard_mode")) {
             case PaycardLib::PAYCARD_MODE_BALANCE:
-                $resp = CoreLocal::get("paycard_response");
-                CoreLocal::set("boxMsg","<b>Success</b><font size=-1>
+                $resp = $this->conf->get("paycard_response");
+                $this->conf->set("boxMsg","<b>Success</b><font size=-1>
                                            <p>Gift card balance: $" . $resp["Balance"] . "
                                            <p>\"rp\" to print
                                            <br>[enter] to continue</font>"
@@ -164,27 +165,27 @@ class MercuryGift extends BasicCCModule
                 break;
             case PaycardLib::PAYCARD_MODE_ADDVALUE:
             case PaycardLib::PAYCARD_MODE_ACTIVATE:
-                $ttl = CoreLocal::get("paycard_amount");
-                $dept = CoreLocal::get('PaycardDepartmentGift');
+                $ttl = $this->conf->get("paycard_amount");
+                $dept = $this->conf->get('PaycardDepartmentGift');
                 $dept = $dept == '' ? 902 : $dept;
                 COREPOS\pos\lib\DeptLib::deptkey($ttl*100, $dept . '0');
-                $resp = CoreLocal::get("paycard_response");    
-                CoreLocal::set("boxMsg","<b>Success</b><font size=-1>
+                $resp = $this->conf->get("paycard_response");    
+                $this->conf->set("boxMsg","<b>Success</b><font size=-1>
                                            <p>New card balance: $" . $resp["Balance"] . "
                                            <p>[enter] to continue
                                            <br>\"rp\" to reprint slip</font>"
                 );
                 break;
             case PaycardLib::PAYCARD_MODE_AUTH:
-                $amt = "".(-1*(CoreLocal::get("paycard_amount")));
+                $amt = "".(-1*($this->conf->get("paycard_amount")));
                 $record_id = $this->last_paycard_transaction_id;
                 $charflag = ($record_id != 0) ? 'PT' : '';
-                $tcode = CoreLocal::get('PaycardsTenderCodeGift');
+                $tcode = $this->conf->get('PaycardsTenderCodeGift');
                 $tcode = $tcode == '' ? 'GD' : $tcode;
                 TransRecord::addFlaggedTender("Gift Card", $tcode, $amt, $record_id, $charflag);
-                $resp = CoreLocal::get("paycard_response");
-                CoreLocal::set("boxMsg","<b>Approved</b><font size=-1>
-                                           <p>Used: $" . CoreLocal::get("paycard_amount") . "
+                $resp = $this->conf->get("paycard_response");
+                $this->conf->set("boxMsg","<b>Approved</b><font size=-1>
+                                           <p>Used: $" . $this->conf->get("paycard_amount") . "
                                            <br />New balance: $" . $resp["Balance"] . "
                                            <p>[enter] to continue
                                            <br>\"rp\" to reprint slip
@@ -193,9 +194,9 @@ class MercuryGift extends BasicCCModule
                 break;
             case PaycardLib::PAYCARD_MODE_VOID:
                 $v = new Void();
-                $v->voidid(CoreLocal::get("paycard_id"), array());
-                $resp = CoreLocal::get("paycard_response");
-                CoreLocal::set("boxMsg","<b>Voided</b><font size=-1>
+                $v->voidid($this->conf->get("paycard_id"), array());
+                $resp = $this->conf->get("paycard_response");
+                $this->conf->set("boxMsg","<b>Voided</b><font size=-1>
                                            <p>New balance: $" . $resp["Balance"] . "
                                            <p>[enter] to continue
                                            <br>\"rp\" to reprint slip</font>"
@@ -218,8 +219,8 @@ class MercuryGift extends BasicCCModule
         $ret = $this->pmod->ccVoid($transID, $laneNo, $transNo, $json);
 
         // save the details
-        CoreLocal::set("paycard_type",PaycardLib::PAYCARD_TYPE_GIFT);
-        CoreLocal::set("paycard_mode",PaycardLib::PAYCARD_MODE_VOID);
+        $this->conf->set("paycard_type",PaycardLib::PAYCARD_TYPE_GIFT);
+        $this->conf->set("paycard_mode",PaycardLib::PAYCARD_MODE_VOID);
     
         return $ret;
     }
@@ -237,17 +238,17 @@ class MercuryGift extends BasicCCModule
         // prepare data for the request
         $today = date('Ymd'); // numeric date only, it goes in an 'int' field as part of the primary key
         $now = date('Y-m-d H:i:s'); // full timestamp
-        $cashierNo = CoreLocal::get("CashierNo");
-        $laneNo = CoreLocal::get("laneno");
-        $transNo = CoreLocal::get("transno");
-        $transID = CoreLocal::get("paycard_id");
+        $cashierNo = $this->conf->get("CashierNo");
+        $laneNo = $this->conf->get("laneno");
+        $transNo = $this->conf->get("transno");
+        $transID = $this->conf->get("paycard_id");
         $program = 'Gift'; // valutec also has 'Loyalty' cards which store arbitrary point values
-        $amount = CoreLocal::get("paycard_amount");
+        $amount = $this->conf->get("paycard_amount");
         $amountText = number_format(abs($amount), 2, '.', '');
         $mode = "";
         $authMethod = "";
         $logged_mode = $mode;
-        switch (CoreLocal::get("paycard_mode")) {
+        switch ($this->conf->get("paycard_mode")) {
             case PaycardLib::PAYCARD_MODE_AUTH:
                 if ($amount < 0) {
                     $mode = 'refund';
@@ -275,7 +276,7 @@ class MercuryGift extends BasicCCModule
         $termID = $this->getTermID();
         $password = $this->getPw();
         $live = 0;
-        $manual = (CoreLocal::get("paycard_manual") ? 1 : 0);
+        $manual = ($this->conf->get("paycard_manual") ? 1 : 0);
         $cardPAN = $this->getPAN();
         $cardTr2 = $this->getTrack2();
         $identifier = $this->valutecIdentifier($transID); // valutec allows 10 digits; this uses lanenum-transnum-transid since we send cashiernum in another field
@@ -326,7 +327,7 @@ class MercuryGift extends BasicCCModule
             array("tran"=>$msgXml,"pw"=>$password),
             "http://www.mercurypay.com");
 
-        if (CoreLocal::get("training") == 1) {
+        if ($this->conf->get("training") == 1) {
             $this->GATEWAY = "https://w1.mercurydev.net/ws/ws.asmx";
         } else {
             $this->GATEWAY = "https://$domain/ws/ws.asmx";
@@ -346,12 +347,12 @@ class MercuryGift extends BasicCCModule
         // prepare data for the void request
         $today = date('Ymd'); // numeric date only, it goes in an 'int' field as part of the primary key
         $now = date('Y-m-d H:i:s'); // full timestamp
-        $cashierNo = CoreLocal::get("CashierNo");
-        $laneNo = CoreLocal::get("laneno");
-        $transNo = CoreLocal::get("transno");
-        $transID = CoreLocal::get("paycard_id");
+        $cashierNo = $this->conf->get("CashierNo");
+        $laneNo = $this->conf->get("laneno");
+        $transNo = $this->conf->get("transno");
+        $transID = $this->conf->get("paycard_id");
         $program = 'Gift'; // valutec also has 'Loyalty' cards which store arbitrary point values
-        $amount = CoreLocal::get("paycard_amount");
+        $amount = $this->conf->get("paycard_amount");
         $amountText = number_format(abs($amount), 2, '.', '');
         $mode = 'void';
         $cardPAN = $this->getPAN();
@@ -460,7 +461,7 @@ class MercuryGift extends BasicCCModule
             array("tran"=>$msgXml,"pw"=>$password),
             "http://www.mercurypay.com");
 
-        if (CoreLocal::get("training") == 1) {
+        if ($this->conf->get("training") == 1) {
             $this->GATEWAY = "https://w1.mercurydev.net/ws/ws.asmx";
         } else {
             $this->GATEWAY = "https://$domain/ws/ws.asmx";
@@ -472,7 +473,7 @@ class MercuryGift extends BasicCCModule
     private function send_balance($domain="w1.mercurypay.com")
     {
         // prepare data for the request
-        $cashierNo = CoreLocal::get("CashierNo");
+        $cashierNo = $this->conf->get("CashierNo");
         $program = 'Gift'; // valutec also has 'Loyalty' cards which store arbitrary point values
         $cardPAN = $this->getPAN();
         $cardTr2 = $this->getTrack2();
@@ -500,7 +501,7 @@ class MercuryGift extends BasicCCModule
             array("tran"=>$msgXml,"pw"=>$password),
             "http://www.mercurypay.com");
 
-        if (CoreLocal::get("training") == 1) {
+        if ($this->conf->get("training") == 1) {
             $this->GATEWAY = "https://w1.mercurydev.net/ws/ws.asmx";
         } else {
             $this->GATEWAY = "https://$domain/ws/ws.asmx";
@@ -511,7 +512,7 @@ class MercuryGift extends BasicCCModule
 
     public function handleResponse($authResult)
     {
-        switch(CoreLocal::get("paycard_mode")) {
+        switch($this->conf->get("paycard_mode")) {
             case PaycardLib::PAYCARD_MODE_AUTH:
             case PaycardLib::PAYCARD_MODE_ACTIVATE:
             case PaycardLib::PAYCARD_MODE_ADDVALUE:
@@ -535,10 +536,10 @@ class MercuryGift extends BasicCCModule
         // prepare data for the request
         $today = date('Ymd'); // numeric date only, it goes in an 'int' field as part of the primary key
         $now = date('Y-m-d H:i:s'); // full timestamp
-        $cashierNo = CoreLocal::get("CashierNo");
-        $laneNo = CoreLocal::get("laneno");
-        $transNo = CoreLocal::get("transno");
-        $transID = CoreLocal::get("paycard_id");
+        $cashierNo = $this->conf->get("CashierNo");
+        $laneNo = $this->conf->get("laneno");
+        $transNo = $this->conf->get("transno");
+        $transID = $this->conf->get("paycard_id");
         $program = 'Gift';
         $identifier = $this->valutecIdentifier($transID); // valutec allows 10 digits; this uses lanenum-transnum-transid since we send cashiernum in another field
 
@@ -619,7 +620,7 @@ class MercuryGift extends BasicCCModule
 
                     return $this->send_auth("w2.backuppay.com");
                 } else {
-                    CoreLocal::set("boxMsg","No response from processor
+                    $this->conf->set("boxMsg","No response from processor
                                                <br />The transaction did not go through"
                     );
 
@@ -637,11 +638,11 @@ class MercuryGift extends BasicCCModule
         }
 
         // put the parsed response into session so the caller, receipt printer, etc can get the data they need
-        CoreLocal::set("paycard_response",array());
-        CoreLocal::set("paycard_response",$xml->array_dump());
-        $temp = CoreLocal::get("paycard_response");
+        $this->conf->set("paycard_response",array());
+        $this->conf->set("paycard_response",$xml->array_dump());
+        $temp = $this->conf->get("paycard_response");
         $temp["Balance"] = isset($temp['BALANCE']) ? $temp["BALANCE"] : 0;
-        CoreLocal::set("paycard_response",$temp);
+        $this->conf->set("paycard_response",$temp);
         /**
           Update authorized amount based on response. If
           the transaction was a refund ("Return") then the
@@ -649,9 +650,9 @@ class MercuryGift extends BasicCCModule
           it correctly.
         */
         if ($xml->get_first("AUTHORIZE")) {
-            CoreLocal::set("paycard_amount",$xml->get_first("AUTHORIZE"));
+            $this->conf->set("paycard_amount",$xml->get_first("AUTHORIZE"));
             if ($xml->get_first('TRANCODE') && $xml->get_first('TRANCODE') == 'Return') {
-                CoreLocal::set("paycard_amount",-1*$xml->get_first("AUTHORIZE"));
+                $this->conf->set("paycard_amount",-1*$xml->get_first("AUTHORIZE"));
             }
             $correctionQ = sprintf("UPDATE PaycardTransactions SET amount=%f WHERE
                 dateID=%s AND refNum='%s'",
@@ -666,7 +667,7 @@ class MercuryGift extends BasicCCModule
 
         // the authorizor gave us some failure code
         // authorization failed, response fields in $_SESSION["paycard_response"]
-        CoreLocal::set("boxMsg","Processor error: ".$errorMsg);
+        $this->conf->set("boxMsg","Processor error: ".$errorMsg);
 
         return PaycardLib::PAYCARD_ERR_PROC; 
     }
@@ -683,11 +684,11 @@ class MercuryGift extends BasicCCModule
         // prepare data for the void request
         $today = date('Ymd'); // numeric date only, it goes in an 'int' field as part of the primary key
         $now = date('Y-m-d H:i:s'); // full timestamp
-        $cashierNo = CoreLocal::get("CashierNo");
-        $laneNo = CoreLocal::get("laneno");
-        $transNo = CoreLocal::get("transno");
-        $transID = CoreLocal::get("paycard_id");
-        $amount = CoreLocal::get("paycard_amount");
+        $cashierNo = $this->conf->get("CashierNo");
+        $laneNo = $this->conf->get("laneno");
+        $transNo = $this->conf->get("transno");
+        $transID = $this->conf->get("paycard_id");
+        $amount = $this->conf->get("paycard_amount");
         $amountText = number_format(abs($amount), 2, '.', '');
         $mode = 'void';
         $authcode = $this->temp;
@@ -759,7 +760,7 @@ class MercuryGift extends BasicCCModule
 
                     return $this->send_void("w2.backuppay.com");
                 } else {
-                    CoreLocal::set("boxMsg","No response from processor<br />
+                    $this->conf->set("boxMsg","No response from processor<br />
                                 The transaction did not go through");
 
                     return PaycardLib::PAYCARD_ERR_PROC;
@@ -775,11 +776,11 @@ class MercuryGift extends BasicCCModule
         }
 
         // put the parsed response into session so the caller, receipt printer, etc can get the data they need
-        CoreLocal::set("paycard_response",array());
-        CoreLocal::set("paycard_response",$xml->array_dump());
-        $temp = CoreLocal::get("paycard_response");
+        $this->conf->set("paycard_response",array());
+        $this->conf->set("paycard_response",$xml->array_dump());
+        $temp = $this->conf->get("paycard_response");
         $temp["Balance"] = isset($temp['BALANCE']) ? $temp["BALANCE"] : 0;
-        CoreLocal::set("paycard_response",$temp);
+        $this->conf->set("paycard_response",$temp);
 
         // comm successful, check the Authorized, AuthorizationCode and ErrorMsg fields
         if ($xml->get('CMDSTATUS') == 'Approved' && $xml->get('REFNO') != '' ) {
@@ -787,7 +788,7 @@ class MercuryGift extends BasicCCModule
         }
 
         // the authorizor gave us some failure code
-        CoreLocal::set("boxMsg","PROCESSOR ERROR: ".$xml->get_first("ERRORMSG"));
+        $this->conf->set("boxMsg","PROCESSOR ERROR: ".$xml->get_first("ERRORMSG"));
 
         return PaycardLib::PAYCARD_ERR_PROC; 
     }
@@ -806,7 +807,7 @@ class MercuryGift extends BasicCCModule
 
                     return $this->send_balance("w2.backuppay.com");
                 } else {
-                    CoreLocal::set("boxMsg","No response from processor<br />
+                    $this->conf->set("boxMsg","No response from processor<br />
                                 The transaction did not go through");
 
                     return PaycardLib::PAYCARD_ERR_PROC;
@@ -815,12 +816,12 @@ class MercuryGift extends BasicCCModule
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_COMM); // comm error, try again
         }
 
-        CoreLocal::set("paycard_response",array());
-        CoreLocal::set("paycard_response",$xml->array_dump());
-        $resp = CoreLocal::get("paycard_response");
+        $this->conf->set("paycard_response",array());
+        $this->conf->set("paycard_response",$xml->array_dump());
+        $resp = $this->conf->get("paycard_response");
         if (isset($resp["BALANCE"])) {
             $resp["Balance"] = $resp["BALANCE"];
-            CoreLocal::set("paycard_response",$resp);
+            $this->conf->set("paycard_response",$resp);
         }
 
         // there's less to verify for balance checks, just make sure all the fields are there
@@ -833,7 +834,7 @@ class MercuryGift extends BasicCCModule
         }
 
         // the authorizor gave us some failure code
-        CoreLocal::set("boxMsg","Processor error: ".$xml->get_first("TEXTRESPONSE"));
+        $this->conf->set("boxMsg","Processor error: ".$xml->get_first("TEXTRESPONSE"));
 
         return PaycardLib::PAYCARD_ERR_PROC;
     }
@@ -842,8 +843,8 @@ class MercuryGift extends BasicCCModule
     // along with their CashierID field, it will be a daily-unique identifier on the transaction
     private function valutecIdentifier($transID) 
     {
-        $transNo   = (int)CoreLocal::get("transno");
-        $laneNo    = (int)CoreLocal::get("laneno");
+        $transNo   = (int)$this->conf->get("transno");
+        $laneNo    = (int)$this->conf->get("laneno");
         // fail if any field is too long (we don't want to truncate, since that might produce a non-unique refnum and cause bigger problems)
         if ($transID > 999 || $transNo > 999 || $laneNo > 99) {
             return "";
@@ -859,7 +860,7 @@ class MercuryGift extends BasicCCModule
     
     private function getTermID()
     {
-        if (CoreLocal::get("training") == 1) {
+        if ($this->conf->get("training") == 1) {
             return "595901";
         } else {
             return MERCURY_GTERMINAL_ID;
@@ -868,7 +869,7 @@ class MercuryGift extends BasicCCModule
 
     private function getPw()
     {
-        if (CoreLocal::get("training") == 1) {
+        if ($this->conf->get("training") == 1) {
             return "xyz";
         } else {
             return MERCURY_GPASSWORD;
@@ -877,19 +878,19 @@ class MercuryGift extends BasicCCModule
 
     private function getPAN()
     {
-        if (CoreLocal::get("training") == 1) {
+        if ($this->conf->get("training") == 1) {
             return "6050110000000296951";
         } else {
-            return CoreLocal::get("paycard_PAN");
+            return $this->conf->get("paycard_PAN");
         }
     }
 
     private function getTrack2()
     {
-        if (CoreLocal::get("training") == 1) {
+        if ($this->conf->get("training") == 1) {
             return false;
         } else {
-            return CoreLocal::get("paycard_tr2");
+            return $this->conf->get("paycard_tr2");
         }
     }
 }

@@ -52,6 +52,7 @@ class MercuryE2E extends BasicCCModule
         $this->encBlock = new EncBlock();
         $this->pmod = new PaycardModule();
         $this->pmod->setDialogs(new PaycardDialogs());
+        $this->conf = new PaycardConf();
     }
 
     const PRIMARY_URL = 'w1.mercurypay.com';
@@ -72,9 +73,9 @@ class MercuryE2E extends BasicCCModule
     */
     public function entered($validate,$json)
     {
-        $pan = CoreLocal::get('paycard_PAN');
-        if (CoreLocal::get('paycard_mode') == PaycardLib::PAYCARD_MODE_AUTH) {
-            $e2e = $this->encBlock->parseEncBlock(CoreLocal::get('paycard_PAN'));
+        $pan = $this->conf->get('paycard_PAN');
+        if ($this->conf->get('paycard_mode') == PaycardLib::PAYCARD_MODE_AUTH) {
+            $e2e = $this->encBlock->parseEncBlock($this->conf->get('paycard_PAN'));
             if (empty($e2e['Block']) || empty($e2e['Key'])){
                 PaycardLib::paycard_reset();
                 $json['output'] = PaycardLib::paycard_msgBox(PaycardLib::PAYCARD_TYPE_CREDIT,
@@ -100,14 +101,14 @@ class MercuryE2E extends BasicCCModule
         $this->voidTrans = "";
         $this->voidRef = "";
         $json = $this->pmod->ccVoid($transID, $laneNo, $transNo, $json);
-        CoreLocal::set("paycard_type",PaycardLib::PAYCARD_TYPE_ENCRYPTED);
+        $this->conf->set("paycard_type",PaycardLib::PAYCARD_TYPE_ENCRYPTED);
     
         return $json;
     }
 
     public function handleResponse($authResult)
     {
-        switch(CoreLocal::get("paycard_mode")){
+        switch($this->conf->get("paycard_mode")){
             case PaycardLib::PAYCARD_MODE_AUTH:
                 return $this->handleResponseAuth($authResult);
             case PaycardLib::PAYCARD_MODE_VOID:
@@ -157,16 +158,16 @@ class MercuryE2E extends BasicCCModule
         $response->setTransactionID($xTransID);
         $response->setValid($validResponse);
 
-        $cardtype = CoreLocal::get("CacheCardType");
+        $cardtype = $this->conf->get("CacheCardType");
         $ebtbalance = 0;
         if ($xml->get_first("Balance")) {
             switch($cardtype) {
                 case 'EBTFOOD':
-                    CoreLocal::set('EbtFsBalance', $xml->get_first('Balance'));
+                    $this->conf->set('EbtFsBalance', $xml->get_first('Balance'));
                     $ebtbalance = $xml->get_first('Balance');
                     break;
                 case 'EBTCASH':
-                    CoreLocal::set('EbtCaBalance', $xml->get_first('Balance'));
+                    $this->conf->set('EbtCaBalance', $xml->get_first('Balance'));
                     $ebtbalance = $xml->get_first('Balance');
                     break;
             }
@@ -202,44 +203,44 @@ class MercuryE2E extends BasicCCModule
 
                 return $this->send_auth("w2.backuppay.com");
             } else if ($authResult['curlHTTP'] == '0') {
-                CoreLocal::set("boxMsg","No response from processor<br />
+                $this->conf->set("boxMsg","No response from processor<br />
                             The transaction did not go through");
                 return PaycardLib::PAYCARD_ERR_PROC;
             } else {
                 return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_COMM);
             }
-        } else if ($this->second_try && $authResult['curlTime'] < 10 && CoreLocal::get('MercurySwitchUrls') <= 0) {
-            CoreLocal::set('MercurySwitchUrls', 5);
+        } else if ($this->second_try && $authResult['curlTime'] < 10 && $this->conf->get('MercurySwitchUrls') <= 0) {
+            $this->conf->set('MercurySwitchUrls', 5);
         }
 
         switch (strtoupper($xml->get_first("CMDSTATUS"))) {
             case 'APPROVED':
                 return PaycardLib::PAYCARD_ERR_OK;
             case 'DECLINED':
-                if (substr(CoreLocal::get('CacheCardType'), 0, 3) == 'EBT' && $ebtbalance > 0 && $ebtbalance < $xml->get_first('AUTHORIZE')) {
+                if (substr($this->conf->get('CacheCardType'), 0, 3) == 'EBT' && $ebtbalance > 0 && $ebtbalance < $xml->get_first('AUTHORIZE')) {
                     // if EBT is declined but lists a balance less than the
                     // requested authorization, it may be possible to
                     // charge the card for a less amount. different return
                     // it to try a less amount immediatley without making
                     // the customer re-enter information
-                    CoreLocal::set('PaycardRetryBalanceLimit', sprintf('%.2f', $ebtbalance));    
-                    CoreLocal::set('paycard_amount', $ebtbalance);
+                    $this->conf->set('PaycardRetryBalanceLimit', sprintf('%.2f', $ebtbalance));    
+                    $this->conf->set('paycard_amount', $ebtbalance);
                     TransRecord::addcomment("");
-                    CoreLocal::set('paycard_id', CoreLocal::get('paycard_id') + 1);
+                    $this->conf->set('paycard_id', $this->conf->get('paycard_id') + 1);
 
                     return PaycardLib::PAYCARD_ERR_NSF_RETRY;
                 }
                 UdpComm::udpSend('termReset');
-                CoreLocal::set('ccTermState','swipe');
+                $this->conf->set('ccTermState','swipe');
                 // intentional fallthrough
             case 'ERROR':
-                CoreLocal::set("boxMsg","");
+                $this->conf->set("boxMsg","");
                 $texts = $xml->get_first("TEXTRESPONSE");
-                CoreLocal::set("boxMsg","Error: $texts");
+                $this->conf->set("boxMsg","Error: $texts");
                 TransRecord::addcomment("");
                 break;
             default:
-                CoreLocal::set("boxMsg","An unknown error occurred<br />at the gateway");
+                $this->conf->set("boxMsg","An unknown error occurred<br />at the gateway");
                 TransRecord::addcomment("");    
         }
 
@@ -291,7 +292,7 @@ class MercuryE2E extends BasicCCModule
 
         if ($authResult['curlErr'] != CURLE_OK || $authResult['curlHTTP'] != 200) {
             if ($authResult['curlHTTP'] == '0') {
-                CoreLocal::set("boxMsg","No response from processor<br />
+                $this->conf->set("boxMsg","No response from processor<br />
                             The transaction did not go through");
 
                 return PaycardLib::PAYCARD_ERR_PROC;
@@ -306,19 +307,19 @@ class MercuryE2E extends BasicCCModule
             case 'DECLINED':
                 // if declined, try again with a regular Void op
                 // and no reversal information
-                $skipReversal = CoreLocal::get("MercuryE2ESkipReversal");
+                $skipReversal = $this->conf->get("MercuryE2ESkipReversal");
                 if ($skipReversal == true) {
-                    CoreLocal::set("MercuryE2ESkipReversal", false);
+                    $this->conf->set("MercuryE2ESkipReversal", false);
                 } else {
                     return $this->send_void(true);
                 }
             case 'ERROR':
-                CoreLocal::set("boxMsg","");
+                $this->conf->set("boxMsg","");
                 $texts = $xml->get_first("TEXTRESPONSE");
-                CoreLocal::set("boxMsg","Error: $texts");
+                $this->conf->set("boxMsg","Error: $texts");
                 break;
             default:
-                CoreLocal::set("boxMsg","An unknown error occurred<br />at the gateway");
+                $this->conf->set("boxMsg","An unknown error occurred<br />at the gateway");
         }
 
         return PaycardLib::PAYCARD_ERR_PROC;
@@ -326,24 +327,24 @@ class MercuryE2E extends BasicCCModule
 
     public function cleanup($json)
     {
-        switch (CoreLocal::get("paycard_mode")) {
+        switch ($this->conf->get("paycard_mode")) {
             case PaycardLib::PAYCARD_MODE_ADDVALUE:
             case PaycardLib::PAYCARD_MODE_ACTIVATE:
-                CoreLocal::set("autoReprint",1);
-                $ttl = CoreLocal::get("paycard_amount");
-                $dept = CoreLocal::get('PaycardDepartmentGift');
+                $this->conf->set("autoReprint",1);
+                $ttl = $this->conf->get("paycard_amount");
+                $dept = $this->conf->get('PaycardDepartmentGift');
                 $dept = $dept == '' ? 902 : $dept;
                 COREPOS\pos\lib\DeptLib::deptkey($ttl*100, $dept . '0');
-                $bal = CoreLocal::get('GiftBalance');
-                CoreLocal::set("boxMsg","<b>Success</b><font size=-1>
+                $bal = $this->conf->get('GiftBalance');
+                $this->conf->set("boxMsg","<b>Success</b><font size=-1>
                                            <p>New card balance: $" . $bal . "
                                            <p>[enter] to continue
                                            <br>\"rp\" to reprint slip</font>"
                 );
                 break;
             case PaycardLib::PAYCARD_MODE_BALANCE:
-                $bal = CoreLocal::get('DatacapBalanceCheck');
-                CoreLocal::set("boxMsg","<b>Success</b><font size=-1>
+                $bal = $this->conf->get('DatacapBalanceCheck');
+                $this->conf->set("boxMsg","<b>Success</b><font size=-1>
                                            <p>Card balance: $" . $bal . "
                                            <p>\"rp\" to print
                                            <br>[enter] to continue</font>"
@@ -352,19 +353,19 @@ class MercuryE2E extends BasicCCModule
             case PaycardLib::PAYCARD_MODE_AUTH:
                 // cast to string. tender function expects string input
                 // numeric input screws up parsing on negative values > $0.99
-                $amt = "".(-1*(CoreLocal::get("paycard_amount")));
-                $type = CoreLocal::get("CacheCardType");
+                $amt = "".(-1*($this->conf->get("paycard_amount")));
+                $type = $this->conf->get("CacheCardType");
                 $t_type = 'CC';
-                if (CoreLocal::get('paycard_issuer') == 'American Express') {
+                if ($this->conf->get('paycard_issuer') == 'American Express') {
                     $t_type = 'AX';
                 }
                 if ($type == 'EBTFOOD') {
                     // extra tax exemption steps
                     TransRecord::addfsTaxExempt();
-                    CoreLocal::set("fntlflag",0);
+                    $this->conf->set("fntlflag",0);
                     Database::setglobalvalue("FntlFlag", 0);
                 }
-                list($tender_code, $tender_description) = PaycardLib::getTenderInfo($type, CoreLocal::get('paycard_issuer'));
+                list($tender_code, $tender_description) = PaycardLib::getTenderInfo($type, $this->conf->get('paycard_issuer'));
 
                 // if the transaction has a non-zero paycardTransactionID,
                 // include it in the tender line
@@ -373,18 +374,18 @@ class MercuryE2E extends BasicCCModule
                 TransRecord::addFlaggedTender($tender_description, $tender_code, $amt, $record_id, $charflag);
 
                 $appr_type = 'Approved';
-                if (CoreLocal::get('paycard_partial')){
+                if ($this->conf->get('paycard_partial')){
                     $appr_type = 'Partial Approval';
-                } elseif (CoreLocal::get('paycard_amount') == 0) {
+                } elseif ($this->conf->get('paycard_amount') == 0) {
                     $appr_type = 'Declined';
                     $json['receipt'] = 'ccDecline';
                 }
-                CoreLocal::set('paycard_partial', false);
+                $this->conf->set('paycard_partial', false);
 
-                $isCredit = (CoreLocal::get('CacheCardType') == 'CREDIT' || CoreLocal::get('CacheCardType') == '') ? true : false;
-                $needSig = (CoreLocal::get('paycard_amount') > CoreLocal::get('CCSigLimit') || CoreLocal::get('paycard_amount') < 0) ? true : false;
-                if (($isCredit || CoreLocal::get('EmvSignature') === true) && $needSig) {
-                    CoreLocal::set("boxMsg",
+                $isCredit = ($this->conf->get('CacheCardType') == 'CREDIT' || $this->conf->get('CacheCardType') == '') ? true : false;
+                $needSig = ($this->conf->get('paycard_amount') > $this->conf->get('CCSigLimit') || $this->conf->get('paycard_amount') < 0) ? true : false;
+                if (($isCredit || $this->conf->get('EmvSignature') === true) && $needSig) {
+                    $this->conf->set("boxMsg",
                             "<b>$appr_type</b>
                             <font size=-1>
                             <p>Please verify cardholder signature
@@ -392,11 +393,11 @@ class MercuryE2E extends BasicCCModule
                             <br>\"rp\" to reprint slip
                             <br>[void] " . _('to reverse the charge') . "
                             </font>");
-                    if (CoreLocal::get('PaycardsSigCapture') != 1) {
+                    if ($this->conf->get('PaycardsSigCapture') != 1) {
                         $json['receipt'] = 'ccSlip';
                     }
                 } else {
-                    CoreLocal::set("boxMsg",
+                    $this->conf->set("boxMsg",
                             "<b>$appr_type</b>
                             <font size=-1>
                             <p>No signature required
@@ -407,10 +408,10 @@ class MercuryE2E extends BasicCCModule
                 break;
             case PaycardLib::PAYCARD_MODE_VOID:
                 $void = new Void();
-                $void->voidid(CoreLocal::get("paycard_id"), array());
+                $void->voidid($this->conf->get("paycard_id"), array());
                 // advanced ID to the void line
-                CoreLocal::set('paycard_id', CoreLocal::get('paycard_id')+1);
-                CoreLocal::set("boxMsg","<b>Voided</b>
+                $this->conf->set('paycard_id', $this->conf->get('paycard_id')+1);
+                $this->conf->set("boxMsg","<b>Voided</b>
                                            <p><font size=-1>[enter] to continue
                                            <br>\"rp\" to reprint slip</font>"
                 );
@@ -448,22 +449,22 @@ class MercuryE2E extends BasicCCModule
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND); 
         }
 
-        $request = new PaycardRequest($this->refnum(CoreLocal::get('paycard_id')), $dbTrans);
+        $request = new PaycardRequest($this->refnum($this->conf->get('paycard_id')), $dbTrans);
         $request->setProcessor('MercuryE2E');
 
-        if (CoreLocal::get("paycard_voiceauthcode") != "") {
+        if ($this->conf->get("paycard_voiceauthcode") != "") {
             $request->setMode("VoiceAuth");
-        } else if (CoreLocal::get("ebt_authcode") != "" && CoreLocal::get("ebt_vnum") != "") {
+        } else if ($this->conf->get("ebt_authcode") != "" && $this->conf->get("ebt_vnum") != "") {
             $request->setMode("Voucher");
         }
         $password = $this->getPw();
-        $e2e = $this->encBlock->parseEncBlock(CoreLocal::get("paycard_PAN"));
-        $pin = $this->encBlock->parsePinBlock(CoreLocal::get("CachePinEncBlock"));
+        $e2e = $this->encBlock->parseEncBlock($this->conf->get("paycard_PAN"));
+        $pin = $this->encBlock->parsePinBlock($this->conf->get("CachePinEncBlock"));
         $request->setIssuer($e2e['Issuer']);
-        CoreLocal::set('paycard_issuer',$e2e['Issuer']);
+        $this->conf->set('paycard_issuer',$e2e['Issuer']);
         $request->setCardholder($e2e['Name']);
         $request->setPAN($e2e['Last4']);
-        CoreLocal::set('paycard_partial',false);
+        $this->conf->set('paycard_partial',false);
         $request->setSent(0, 0, 0, 1);
         
         // store request in the database before sending it
@@ -479,11 +480,11 @@ class MercuryE2E extends BasicCCModule
         if (substr($request->type,0,3) == 'EBT') {
             $msgXml .= '<TranType>EBT</TranType>';
             if ($request->type == 'EBTFOOD') {
-                CoreLocal::set('EbtFsBalance', 'unknown');
+                $this->conf->set('EbtFsBalance', 'unknown');
                 $msgXml .= '<CardType>Foodstamp</CardType>';
             } else if ($request->type == 'EBTCASH') {
                 $msgXml .= '<CardType>Cash</CardType>';
-                CoreLocal::set('EbtCaBalance', 'unknown');
+                $this->conf->set('EbtCaBalance', 'unknown');
             }
         } else {
             $msgXml .= '<TranType>'.$request->type.'</TranType>';
@@ -501,13 +502,13 @@ class MercuryE2E extends BasicCCModule
                 <DervdKey>".$pin['key']."</DervdKey>
                 </PIN>";
         }
-        if (CoreLocal::get("paycard_voiceauthcode") != "") {
+        if ($this->conf->get("paycard_voiceauthcode") != "") {
             $msgXml .= "<TransInfo>";
             $msgXml .= "<AuthCode>";
-            $msgXml .= CoreLocal::get("paycard_voiceauthcode");
+            $msgXml .= $this->conf->get("paycard_voiceauthcode");
             $msgXml .= "</AuthCode>";
             $msgXml .= "</TransInfo>";
-        } else if (CoreLocal::get("ebt_authcode") != "" && CoreLocal::get("ebt_vnum") != "") {
+        } else if ($this->conf->get("ebt_authcode") != "" && $this->conf->get("ebt_vnum") != "") {
             $msgXml .= $this->ebtVoucherXml();
         }
         $msgXml .= "</Transaction>
@@ -534,14 +535,14 @@ class MercuryE2E extends BasicCCModule
     */
     public function prepareDataCapAuth($type, $amount, $prompt=false)
     {
-        $request = new PaycardRequest($this->refnum(CoreLocal::get('paycard_id')), PaycardLib::paycard_db());
+        $request = new PaycardRequest($this->refnum($this->conf->get('paycard_id')), PaycardLib::paycard_db());
         $request->setProcessor('MercuryE2E');
         $tran_code = $amount > 0 ? 'Sale' : 'Return';
         if ($type == 'EMV') {
             $tran_code = 'EMV' . $tran_code;
         } elseif ($type == 'GIFT') {
             $tran_code = $amount > 0 ? 'NoNSFSale' : 'Return';
-        } else if (CoreLocal::get("ebt_authcode") != "" && CoreLocal::get("ebt_vnum") != "") {
+        } else if ($this->conf->get("ebt_authcode") != "" && $this->conf->get("ebt_vnum") != "") {
             $tran_code = 'Voucher';
         }
 
@@ -570,8 +571,8 @@ class MercuryE2E extends BasicCCModule
             $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND); 
             return 'Error';
         }
-        CoreLocal::set('LastEmvPcId', $request->last_paycard_transaction_id);
-        CoreLocal::set('LastEmvReqType', 'normal');
+        $this->conf->set('LastEmvPcId', $request->last_paycard_transaction_id);
+        $this->conf->set('LastEmvReqType', 'normal');
 
         // start with fields common to PDCX and EMVX
         $msgXml = $this->beginXmlRequest($request);
@@ -579,7 +580,7 @@ class MercuryE2E extends BasicCCModule
             <SecureDevice>{{SecureDevice}}</SecureDevice>
             <ComPort>{{ComPort}}</ComPort>';
         if ($type == 'EMV') { // add EMV specific fields
-            $dc_host = CoreLocal::get('PaycardsDatacapLanHost');
+            $dc_host = $this->conf->get('PaycardsDatacapLanHost');
             if (empty($dc_host)) {
                 $dc_host = '127.0.0.1';
             }
@@ -594,9 +595,9 @@ class MercuryE2E extends BasicCCModule
                         <AcctNo>Prompt</AcctNo>
                     </Account>';
             }
-            if (CoreLocal::get('PaycardsDatacapMode') == 2) {
+            if ($this->conf->get('PaycardsDatacapMode') == 2) {
                 $msgXml .= '<MerchantLanguage>English</MerchantLanguage>';
-            } elseif (CoreLocal::get('PaycardsDatacapMode') == 3) {
+            } elseif ($this->conf->get('PaycardsDatacapMode') == 3) {
                 $msgXml .= '<MerchantLanguage>French</MerchantLanguage>';
             }
         } else {
@@ -615,7 +616,7 @@ class MercuryE2E extends BasicCCModule
                 $msgXml .= '<IpPort>9100</IpPort>';
                 $msgXml .= '<IpAddress>' . $this->giftServerIP() . '</IpAddress>';
             }
-            if (CoreLocal::get("ebt_authcode") != "" && CoreLocal::get("ebt_vnum") != "") {
+            if ($this->conf->get("ebt_authcode") != "" && $this->conf->get("ebt_vnum") != "") {
                 $msgXml .= $this->ebtVoucherXml();
             }
         }
@@ -639,9 +640,9 @@ class MercuryE2E extends BasicCCModule
         $dbc = Database::tDataConnect();
         $prep = $dbc->prepare('SELECT transNo, registerNo FROM PaycardTransactions WHERE paycardTransactionID=?');
         $row = $dbc->getRow($prep, $pcID);
-        CoreLocal::set('paycard_trans', CoreLocal::get('CashierNo') . '-' . $row['registerNo'] . '-' . $row['transNo']);
+        $this->conf->set('paycard_trans', $this->conf->get('CashierNo') . '-' . $row['registerNo'] . '-' . $row['transNo']);
 
-        $request = new PaycardVoidRequest($this->refnum(CoreLocal::get('paycard_id')), $dbc);
+        $request = new PaycardVoidRequest($this->refnum($this->conf->get('paycard_id')), $dbc);
         $request->setProcessor('MercuryE2E');
 
         $host = $this->getAxHost();
@@ -649,14 +650,14 @@ class MercuryE2E extends BasicCCModule
         try {
             $prev = $request->findOriginal();
         } catch (Exception $ex) {
-            CoreLocal::set('boxMsg', 'Transaction not found');
+            $this->conf->set('boxMsg', 'Transaction not found');
             return 'Error';
         }
 
         try {
             $request->saveRequest();
-            CoreLocal::set('LastEmvPcId', $request->last_paycard_transaction_id);
-            CoreLocal::set('LastEmvReqType', 'void');
+            $this->conf->set('LastEmvPcId', $request->last_paycard_transaction_id);
+            $this->conf->set('LastEmvReqType', 'void');
         } catch (Exception $ex) {
             $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND); 
             return 'Error';
@@ -706,7 +707,7 @@ class MercuryE2E extends BasicCCModule
             <SecureDevice>{{SecureDevice}}</SecureDevice>
             <ComPort>{{ComPort}}</ComPort>';
         if ($tran_type == 'EMV') { // add EMV specific fields
-            $dc_host = CoreLocal::get('PaycardsDatacapLanHost');
+            $dc_host = $this->conf->get('PaycardsDatacapLanHost');
             if (empty($dc_host)) {
                 $dc_host = '127.0.0.1';
             }
@@ -715,9 +716,9 @@ class MercuryE2E extends BasicCCModule
             <SequenceNo>{{SequenceNo}}</SequenceNo>
             <CollectData>CardholderName</CollectData>
             <PartialAuth>Allow</PartialAuth>';
-            if (CoreLocal::get('PaycardsDatacapMode') == 2) {
+            if ($this->conf->get('PaycardsDatacapMode') == 2) {
                 $msgXml .= '<MerchantLanguage>English</MerchantLanguage>';
-            } elseif (CoreLocal::get('PaycardsDatacapMode') == 3) {
+            } elseif ($this->conf->get('PaycardsDatacapMode') == 3) {
                 $msgXml .= '<MerchantLanguage>French</MerchantLanguage>';
             }
         } else { // add non-EMV fields
@@ -764,19 +765,19 @@ class MercuryE2E extends BasicCCModule
     */
     public function prepareDataCapBalance($type, $prompt=false)
     {
-        CoreLocal::set('DatacapBalanceCheck', '??');
+        $this->conf->set('DatacapBalanceCheck', '??');
         $termID = $this->getTermID();
-        $operatorID = CoreLocal::get("CashierNo");
-        $transID = CoreLocal::get('paycard_id');
-        $mcTerminalID = CoreLocal::get('PaycardsTerminalID');
+        $operatorID = $this->conf->get("CashierNo");
+        $transID = $this->conf->get('paycard_id');
+        $mcTerminalID = $this->conf->get('PaycardsTerminalID');
         if ($mcTerminalID === '') {
-            $mcTerminalID = CoreLocal::get('laneno');
+            $mcTerminalID = $this->conf->get('laneno');
         }
         $refNum = $this->refnum($transID);
 
         $host = $this->getAxHost();
         $live = 1;
-        if (CoreLocal::get("training") == 1) {
+        if ($this->conf->get("training") == 1) {
             $live = 0;
             $operatorID = 'test';
         }
@@ -831,11 +832,11 @@ class MercuryE2E extends BasicCCModule
 
     public function prepareDataCapGift($mode, $amount, $prompt)
     {
-        $request = new PaycardGiftRequest($this->refnum(CoreLocal::get('paycard_id')), PaycardLib::paycard_db());
+        $request = new PaycardGiftRequest($this->refnum($this->conf->get('paycard_id')), PaycardLib::paycard_db());
         $request->setProcessor('MercuryE2E');
 
         $host = "g1.mercurypay.com";
-        if (CoreLocal::get("training") == 1) {
+        if ($this->conf->get("training") == 1) {
             $host = "g1.mercurydev.net";
         }
         $tran_code = 'Issue';
@@ -853,13 +854,13 @@ class MercuryE2E extends BasicCCModule
             $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND); 
             return 'Error';
         }
-        CoreLocal::set('LastEmvPcId', $request->last_paycard_transaction_id);
-        CoreLocal::set('LastEmvReqType', 'gift');
-        CoreLocal::set('paycard_amount', $amount);
-        CoreLocal::set('paycard_id', CoreLocal::get('LastID'+1));
-        CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_GIFT);
-        CoreLocal::set('CacheCardType', 'GIFT');
-        CoreLocal::set('paycard_mode', $mode);
+        $this->conf->set('LastEmvPcId', $request->last_paycard_transaction_id);
+        $this->conf->set('LastEmvReqType', 'gift');
+        $this->conf->set('paycard_amount', $amount);
+        $this->conf->set('paycard_id', $this->conf->get('LastID'+1));
+        $this->conf->set('paycard_type', PaycardLib::PAYCARD_TYPE_GIFT);
+        $this->conf->set('CacheCardType', 'GIFT');
+        $this->conf->set('paycard_mode', $mode);
 
         $msgXml = $this->beginXmlRequest($request);
         $msgXml .= '<TranType>PrePaid</TranType>
@@ -891,10 +892,10 @@ class MercuryE2E extends BasicCCModule
     public function handleResponseDataCap($xml)
     {
         $rawXml = $xml;
-        $ref = $this->refnum(CoreLocal::get('paycard_id'));
-        $transID = CoreLocal::get('paycard_id');
+        $ref = $this->refnum($this->conf->get('paycard_id'));
+        $transID = $this->conf->get('paycard_id');
         $request = $this->getRequestObj($ref);
-        $request->last_paycard_transaction_id = CoreLocal::get('LastEmvPcId');
+        $request->last_paycard_transaction_id = $this->conf->get('LastEmvPcId');
         $this->last_paycard_transaction_id = $request->last_paycard_transaction_id;
         $response = new PaycardResponse($request,array(
             'curlTime' => 0,
@@ -943,16 +944,16 @@ class MercuryE2E extends BasicCCModule
         $ebtbalance = 0;
         if ($issuer == 'Foodstamp' && $resp_balance !== false) {
             $issuer = 'EBT';
-            CoreLocal::set('EbtFsBalance', $resp_balance);
+            $this->conf->set('EbtFsBalance', $resp_balance);
             $ebtbalance = $resp_balance;
         } elseif ($issuer == 'Cash' && $resp_balance !== false) {
             $issuer = 'EBT';
-            CoreLocal::set('EbtCaBalance', $resp_balance);
+            $this->conf->set('EbtCaBalance', $resp_balance);
             $ebtbalance = $resp_balance;
         } elseif ($xml->query('/RStream/TranResponse/TranType') == 'PrePaid' && $resp_balance !== false) {
             $issuer = 'NCG';
             $ebtbalance = $resp_balance;
-            CoreLocal::set('GiftBalance', $resp_balance);
+            $this->conf->set('GiftBalance', $resp_balance);
         }
         $response->setBalance($ebtbalance);
 
@@ -961,15 +962,15 @@ class MercuryE2E extends BasicCCModule
         $tran_code = $xml->query('/RStream/TranResponse/TranCode');
         if (substr($tran_code, 0, 3) == 'EMV') {
             if (strpos($rawXml, 'x____') !== false) {
-                CoreLocal::set('EmvSignature', true);
+                $this->conf->set('EmvSignature', true);
             } else {
-                CoreLocal::set('EmvSignature', false);
+                $this->conf->set('EmvSignature', false);
             }
             $printData = $xml->query('/RStream/PrintData/*', false);
             /* Code Climate's syntax highlighting gets confused by the previous line */
             if (strlen($printData) > 0) {
                 $receiptID = $transID;
-                if (CoreLocal::get('paycard_mode') == PaycardLib::PAYCARD_MODE_VOID) {
+                if ($this->conf->get('paycard_mode') == PaycardLib::PAYCARD_MODE_VOID) {
                     $receiptID++;
                 }
                 $printP = $dbc->prepare('
@@ -977,7 +978,7 @@ class MercuryE2E extends BasicCCModule
                         (dateID, tdate, empNo, registerNo, transNo, transID, content)
                     VALUES 
                         (?, ?, ?, ?, ?, ?, ?)');
-                $dbc->execute($printP, array(date('Ymd'), date('Y-m-d H:i:s'), CoreLocal::get('cashierNo'), CoreLocal::get('laneno'), CoreLocal::get('transno'), $receiptID, $printData));
+                $dbc->execute($printP, array(date('Ymd'), date('Y-m-d H:i:s'), $this->conf->get('cashierNo'), $this->conf->get('laneno'), $this->conf->get('transno'), $receiptID, $printData));
             }
         }
 
@@ -1016,18 +1017,18 @@ class MercuryE2E extends BasicCCModule
                     // requested authorization, it may be possible to
                     // charge the card for a less amount. 
                     TransRecord::addcomment("");
-                    CoreLocal::set('boxMsg', sprintf('Card Balance: $%.2f', $ebtbalance));
+                    $this->conf->set('boxMsg', sprintf('Card Balance: $%.2f', $ebtbalance));
                 } elseif (substr($tran_code, 0, 3) == 'EMV') {
-                    CoreLocal::set('paycard_amount', 0);
+                    $this->conf->set('paycard_amount', 0);
                     return PaycardLib::PAYCARD_ERR_OK;
                 }
                 UdpComm::udpSend('termReset');
-                CoreLocal::set('ccTermState','swipe');
+                $this->conf->set('ccTermState','swipe');
                 // intentional fallthrough
             case 'ERROR':
-                CoreLocal::set("boxMsg","");
+                $this->conf->set("boxMsg","");
                 $texts = $xml->query('/RStream/CmdResponse/TextResponse');
-                CoreLocal::set("boxMsg","Error: $texts");
+                $this->conf->set("boxMsg","Error: $texts");
                 $dsix = $xml->query('/RStream/CmdResponse/DSIXReturnCode');
                 if ($dsix == '001007' || $dsix == '003007' || $dsix == '003010') {
                     /* These error codes indicate a potential connectivity
@@ -1039,7 +1040,7 @@ class MercuryE2E extends BasicCCModule
                 }
                 break;
             default:
-                CoreLocal::set("boxMsg","An unknown error occurred<br />at the gateway");
+                $this->conf->set("boxMsg","An unknown error occurred<br />at the gateway");
                 TransRecord::addcomment("");    
         }
 
@@ -1066,18 +1067,18 @@ class MercuryE2E extends BasicCCModule
 
         switch (strtoupper($xml->get_first("CMDSTATUS"))) {
             case 'APPROVED':
-                CoreLocal::set('DatacapBalanceCheck', $balance);
+                $this->conf->set('DatacapBalanceCheck', $balance);
                 return PaycardLib::PAYCARD_ERR_OK;
             case 'DECLINED':
                 // intentional fallthrough
             case 'ERROR':
-                CoreLocal::set("boxMsg","");
+                $this->conf->set("boxMsg","");
                 $texts = $xml->get_first("TEXTRESPONSE");
-                CoreLocal::set("boxMsg","Error: $texts");
+                $this->conf->set("boxMsg","Error: $texts");
                 TransRecord::addcomment("");
                 break;
             default:
-                CoreLocal::set("boxMsg","An unknown error occurred<br />at the gateway");
+                $this->conf->set("boxMsg","An unknown error occurred<br />at the gateway");
                 TransRecord::addcomment("");    
         }
 
@@ -1097,19 +1098,19 @@ class MercuryE2E extends BasicCCModule
         }
 
         if ($skipReversal) {
-            CoreLocal::set("MercuryE2ESkipReversal", true);
+            $this->conf->set("MercuryE2ESkipReversal", true);
         } else {
-            CoreLocal::set("MercuryE2ESkipReversal", false);
+            $this->conf->set("MercuryE2ESkipReversal", false);
         }
 
-        $request = new PaycardVoidRequest($this->refnum(CoreLocal::get('paycard_id')), $dbTrans);
+        $request = new PaycardVoidRequest($this->refnum($this->conf->get('paycard_id')), $dbTrans);
         $request->setProcessor('MercuryE2E');
         $request->setMode('VoidSaleByRecordNo');
 
         $password = $this->getPw();
-        $transID = CoreLocal::get("paycard_id");
+        $transID = $this->conf->get("paycard_id");
         $this->voidTrans = $transID;
-        $this->voidRef = CoreLocal::get("paycard_trans");
+        $this->voidRef = $this->conf->get("paycard_trans");
 
         try {
             $res = $request->findOriginal();
@@ -1133,7 +1134,7 @@ class MercuryE2E extends BasicCCModule
             } else if (substr($res['mode'],-7)=="_Return") {
                 $mode = 'SaleByRecordNo';
             }
-            CoreLocal::set("MercuryE2ESkipReversal", true);
+            $this->conf->set("MercuryE2ESkipReversal", true);
         } else if (substr($res['mode'],-7)=="_Return") {
             $mode = 'VoidReturnByRecordNo';
         }
@@ -1166,9 +1167,9 @@ class MercuryE2E extends BasicCCModule
     // field. requires uniqueness, doesn't seem to cycle daily
     public function refnum($transID)
     {
-        $transNo   = (int)CoreLocal::get("transno");
-        $cashierNo = (int)CoreLocal::get("CashierNo");
-        $laneNo    = (int)CoreLocal::get("laneno");    
+        $transNo   = (int)$this->conf->get("transno");
+        $cashierNo = (int)$this->conf->get("CashierNo");
+        $laneNo    = (int)$this->conf->get("laneno");    
 
         // assemble string
         $ref = "";
@@ -1187,8 +1188,8 @@ class MercuryE2E extends BasicCCModule
     */
     public function getTermID()
     {
-        if (CoreLocal::get("training") == 1) {
-            if (CoreLocal::get('CacheCardType') == 'EMV') {
+        if ($this->conf->get("training") == 1) {
+            if ($this->conf->get('CacheCardType') == 'EMV') {
                 return '337234005'; // emv
             } else {
                 return '019588466313922';
@@ -1196,7 +1197,7 @@ class MercuryE2E extends BasicCCModule
             }
             //return "395347308=E2ETKN"; // old test ID
         } else {
-            return CoreLocal::get('MercuryE2ETerminalID');
+            return $this->conf->get('MercuryE2ETerminalID');
         }
     }
 
@@ -1206,11 +1207,11 @@ class MercuryE2E extends BasicCCModule
     */
     private function getPw()
     {
-        if (CoreLocal::get("training") == 1) {
+        if ($this->conf->get("training") == 1) {
             return 'xyz';
             return "123E2ETKN";
         } else {
-            return CoreLocal::get('MercuryE2EPassword');
+            return $this->conf->get('MercuryE2EPassword');
         }
     }
 
@@ -1226,8 +1227,8 @@ class MercuryE2E extends BasicCCModule
     public function lookupTransaction($ref, $local, $mode)
     {
         $ws_params = array(
-            'merchant' => CoreLocal::get('MercuryE2ETerminalID'),
-            'pw' => CoreLocal::get('MercuryE2EPassword'),
+            'merchant' => $this->conf->get('MercuryE2ETerminalID'),
+            'pw' => $this->conf->get('MercuryE2EPassword'),
             'invoice' => $ref,
         );
 
@@ -1332,7 +1333,7 @@ class MercuryE2E extends BasicCCModule
                 $apprNumber,
                 $normalized,
                 $ref,
-                CoreLocal::get('paycard_id'),
+                $this->conf->get('paycard_id'),
             );
             $upR = $db->execute($upP, $args);
         }
@@ -1383,10 +1384,10 @@ class MercuryE2E extends BasicCCModule
     private function giftServerIP()
     {
         $host = 'g1.mercurypay.com';
-        if (CoreLocal::get('training') == 1) {
+        if ($this->conf->get('training') == 1) {
             $host = 'g1.mercurydev.net';
         }
-        $host_cache = CoreLocal::get('DnsCache');
+        $host_cache = $this->conf->get('DnsCache');
         if (!is_array($host_cache)) {
             $host_cache = array();
         }
@@ -1398,7 +1399,7 @@ class MercuryE2E extends BasicCCModule
                 return $host;
             } else { // cache IP for next time
                 $host_cache[$host] = $addr;
-                CoreLocal::set('DnsCache', $host_cache);
+                $this->conf->set('DnsCache', $host_cache);
                 return $addr;
             }
         }
@@ -1422,10 +1423,10 @@ class MercuryE2E extends BasicCCModule
     {
         return "<TranInfo>
             <AuthCode>
-            " . CoreLocal::get("ebt_authcode") . "
+            " . $this->conf->get("ebt_authcode") . "
             </AuthCode>
             <VoucherNo>
-            " . CoreLocal::get("ebt_vnum") . "
+            " . $this->conf->get("ebt_vnum") . "
             </VoucherNo>
             </TranInfo>";
     }
@@ -1447,9 +1448,9 @@ class MercuryE2E extends BasicCCModule
     private function beginXmlRequest($request, $ref_no=false, $record_no=false)
     {
         $termID = $this->getTermID();
-        $mcTerminalID = CoreLocal::get('PaycardsTerminalID');
+        $mcTerminalID = $this->conf->get('PaycardsTerminalID');
         if ($mcTerminalID === '') {
-            $mcTerminalID = CoreLocal::get('laneno');
+            $mcTerminalID = $this->conf->get('laneno');
         }
 
         $msgXml = '<?xml version="1.0"?'.'>
@@ -1491,7 +1492,7 @@ class MercuryE2E extends BasicCCModule
           a timeout and waiting 30 seconds for the primary
           to fail every single transaction isn't ideal.
         */
-        if (CoreLocal::get('MercurySwitchUrls') > 0) {
+        if ($this->conf->get('MercurySwitchUrls') > 0) {
             if (!$this->second_try) {
                 $domain = self::BACKUP_URL;    
             } else {
@@ -1509,10 +1510,10 @@ class MercuryE2E extends BasicCCModule
           SwitchUrls is a counter
           Go back to normal order when it reaches zero 
         */    
-        if (CoreLocal::get('MercurySwitchUrls') > 0) {
-            $switch_count = CoreLocal::get('MercurySwitchUrls');
+        if ($this->conf->get('MercurySwitchUrls') > 0) {
+            $switch_count = $this->conf->get('MercurySwitchUrls');
             $switch_count--;
-            CoreLocal::set('MercurySwitchUrls', $switch_count);
+            $this->conf->set('MercurySwitchUrls', $switch_count);
         }
 
         return $domain;
@@ -1520,7 +1521,7 @@ class MercuryE2E extends BasicCCModule
 
     private function getWsUrl($domain)
     {
-        if (CoreLocal::get("training") == 1) {
+        if ($this->conf->get("training") == 1) {
             return "https://w1.mercurydev.net/ws/ws.asmx";
         } else {
             return "https://$domain/ws/ws.asmx";
@@ -1530,7 +1531,7 @@ class MercuryE2E extends BasicCCModule
     private function getAxHost()
     {
         $host = "x1.mercurypay.com";
-        if (CoreLocal::get("training") == 1) {
+        if ($this->conf->get("training") == 1) {
             $host = "x1.mercurydev.net";
         }
 
@@ -1539,23 +1540,23 @@ class MercuryE2E extends BasicCCModule
 
     private function handlePartial($amt, $request)
     {
-        if ($amt != abs(CoreLocal::get("paycard_amount"))) {
+        if ($amt != abs($this->conf->get("paycard_amount"))) {
             $request->changeAmount($amt);
 
-            CoreLocal::set("paycard_amount",$amt);
-            CoreLocal::set("paycard_partial",True);
+            $this->conf->set("paycard_amount",$amt);
+            $this->conf->set("paycard_partial",True);
             UdpComm::udpSend('goodBeep');
         }
     }
 
     private function getRequestObj($ref)
     {
-        if (CoreLocal::get('LastEmvReqType') == 'void') {
+        if ($this->conf->get('LastEmvReqType') == 'void') {
             return new PaycardVoidRequest($ref, PaycardLib::paycard_db());
-        } elseif (CoreLocal::get('LastEmvReqType') == 'gift') {
+        } elseif ($this->conf->get('LastEmvReqType') == 'gift') {
             return new PaycardGiftRequest($ref, PaycardLib::paycard_db());
         }
-        return new PaycardRequest($this->refnum(CoreLocal::get('paycard_id')), PaycardLib::paycard_db());
+        return new PaycardRequest($this->refnum($this->conf->get('paycard_id')), PaycardLib::paycard_db());
     }
 }
 

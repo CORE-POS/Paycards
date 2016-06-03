@@ -39,6 +39,7 @@ class Valutec extends BasicCCModule
         $this->pmod = new PaycardModule();
         $this->dialogs = new PaycardDialogs();
         $this->pmod->setDialogs($this->dialogs);
+        $this->conf = new PaycardConf();
     }
     // BEGIN INTERFACE METHODS
 
@@ -67,17 +68,17 @@ class Valutec extends BasicCCModule
         try {
             $enabled = $this->dialogs->enabledCheck();
             // error checks based on processing mode
-            if (CoreLocal::get("paycard_mode") == PaycardLib::PAYCARD_MODE_VOID) {
+            if ($this->conf->get("paycard_mode") == PaycardLib::PAYCARD_MODE_VOID) {
                 // use the card number to find the trans_id
                 $pan4 = substr($this->getPAN(), -4);
-                $trans = array(CoreLocal::get('CashierNo'), CoreLocal::get('laneno'), CoreLocal::get('transno'));
+                $trans = array($this->conf->get('CashierNo'), $this->conf->get('laneno'), $this->conf->get('transno'));
                 $result = $this->dialogs->voidableCheck($pan4, $trans);
                 return $this->paycard_void($result,-1,-1,$json);
             }
 
             // check card data for anything else
             if ($validate) {
-                $valid = $this->dialogs->validateCard(CoreLocal::get('paycard_PAN'), false);
+                $valid = $this->dialogs->validateCard($this->conf->get('paycard_PAN'), false);
             }
         } catch (Exception $ex) {
             $json['output'] = $ex->getMessage();
@@ -86,13 +87,13 @@ class Valutec extends BasicCCModule
 
         // other modes
         $plugin_info = new Paycards();
-        switch (CoreLocal::get("paycard_mode")) {
+        switch ($this->conf->get("paycard_mode")) {
             case PaycardLib::PAYCARD_MODE_AUTH:
                 return PaycardLib::setupAuthJson($json);
             case PaycardLib::PAYCARD_MODE_ACTIVATE:
             case PaycardLib::PAYCARD_MODE_ADDVALUE:
-                CoreLocal::set("paycard_amount",0);
-                CoreLocal::set("paycard_id",CoreLocal::get("LastID")+1); // kind of a hack to anticipate it this way..
+                $this->conf->set("paycard_amount",0);
+                $this->conf->set("paycard_id",$this->conf->get("LastID")+1); // kind of a hack to anticipate it this way..
                 $json['main_frame'] = $plugin_info->pluginUrl().'/gui/paycardboxMsgGift.php';
                 return $json;
             case PaycardLib::PAYCARD_MODE_BALANCE:
@@ -123,10 +124,10 @@ class Valutec extends BasicCCModule
      */
     public function cleanup($json)
     {
-        switch (CoreLocal::get("paycard_mode")) {
+        switch ($this->conf->get("paycard_mode")) {
             case PaycardLib::PAYCARD_MODE_BALANCE:
-                $resp = CoreLocal::get("paycard_response");
-                CoreLocal::set("boxMsg","<b>Success</b><font size=-1>
+                $resp = $this->conf->get("paycard_response");
+                $this->conf->set("boxMsg","<b>Success</b><font size=-1>
                                            <p>Gift card balance: $" . $resp["Balance"] . "
                                            <p>\"rp\" to print
                                            <br>[enter] to continue</font>"
@@ -134,25 +135,25 @@ class Valutec extends BasicCCModule
                 break;
             case PaycardLib::PAYCARD_MODE_ADDVALUE:
             case PaycardLib::PAYCARD_MODE_ACTIVATE:
-                CoreLocal::set("autoReprint",1);
-                $ttl = CoreLocal::get("paycard_amount");
+                $this->conf->set("autoReprint",1);
+                $ttl = $this->conf->get("paycard_amount");
                 COREPOS\pos\lib\DeptLib::deptkey($ttl*100,9020);
-                $resp = CoreLocal::get("paycard_response");    
-                CoreLocal::set("boxMsg","<b>Success</b><font size=-1>
+                $resp = $this->conf->get("paycard_response");    
+                $this->conf->set("boxMsg","<b>Success</b><font size=-1>
                                            <p>New card balance: $" . $resp["Balance"] . "
                                            <p>[enter] to continue
                                            <br>\"rp\" to reprint slip</font>"
                 );
                 break;
             case PaycardLib::PAYCARD_MODE_AUTH:
-                $amt = "".(-1*(CoreLocal::get("paycard_amount")));
-                CoreLocal::set("autoReprint",1);
+                $amt = "".(-1*($this->conf->get("paycard_amount")));
+                $this->conf->set("autoReprint",1);
                 $record_id = $this->last_paycard_transaction_id;
                 $charflag = ($record_id != 0) ? 'PT' : '';
                 TransRecord::addFlaggedTender("Gift Card", "GD", $amt, $record_id, $charflag);
-                $resp = CoreLocal::get("paycard_response");
-                CoreLocal::set("boxMsg","<b>Approved</b><font size=-1>
-                                           <p>Used: $" . CoreLocal::get("paycard_amount") . "
+                $resp = $this->conf->get("paycard_response");
+                $this->conf->set("boxMsg","<b>Approved</b><font size=-1>
+                                           <p>Used: $" . $this->conf->get("paycard_amount") . "
                                            <br />New balance: $" . $resp["Balance"] . "
                                            <p>[enter] to continue
                                            <br>\"rp\" to reprint slip
@@ -160,11 +161,11 @@ class Valutec extends BasicCCModule
                 );
                 break;
             case PaycardLib::PAYCARD_MODE_VOID:
-                CoreLocal::set("autoReprint",1);
+                $this->conf->set("autoReprint",1);
                 $void = new Void();
-                $void->voidid(CoreLocal::get("paycard_id"), array());
-                $resp = CoreLocal::get("paycard_response");
-                CoreLocal::set("boxMsg","<b>Voided</b><font size=-1>
+                $void->voidid($this->conf->get("paycard_id"), array());
+                $resp = $this->conf->get("paycard_response");
+                $this->conf->set("boxMsg","<b>Voided</b><font size=-1>
                                            <p>New balance: $" . $resp["Balance"] . "
                                            <p>[enter] to continue
                                            <br>\"rp\" to reprint slip</font>"
@@ -187,8 +188,8 @@ class Valutec extends BasicCCModule
         $ret = $this->pmod->ccVoid($transID, $laneNo, $transNo, $json);
 
         // save the details
-        CoreLocal::set("paycard_type",PaycardLib::PAYCARD_TYPE_GIFT);
-        CoreLocal::set("paycard_mode",PaycardLib::PAYCARD_MODE_VOID);
+        $this->conf->set("paycard_type",PaycardLib::PAYCARD_TYPE_GIFT);
+        $this->conf->set("paycard_mode",PaycardLib::PAYCARD_MODE_VOID);
     
         return $ret;
     }
@@ -202,13 +203,13 @@ class Valutec extends BasicCCModule
         if (!$dbTrans) {
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND); // internal error, nothing sent (ok to retry)
         }
-        $request = new PaycardGiftRequest($this->valutecIdentifier(CoreLocal::get('paycard_id')), $dbTrans);
+        $request = new PaycardGiftRequest($this->valutecIdentifier($this->conf->get('paycard_id')), $dbTrans);
         $program = 'Gift'; // valutec also has 'Loyalty' cards which store arbitrary point values
         $mode = "";
         $logged_mode = $mode;
         $authMethod = "";
-        $amount = CoreLocal::get('paycard_amount');
-        switch (CoreLocal::get("paycard_mode")) {
+        $amount = $this->conf->get('paycard_amount');
+        switch ($this->conf->get("paycard_mode")) {
             case PaycardLib::PAYCARD_MODE_AUTH:
                 $mode = (($amount < 0) ? 'refund' : 'tender');
                 $logged_mode = (($amount < 0) ? 'Return' : 'Sale');
@@ -274,7 +275,7 @@ class Valutec extends BasicCCModule
         if (!$dbTrans) {
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND); // database error, nothing sent (ok to retry)
         }
-        $request = new PaycardVoidRequest($this->valutecIdentifier(CoreLocal::get('paycard_id')), $dbTrans);
+        $request = new PaycardVoidRequest($this->valutecIdentifier($this->conf->get('paycard_id')), $dbTrans);
 
         $program = 'Gift'; // valutec also has 'Loyalty' cards which store arbitrary point values
         $mode = 'void';
@@ -318,7 +319,7 @@ class Valutec extends BasicCCModule
     protected function send_balance()
     {
         // prepare data for the request
-        $cashierNo = CoreLocal::get("CashierNo");
+        $cashierNo = $this->conf->get("CashierNo");
         $program = 'Gift'; // valutec also has 'Loyalty' cards which store arbitrary point values
         $cardPAN = $this->getPAN();
         $cardTr2 = $this->getTrack2();
@@ -359,7 +360,7 @@ class Valutec extends BasicCCModule
         $request = $this->last_request;
         $this->last_paycard_transaction_id = $request->last_paycard_transaction_id;
         $response = new PaycardResponse($request, $authResult, PaycardLib::paycard_db());
-        $identifier = $this->valutecIdentifier(CoreLocal::get('paycard_id'));
+        $identifier = $this->valutecIdentifier($this->conf->get('paycard_id'));
 
         // initialize
         $dbTrans = Database::tDataConnect();
@@ -431,7 +432,7 @@ class Valutec extends BasicCCModule
         // check for communication errors (any cURL error or any HTTP code besides 200)
         if ($authResult['curlErr'] != CURLE_OK || $authResult['curlHTTP'] != 200) {
             if ($authResult['curlHTTP'] == '0') {
-                    CoreLocal::set("boxMsg","No response from processor<br />
+                    $this->conf->set("boxMsg","No response from processor<br />
                                 The transaction did not go through");
 
                     return PaycardLib::PAYCARD_ERR_PROC;
@@ -452,11 +453,11 @@ class Valutec extends BasicCCModule
         }
 
         // put the parsed response into session so the caller, receipt printer, etc can get the data they need
-        CoreLocal::set("paycard_response",array());
-        CoreLocal::set("paycard_response",$xml->array_dump());
-        $temp = CoreLocal::get("paycard_response");
+        $this->conf->set("paycard_response",array());
+        $this->conf->set("paycard_response",$xml->array_dump());
+        $temp = $this->conf->get("paycard_response");
         $temp["Balance"] = $temp["BALANCE"];
-        CoreLocal::set("paycard_response",$temp);
+        $this->conf->set("paycard_response",$temp);
 
         // comm successful, check the Authorized, AuthorizationCode and ErrorMsg fields
         if ($xml->get('AUTHORIZED') == 'true' && $xml->get('AUTHORIZATIONCODE') != '' 
@@ -467,7 +468,7 @@ class Valutec extends BasicCCModule
 
         // the authorizor gave us some failure code
         // authorization failed, response fields in $_SESSION["paycard_response"]
-        CoreLocal::set("boxMsg","Processor error: ".$errorMsg);
+        $this->conf->set("boxMsg","Processor error: ".$errorMsg);
 
         return PaycardLib::PAYCARD_ERR_PROC;
     }
@@ -518,7 +519,7 @@ class Valutec extends BasicCCModule
 
         if ($vdResult['curlErr'] != CURLE_OK || $vdResult['curlHTTP'] != 200) {
             if ($vdResult['curlHTTP'] == '0') {
-                CoreLocal::set("boxMsg","No response from processor<br />
+                $this->conf->set("boxMsg","No response from processor<br />
                                 The transaction did not go through");
 
                 return PaycardLib::PAYCARD_ERR_PROC;
@@ -533,11 +534,11 @@ class Valutec extends BasicCCModule
         }
 
         // put the parsed response into session so the caller, receipt printer, etc can get the data they need
-        CoreLocal::set("paycard_response",array());
-        CoreLocal::set("paycard_response",$xml->array_dump());
-        $temp = CoreLocal::get("paycard_response");
+        $this->conf->set("paycard_response",array());
+        $this->conf->set("paycard_response",$xml->array_dump());
+        $temp = $this->conf->get("paycard_response");
         $temp["Balance"] = $temp["BALANCE"];
-        CoreLocal::set("paycard_response",$temp);
+        $this->conf->set("paycard_response",$temp);
 
         // comm successful, check the Authorized, AuthorizationCode and ErrorMsg fields
         if ($xml->get('AUTHORIZED') == 'true' && $xml->get('AUTHORIZATIONCODE') != '' 
@@ -546,7 +547,7 @@ class Valutec extends BasicCCModule
         }
 
         // the authorizor gave us some failure code
-        CoreLocal::set("boxMsg","PROCESSOR ERROR: ".$xml->get_first("ERRORMSG"));
+        $this->conf->set("boxMsg","PROCESSOR ERROR: ".$xml->get_first("ERRORMSG"));
 
         return PaycardLib::PAYCARD_ERR_PROC; 
     }
@@ -558,7 +559,7 @@ class Valutec extends BasicCCModule
 
         if ($balResult['curlErr'] != CURLE_OK || $balResult['curlHTTP'] != 200) {
             if ($balResult['curlHTTP'] == '0'){
-                CoreLocal::set("boxMsg","No response from processor<br />
+                $this->conf->set("boxMsg","No response from processor<br />
                                           The transaction did not go through");
                 return PaycardLib::PAYCARD_ERR_PROC;
             }
@@ -566,12 +567,12 @@ class Valutec extends BasicCCModule
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_COMM); // comm error, try again
         }
 
-        CoreLocal::set("paycard_response",array());
-        CoreLocal::set("paycard_response",$xml->array_dump());
-        $resp = CoreLocal::get("paycard_response");
+        $this->conf->set("paycard_response",array());
+        $this->conf->set("paycard_response",$xml->array_dump());
+        $resp = $this->conf->get("paycard_response");
         if (isset($resp["BALANCE"])) {
             $resp["Balance"] = $resp["BALANCE"];
-            CoreLocal::set("paycard_response",$resp);
+            $this->conf->set("paycard_response",$resp);
         }
 
         // there's less to verify for balance checks, just make sure all the fields are there
@@ -585,7 +586,7 @@ class Valutec extends BasicCCModule
         }
 
         // the authorizor gave us some failure code
-        CoreLocal::set("boxMsg","Processor error: ".$xml->get_first("ERRORMSG"));
+        $this->conf->set("boxMsg","Processor error: ".$xml->get_first("ERRORMSG"));
 
         return PaycardLib::PAYCARD_ERR_PROC;
     }
@@ -594,8 +595,8 @@ class Valutec extends BasicCCModule
     // along with their CashierID field, it will be a daily-unique identifier on the transaction
     private function valutecIdentifier($transID) 
     {
-        $transNo   = (int)CoreLocal::get("transno");
-        $laneNo    = (int)CoreLocal::get("laneno");
+        $transNo   = (int)$this->conf->get("transno");
+        $laneNo    = (int)$this->conf->get("laneno");
         // fail if any field is too long (we don't want to truncate, since that might produce a non-unique refnum and cause bigger problems)
         if ($transID > 999 || $transNo > 999 || $laneNo > 99) {
             return "";
@@ -610,28 +611,28 @@ class Valutec extends BasicCCModule
     
     private function getTermID()
     {
-        if (CoreLocal::get("training") == 1) {
+        if ($this->conf->get("training") == 1) {
             return "45095";
         } else {
-            return CoreLocal::get("gcTermID");
+            return $this->conf->get("gcTermID");
         }
     }
 
     private function getPAN()
     {
-        if (CoreLocal::get("training") == 1) {
+        if ($this->conf->get("training") == 1) {
             return "7018525936200000012";
         } else {
-            return CoreLocal::get("paycard_PAN");
+            return $this->conf->get("paycard_PAN");
         }
     }
 
     private function getTrack2()
     {
-        if (CoreLocal::get("training") == 1) {
+        if ($this->conf->get("training") == 1) {
             return "7018525936200000012=68893620";
         } else {
-            return CoreLocal::get("paycard_tr2");
+            return $this->conf->get("paycard_tr2");
         }
     }
 }
