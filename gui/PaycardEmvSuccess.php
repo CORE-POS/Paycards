@@ -30,6 +30,7 @@ class PaycardEmvSuccess extends BasicCorePage
 
     function preprocess()
     {
+        $this->conf = new PaycardConf();
         $this->bmp_path = $this->page_url . 'scale-drivers/drivers/NewMagellan/ss-output/tmp/';
 
         // check for input
@@ -54,10 +55,10 @@ class PaycardEmvSuccess extends BasicCorePage
                     $capP = $dbc->prepare($capQ);
                     $args = array(
                         date('Y-m-d H:i:s'),
-                        CoreLocal::get('CashierNo'),
-                        CoreLocal::get('laneno'),
-                        CoreLocal::get('transno'),
-                        CoreLocal::get('paycard_id'),
+                        $this->conf->get('CashierNo'),
+                        $this->conf->get('laneno'),
+                        $this->conf->get('transno'),
+                        $this->conf->get('paycard_id'),
                         $format,
                         $img_content,
                     );
@@ -74,12 +75,12 @@ class PaycardEmvSuccess extends BasicCorePage
                 }
             }
 
-            $mode = CoreLocal::get("paycard_mode");
-            $type = CoreLocal::get("paycard_type");
-            $tender_id = CoreLocal::get("paycard_id");
+            $mode = $this->conf->get("paycard_mode");
+            $type = $this->conf->get("paycard_type");
+            $tender_id = $this->conf->get("paycard_id");
             if( $input == "") { // [enter] exits this screen
                 // remember the mode, type and transid before we reset them
-                CoreLocal::set("boxMsg","");
+                $this->conf->set("boxMsg","");
 
                 /**
                   paycard_mode is sometimes cleared pre-emptively
@@ -92,17 +93,17 @@ class PaycardEmvSuccess extends BasicCorePage
                 if ($mode == PaycardLib::PAYCARD_MODE_AUTH || 
                     ($peek !== false && isset($peek['trans_type']) && $peek['trans_type'] == 'T')) {
                     $qstr = '?reginput=TO&repeat=1';
-                    CoreLocal::set('paycardTendered', true);
+                    $this->conf->set('paycardTendered', true);
                 } else {
                     TransRecord::debugLog('Not Tendering Out (mode): ' . print_r($mode, true));
                 }
 
                 // only reset terminal if the terminal was used for the transaction
                 // activating a gift card should not reset terminal
-                if (CoreLocal::get("paycard_type") == PaycardLib::PAYCARD_TYPE_ENCRYPTED) {
+                if ($this->conf->get("paycard_type") == PaycardLib::PAYCARD_TYPE_ENCRYPTED) {
                     UdpComm::udpSend('termReset');
-                    CoreLocal::set('ccTermState','swipe');
-                    CoreLocal::set("CacheCardType","");
+                    $this->conf->set('ccTermState','swipe');
+                    $this->conf->set("CacheCardType","");
                 }
                 PaycardLib::paycard_reset();
 
@@ -110,7 +111,7 @@ class PaycardEmvSuccess extends BasicCorePage
 
                 return false;
             } elseif ($mode == PaycardLib::PAYCARD_MODE_AUTH && $input == "VD" 
-                && (CoreLocal::get('CacheCardType') == 'CREDIT' || CoreLocal::get('CacheCardType') == 'EMV' || CoreLocal::get('CacheCardType') == 'GIFT' || CoreLocal::get('CacheCardType') == '')) {
+                && ($this->conf->get('CacheCardType') == 'CREDIT' || $this->conf->get('CacheCardType') == 'EMV' || $this->conf->get('CacheCardType') == 'GIFT' || $this->conf->get('CacheCardType') == '')) {
                 $plugin_info = new Paycards();
                 $this->change_page($plugin_info->pluginUrl()."/gui/PaycardEmvVoid.php");
 
@@ -120,9 +121,9 @@ class PaycardEmvSuccess extends BasicCorePage
         /* shouldn't happen unless session glitches
            but getting here implies the transaction
            succeeded */
-        $var = CoreLocal::get("boxMsg");
+        $var = $this->conf->get("boxMsg");
         if (empty($var)){
-            CoreLocal::set("boxMsg",
+            $this->conf->set("boxMsg",
                 "<b>Approved</b><font size=-1>
                 <p>&nbsp;
                 <p>[enter] to continue
@@ -203,16 +204,16 @@ class PaycardEmvSuccess extends BasicCorePage
         //   a) enabled
         //   b) a Credit transaction
         //   c) Over limit threshold OR a return
-        $isCredit = (CoreLocal::get('CacheCardType') == 'CREDIT' || CoreLocal::get('CacheCardType') == '') ? true : false;
+        $isCredit = ($this->conf->get('CacheCardType') == 'CREDIT' || $this->conf->get('CacheCardType') == '') ? true : false;
         // gift doesn't set CacheCardType so customer swipes and
         // cashier types don't overwrite each other's type
-        if (CoreLocal::get('paycard_type') == PaycardLib::PAYCARD_TYPE_GIFT) {
+        if ($this->conf->get('paycard_type') == PaycardLib::PAYCARD_TYPE_GIFT) {
             $isCredit = false;
         }
-        $needSig = (CoreLocal::get('paycard_amount') > CoreLocal::get('CCSigLimit') || CoreLocal::get('paycard_amount') < 0) ? true : false;
-        $isVoid = (CoreLocal::get('paycard_mode') == PaycardLib::PAYCARD_MODE_VOID) ? true : false;
+        $needSig = ($this->conf->get('paycard_amount') > $this->conf->get('CCSigLimit') || $this->conf->get('paycard_amount') < 0) ? true : false;
+        $isVoid = ($this->conf->get('paycard_mode') == PaycardLib::PAYCARD_MODE_VOID) ? true : false;
 
-        return (CoreLocal::get("PaycardsSigCapture") == 1 && $isCredit && $needSig && !$isVoid); 
+        return ($this->conf->get("PaycardsSigCapture") == 1 && $isCredit && $needSig && !$isVoid); 
     }
 
     function body_content()
@@ -230,7 +231,7 @@ class PaycardEmvSuccess extends BasicCorePage
 
             echo "<div id=\"imgArea\"></div>";
             echo '<div class="textArea">';
-            echo '$' . sprintf('%.2f', CoreLocal::get('paycard_amount')) . ' as CREDIT';
+            echo '$' . sprintf('%.2f', $this->conf->get('paycard_amount')) . ' as CREDIT';
             echo '<br />';
             echo '<span id="sigInstructions" style="font-size:90%;">';
             echo '[enter] to get re-request signature, [void] ' . _('to reverse the charge');
@@ -251,24 +252,24 @@ class PaycardEmvSuccess extends BasicCorePage
             UdpComm::udpSend('termSig');
             $this->addOnloadCommand("addToForm('doCapture', '1');\n");
         } else {
-            echo DisplayLib::boxMsg(CoreLocal::get("boxMsg"), "", true);
+            echo DisplayLib::boxMsg($this->conf->get("boxMsg"), "", true);
             UdpComm::udpSend('termApproved');
         }
-        CoreLocal::set("CachePanEncBlock","");
-        CoreLocal::set("CachePinEncBlock","");
+        $this->conf->set("CachePanEncBlock","");
+        $this->conf->set("CachePinEncBlock","");
         echo '</div>';
         echo "<div id=\"footer\">";
         Database::getsubtotals(); // in case of partial approval shows remainder due
         echo DisplayLib::printfooter();
         echo "</div>";
 
-        $rp_type = $this->rpType(CoreLocal::get('paycard_type'));
+        $rp_type = $this->rpType($this->conf->get('paycard_type'));
         if (FormLib::get('receipt') !== '') {
             $rp_type = FormLib::get('receipt');
             $this->addOnloadCommand("\$('#reginput').val('RP');\n");
             $this->addOnloadCommand("submitWrapper();\n");
         }
-        $rp_type = $this->rpType(CoreLocal::get('paycard_type'));
+        $rp_type = $this->rpType($this->conf->get('paycard_type'));
         printf("<input type=\"hidden\" id=\"rp_type\" value=\"%s\" />",$rp_type);
     }
 
@@ -276,7 +277,7 @@ class PaycardEmvSuccess extends BasicCorePage
     {
         switch ($type) {
             case PaycardLib::PAYCARD_TYPE_GIFT:
-                return CoreLocal::get('paycard_mode') == PaycardLib::PAYCARD_MODE_BALANCE ? 'gcBalSlip' : 'gcSlip';
+                return $this->conf->get('paycard_mode') == PaycardLib::PAYCARD_MODE_BALANCE ? 'gcBalSlip' : 'gcSlip';
             case PaycardLib::PAYCARD_TYPE_CREDIT:
             case PaycardLib::PAYCARD_TYPE_ENCRYPTED:
             default:

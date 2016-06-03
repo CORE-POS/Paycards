@@ -36,6 +36,7 @@ class PaycardEmvMenu extends NoInputCorePage
     
     function preprocess()
     {
+        $this->conf = new PaycardConf();
         $choice = FormLib::get('selectlist', false);
         if ($choice !== false) {
             $parser = new PaycardDatacapParser();
@@ -90,13 +91,13 @@ class PaycardEmvMenu extends NoInputCorePage
             }
         }
         if ($choice === false || $choice === 'CL' || $choice === '') {
-            if (CoreLocal::get('PaycardsDatacapMode') == 1) {
+            if ($this->conf->get('PaycardsDatacapMode') == 1) {
                 $this->menu = array(
                     'EMV' => 'EMV Credit/Debit',
                     'EBT' => 'EBT',
                     'GIFT' => 'Gift',
                 );
-            } elseif (CoreLocal::get('PaycardsDatacapMode') == 2 || CoreLocal::get('PaycardsDatacapMode') == 3) {
+            } elseif ($this->conf->get('PaycardsDatacapMode') == 2 || $this->conf->get('PaycardsDatacapMode') == 3) {
                 $this->menu = array(
                     'EMV' => 'EMV Credit/Debit',
                     'CAADMIN' => 'Admin Functions',
@@ -126,7 +127,7 @@ class PaycardEmvMenu extends NoInputCorePage
         <form name="selectform" method="post" id="selectform"
             action="<?php echo filter_input(INPUT_SERVER, 'PHP_SELF'); ?>">
         <input type="hidden" name="clear-to-home" value="<?php echo $this->clear_to_home; ?>" />
-        <?php if (CoreLocal::get('touchscreen')) { ?>
+        <?php if ($this->conf->get('touchscreen')) { ?>
         <button type="button" class="pos-button coloredArea"
             onclick="scrollDown('#selectlist');">
             <img src="<?php echo $stem; ?>down.png" width="16" height="16" />
@@ -143,7 +144,7 @@ class PaycardEmvMenu extends NoInputCorePage
         }
         ?>
         </select>
-        <?php if (CoreLocal::get('touchscreen')) { ?>
+        <?php if ($this->conf->get('touchscreen')) { ?>
         <button type="button" class="pos-button coloredArea"
             onclick="scrollUp('#selectlist');">
             <img src="<?php echo $stem; ?>up.png" width="16" height="16" />

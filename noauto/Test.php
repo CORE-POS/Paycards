@@ -880,6 +880,7 @@ class Test extends PHPUnit_Framework_TestCase
         FormLib::clear();
 
         $page = new PaycardTransListPage();
+        $page->preprocess();
         SQLManager::addResult(array('amount'=>1, 'PAN'=>'1', 'refNum'=>1));
         SQLManager::addResult(false); // end first while loop
         SQLManager::addResult(array('dt'=>date('Y-m-d H:i:s'), 'amount'=>1, 'PAN'=>'1', 'refNum'=>1, 'cashierNo'=>1,'laneNo'=>1,'transNo'=>1));

@@ -29,6 +29,7 @@ class PaycardTransListPage extends NoInputCorePage
 
     function preprocess()
     {
+        $this->conf = new PaycardConf();
         // check for posts before drawing anything, so we can redirect
         if (FormLib::get('selectlist', false) !== false) {
             $id = FormLib::get('selectlist');
@@ -56,9 +57,9 @@ class PaycardTransListPage extends NoInputCorePage
         while($w = $db->fetchRow($localR)) {
             $local['_l' . $w['refNum']] = '(CURRENT)' . $w['PAN'] . ' : ' . sprintf('%.2f', $w['amount']);
         }
-        if (CoreLocal::get('standalone') == 0) {
+        if ($this->conf->get('standalone') == 0) {
 
-            $emp = CoreLocal::get('CashierNo');
+            $emp = $this->conf->get('CashierNo');
             $sec = Authenticate::getPermission($emp);
             $supervisor = $sec >= 30 ? true : false;
 
@@ -68,8 +69,8 @@ class PaycardTransListPage extends NoInputCorePage
                         FROM PaycardTransactions 
                         WHERE dateID=' . date('Ymd');
             if (!$supervisor) {
-                $otherQ .= ' AND registerNo=' . ((int)CoreLocal::get('laneno')) . '
-                           AND empNo=' . ((int)CoreLocal::get('CashierNo'));
+                $otherQ .= ' AND registerNo=' . ((int)$this->conf->get('laneno')) . '
+                           AND empNo=' . ((int)$this->conf->get('CashierNo'));
             }
             $otherQ .= ' GROUP BY amount, PAN, refNum
                         ORDER BY requestDatetime DESC';

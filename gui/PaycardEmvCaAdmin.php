@@ -48,6 +48,7 @@ class PaycardEmvCaAdmin extends NoInputCorePage
     
     function preprocess()
     {
+        $this->conf = new PaycardConf();
         $caAdmin = new DatacapCaAdmin();
         if (FormLib::get("selectlist", false) !== false) {
             /** generate XML based on menu choice **/
@@ -75,12 +76,12 @@ class PaycardEmvCaAdmin extends NoInputCorePage
             $output = FormLib::get('output-method');
             $resp = $caAdmin->parseResponse($xml);
             if ($output == 'display' || $resp['receipt'] === false) {
-                CoreLocal::set('boxMsg', '<strong>' . $resp['status'] . '</strong><br />' . $resp['msg-text']);
-                CoreLocal::set('strRemembered', '');
+                $this->conf->set('boxMsg', '<strong>' . $resp['status'] . '</strong><br />' . $resp['msg-text']);
+                $this->conf->set('strRemembered', '');
                 $this->change_page(MiscLib::baseURL() . 'gui-modules/boxMsg2.php');
                 return false;
             } else {
-                $print_class = CoreLocal::get('ReceiptDriver');
+                $print_class = $this->conf->get('ReceiptDriver');
                 if ($print_class === '' || !class_exists($print_class)) {
                     $print_class = 'ESCPOSPrintHandler';
                 }
@@ -159,7 +160,7 @@ function emvSubmit() {
         <span class="larger">process admin transaction</span>
         <form name="selectform" method="post" id="selectform"
             action="<?php echo $_SERVER['PHP_SELF']; ?>">
-        <?php if (CoreLocal::get('touchscreen')) { ?>
+        <?php if ($this->conf->get('touchscreen')) { ?>
         <button type="button" class="pos-button coloredArea"
             onclick="scrollDown('#selectlist');">
             <img src="<?php echo $stem; ?>down.png" width="16" height="16" />
@@ -176,7 +177,7 @@ function emvSubmit() {
         }
         ?>
         </select>
-        <?php if (CoreLocal::get('touchscreen')) { ?>
+        <?php if ($this->conf->get('touchscreen')) { ?>
         <button type="button" class="pos-button coloredArea"
             onclick="scrollUp('#selectlist');">
             <img src="<?php echo $stem; ?>up.png" width="16" height="16" />

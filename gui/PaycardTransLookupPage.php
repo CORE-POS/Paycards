@@ -29,6 +29,7 @@ class PaycardTransLookupPage extends BasicCorePage
 
     function preprocess()
     {
+        $this->conf = new PaycardConf();
         if (FormLib::get('doLookup', false) !== false) {
             $ref = FormLib::get('id');
             $local = FormLib::get('local');
@@ -36,7 +37,7 @@ class PaycardTransLookupPage extends BasicCorePage
 
             $obj = null;
             $resp = array();
-            foreach(CoreLocal::get('RegisteredPaycardClasses') as $rpc) {
+            foreach($this->conf->get('RegisteredPaycardClasses') as $rpc) {
                 $obj = new $rpc();
                 if ($obj->myRefNum($ref)) {
                     break;
