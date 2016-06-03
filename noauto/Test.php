@@ -45,7 +45,7 @@ class Test extends PHPUnit_Framework_TestCase
             'curlHTTP' => 0,
             'response' => '',
         );
-        $req = new PaycardRequest('1-1-1');
+        $req = new PaycardRequest('1-1-1', Database::tDataConnect());
         $req->last_paycard_transaction_id=1;
 
         $a = new AuthorizeDotNet();
@@ -1248,7 +1248,7 @@ class Test extends PHPUnit_Framework_TestCase
 
     public function testReqResp()
     {
-        $req = new PaycardRequest('1-1-1');
+        $req = new PaycardRequest('1-1-1', Database::tDataConnect());
         $req->setManual(0);
         $req->setRefNum(0);
         $req->setMode(0);
@@ -1262,7 +1262,7 @@ class Test extends PHPUnit_Framework_TestCase
         $req->changeAmount(1);
         $req->updateCardInfo('pan', 'name', 'issuer');
 
-        $resp = new PaycardResponse($req, array('curlTime'=>0, 'curlErr'=>0, 'curlHTTP'=>200));
+        $resp = new PaycardResponse($req, array('curlTime'=>0, 'curlErr'=>0, 'curlHTTP'=>200), Database::tDataConnect());
         $resp->setToken(1,2,3);
         $resp->setBalance(0);
         $resp->setValid(1);
@@ -1275,7 +1275,7 @@ class Test extends PHPUnit_Framework_TestCase
         $resp->saveResponse();
 
         CoreLocal::set('paycard_trans', '1-1-1');
-        $req = new PaycardVoidRequest('1-1-1');
+        $req = new PaycardVoidRequest('1-1-1', Database::tDataConnect());
         try {
             $req->findOriginal();
         } catch (Exception $ex){}
@@ -1284,7 +1284,7 @@ class Test extends PHPUnit_Framework_TestCase
         SQLManager::clear();
         $req->saveRequest();
 
-        $req = new PaycardGiftRequest('1-1-1');
+        $req = new PaycardGiftRequest('1-1-1', Database::tDataConnect());
     }
 }
 

@@ -32,9 +32,10 @@ class PaycardRequest
     );
     public $pan = '';
 
-    public function __construct($refNum)
+    public function __construct($refNum, $dbTrans)
     {
         $this->conf = new PaycardConf();
+        $this->dbTrans = $dbTrans;
         $this->refNum = $refNum;
         $this->today = date('Ymd'); // numeric date only, it goes in an 'int' field as part of the primary key
         $this->now = date('Y-m-d H:i:s'); // full timestamp
@@ -138,8 +139,6 @@ class PaycardRequest
 
     public function saveRequest()
     {
-        $dbTrans = PaycardLib::paycard_db();
-
         $insQ = '
                 INSERT INTO PaycardTransactions (
                     dateID, empNo, registerNo, transNo, transID,
@@ -156,23 +155,22 @@ class PaycardRequest
             ($this->amount+$this->cashback), $this->pan, $this->issuer,
             $this->cardholder, $this->manual, $this->now,
         );
-        $insP = $dbTrans->prepare($insQ);
-        $insR = $dbTrans->execute($insP, $ptArgs);
+        $insP = $this->dbTrans->prepare($insQ);
+        $insR = $this->dbTrans->execute($insP, $ptArgs);
         if ($insR === false) {
             throw new Exception('Error saving PaycardTransactions');
         }
-        $this->last_paycard_transaction_id = $dbTrans->insertID();
+        $this->last_paycard_transaction_id = $this->dbTrans->insertID();
     }
 
     public function changeAmount($amt)
     {
         $this->amount = $amt;
-        $dbTrans = PaycardLib::paycard_db();
         $upQ = sprintf('UPDATE PaycardTransactions
                         SET amount=%.2f
                         WHERE paycardTransactionID=%d',
                         $amt, $this->last_paycard_transaction_id);
-        $dbTrans->query($upQ);
+        $this->dbTrans->query($upQ);
     }
 
     public function updateCardInfo($pan, $name, $issuer)
@@ -180,15 +178,14 @@ class PaycardRequest
         $this->setPAN($pan);
         $this->cardholder = $name;
         $this->issuer = $issuer;
-        $dbTrans = PaycardLib::paycard_db();
-        $upP = $dbTrans->prepare('
+        $upP = $this->dbTrans->prepare('
             UPDATE PaycardTransactions
             SET PAN=?,
                 issuer=?,
                 name=?
             WHERE paycardTransactionID=?
         ');
-        $dbTrans->execute($upP, array(
+        $this->dbTrans->execute($upP, array(
             $this->pan,
             $this->issuer,
             $this->cardholder,

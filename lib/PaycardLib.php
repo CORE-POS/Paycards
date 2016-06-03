@@ -213,18 +213,6 @@ static public function paycard_db()
     return self::$paycardDB;
 }
 
-static public function paycard_db_query($query_text,$link){
-    return self::$paycardDB->query($query_text);
-}
-
-static public function paycard_db_num_rows($result){
-    return self::$paycardDB->numRows($result);
-}
-
-static public function paycard_db_fetch_row($result){
-    return self::$paycardDB->fetchRow($result);
-}
-
 static private function getIssuerOverride($issuer)
 {
     if (CoreLocal::get('PaycardsTenderCodeVisa') && $issuer == 'Visa') {

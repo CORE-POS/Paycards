@@ -127,7 +127,7 @@ class MercuryE2E extends BasicCCModule
         $dbTrans = PaycardLib::paycard_db();
         $request = $this->last_request;
         $this->last_paycard_transaction_id = $request->last_paycard_transaction_id;
-        $response = new PaycardResponse($request, $authResult);
+        $response = new PaycardResponse($request, $authResult, PaycardLib::paycard_db());
 
         $validResponse = ($xml->isValid()) ? 1 : 0;
 
@@ -257,7 +257,7 @@ class MercuryE2E extends BasicCCModule
         $dbTrans = PaycardLib::paycard_db();
         $request = $this->last_request;
         $this->last_paycard_transaction_id = $request->last_paycard_transaction_id;
-        $response = new PaycardResponse($request, $authResult);
+        $response = new PaycardResponse($request, $authResult, PaycardLib::paycard_db());
 
         $validResponse = ($xml->isValid()) ? 1 : 0;
 
@@ -448,7 +448,7 @@ class MercuryE2E extends BasicCCModule
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND); 
         }
 
-        $request = new PaycardRequest($this->refnum(CoreLocal::get('paycard_id')));
+        $request = new PaycardRequest($this->refnum(CoreLocal::get('paycard_id')), $dbTrans);
         $request->setProcessor('MercuryE2E');
 
         if (CoreLocal::get("paycard_voiceauthcode") != "") {
@@ -534,7 +534,7 @@ class MercuryE2E extends BasicCCModule
     */
     public function prepareDataCapAuth($type, $amount, $prompt=false)
     {
-        $request = new PaycardRequest($this->refnum(CoreLocal::get('paycard_id')));
+        $request = new PaycardRequest($this->refnum(CoreLocal::get('paycard_id')), PaycardLib::paycard_db());
         $request->setProcessor('MercuryE2E');
         $tran_code = $amount > 0 ? 'Sale' : 'Return';
         if ($type == 'EMV') {
@@ -641,7 +641,7 @@ class MercuryE2E extends BasicCCModule
         $row = $dbc->getRow($prep, $pcID);
         CoreLocal::set('paycard_trans', CoreLocal::get('CashierNo') . '-' . $row['registerNo'] . '-' . $row['transNo']);
 
-        $request = new PaycardVoidRequest($this->refnum(CoreLocal::get('paycard_id')));
+        $request = new PaycardVoidRequest($this->refnum(CoreLocal::get('paycard_id')), $dbc);
         $request->setProcessor('MercuryE2E');
 
         $host = $this->getAxHost();
@@ -831,7 +831,7 @@ class MercuryE2E extends BasicCCModule
 
     public function prepareDataCapGift($mode, $amount, $prompt)
     {
-        $request = new PaycardGiftRequest($this->refnum(CoreLocal::get('paycard_id')));
+        $request = new PaycardGiftRequest($this->refnum(CoreLocal::get('paycard_id')), PaycardLib::paycard_db());
         $request->setProcessor('MercuryE2E');
 
         $host = "g1.mercurypay.com";
@@ -900,7 +900,7 @@ class MercuryE2E extends BasicCCModule
             'curlTime' => 0,
             'curlErr' => 0,
             'curlHTTP' => 200,
-        ));
+        ), PaycardLib::paycard_db());
 
         $xml = new BetterXmlData($xml);
 
@@ -1102,7 +1102,7 @@ class MercuryE2E extends BasicCCModule
             CoreLocal::set("MercuryE2ESkipReversal", false);
         }
 
-        $request = new PaycardVoidRequest($this->refnum(CoreLocal::get('paycard_id')));
+        $request = new PaycardVoidRequest($this->refnum(CoreLocal::get('paycard_id')), $dbTrans);
         $request->setProcessor('MercuryE2E');
         $request->setMode('VoidSaleByRecordNo');
 
@@ -1551,12 +1551,11 @@ class MercuryE2E extends BasicCCModule
     private function getRequestObj($ref)
     {
         if (CoreLocal::get('LastEmvReqType') == 'void') {
-            return new PaycardVoidRequest($ref);
+            return new PaycardVoidRequest($ref, PaycardLib::paycard_db());
         } elseif (CoreLocal::get('LastEmvReqType') == 'gift') {
-            return new PaycardGiftRequest($ref);
-        } else {
-            return new PaycardRequest($ref);
+            return new PaycardGiftRequest($ref, PaycardLib::paycard_db());
         }
+        return new PaycardRequest($this->refnum(CoreLocal::get('paycard_id')), PaycardLib::paycard_db());
     }
 }
 

@@ -528,12 +528,12 @@ class GoEMerchant extends BasicCCModule
                     AND registerNo=' . $laneNo . '
                     AND transNo=' . $transNo . '
                     AND transID=' . $transID;
-        $result = PaycardLib::paycard_db_query($sql, $dbTrans);
-        if (!$result || PaycardLib::paycard_db_num_rows($result) != 1) {
+        $result = $dbTrans->query($sql);
+        if (!$result || $dbTrans->numRows($result) != 1) {
             PaycardLib::paycard_reset();
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND); 
         }
-        $res = PaycardLib::paycard_db_fetch_row($result);
+        $res = $dbTrans->fetchRow($result);
         $TransactionID = $res['xTransactionID'];
 
         /**

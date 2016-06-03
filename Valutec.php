@@ -202,7 +202,7 @@ class Valutec extends BasicCCModule
         if (!$dbTrans) {
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND); // internal error, nothing sent (ok to retry)
         }
-        $request = new PaycardGiftRequest($this->valutecIdentifier(CoreLocal::get('paycard_id')));
+        $request = new PaycardGiftRequest($this->valutecIdentifier(CoreLocal::get('paycard_id')), $dbTrans);
         $program = 'Gift'; // valutec also has 'Loyalty' cards which store arbitrary point values
         $mode = "";
         $logged_mode = $mode;
@@ -274,7 +274,7 @@ class Valutec extends BasicCCModule
         if (!$dbTrans) {
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND); // database error, nothing sent (ok to retry)
         }
-        $request = new PaycardVoidRequest($this->valutecIdentifier(CoreLocal::get('paycard_id')));
+        $request = new PaycardVoidRequest($this->valutecIdentifier(CoreLocal::get('paycard_id')), $dbTrans);
 
         $program = 'Gift'; // valutec also has 'Loyalty' cards which store arbitrary point values
         $mode = 'void';
@@ -358,7 +358,7 @@ class Valutec extends BasicCCModule
         $xml = new xmlData($authResult["response"]);
         $request = $this->last_request;
         $this->last_paycard_transaction_id = $request->last_paycard_transaction_id;
-        $response = new PaycardResponse($request, $authResult);
+        $response = new PaycardResponse($request, $authResult, PaycardLib::paycard_db());
         $identifier = $this->valutecIdentifier(CoreLocal::get('paycard_id'));
 
         // initialize
@@ -477,7 +477,7 @@ class Valutec extends BasicCCModule
         $xml = new xmlData($vdResult["response"]);
         $request = $this->last_request;
         $this->last_paycard_transaction_id = $request->last_paycard_transaction_id;
-        $response = new PaycardResponse($request, $vdResult);
+        $response = new PaycardResponse($request, $vdResult, PaycardLib::paycard_db());
 
         $mode = 'void';
         $authcode = $this->temp;

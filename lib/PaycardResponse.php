@@ -37,20 +37,18 @@ class PaycardResponse
         'acq' => '',
     );
 
-
-    public function __construct($req, $curlResult)
+    public function __construct($req, $curlResult, $dbTrans)
     {
         $this->request = $req;
         $this->now = date('Y-m-d H:i:s');
         $this->curlTime = $curlResult['curlTime'];
         $this->curlErr = $curlResult['curlErr'];
         $this->curlHttp = $curlResult['curlHTTP'];
+        $this->dbTrans = $dbTrans;
     }
 
     public function saveResponse()
     {
-        $dbTrans = PaycardLib::paycard_db();
-
         $finishQ = sprintf("UPDATE PaycardTransactions
                             SET responseDatetime='%s',
                                 seconds=%f,
@@ -83,7 +81,7 @@ class PaycardResponse
                             $this->token['acq'],
                             $this->request->last_paycard_transaction_id
         );
-        if (!$dbTrans->query($finishQ)) {
+        if (!$this->dbTrans->query($finishQ)) {
             throw new Exception('Error updating PaycardTransactions with response data');
         }
     }

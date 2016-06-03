@@ -27,6 +27,7 @@ class PaycardDialogs
     {
         $this->conf = new PaycardConf();
         $this->reader = new CardReader();
+        $this->dbTrans = PaycardLib::paycard_db();
     }
 
     public function enabledCheck()
@@ -71,7 +72,6 @@ class PaycardDialogs
 
     public function voidableCheck($pan4, $trans)
     {
-        $dbTrans = PaycardLib::paycard_db();
         $today = date('Ymd');
         $sql = 'SELECT transID
                 FROM PaycardTransactions
@@ -80,8 +80,8 @@ class PaycardDialogs
                     AND registerNo=' . $trans[1] . '
                     AND transNo=' . $trans[2] . '
                     AND PAN LIKE \'%' . $pan4 . '\'';
-        $search = PaycardLib::paycard_db_query($sql, $dbTrans);
-        $num = PaycardLib::paycard_db_num_rows($search);
+        $search = $this->dbTrans->query($sql);
+        $num = $this->dbTrans->numRows($search);
         if ($num < 1) {
             PaycardLib::paycard_reset();
             throw new Exception(PaycardLib::paycard_msgBox(PaycardLib::PAYCARD_TYPE_CREDIT,
@@ -97,7 +97,7 @@ class PaycardDialogs
                                                          "[clear] to cancel"
             ));
         }
-        $payment = PaycardLib::paycard_db_fetch_row($search);
+        $payment = $this->dbTrans->fetchRow($search);
         return $payment['transID'];
     }
 
@@ -112,7 +112,6 @@ class PaycardDialogs
 
     public function getRequest($trans, $transID)
     {
-        $dbTrans = PaycardLib::paycard_db();
         $today = date('Ymd');
         // look up the request using transID (within this transaction)
         $sql = "SELECT live,
@@ -126,8 +125,8 @@ class PaycardDialogs
                     AND registerNo=" . $trans[1] . "
                     AND transNo=" . $trans[2] . " 
                     AND transID=" . $transID;
-        $search = PaycardLib::paycard_db_query($sql, $dbTrans);
-        $num = PaycardLib::paycard_db_num_rows($search);
+        $search = $this->dbTrans->query($sql);
+        $num = $this->dbTrans->numRows($search);
         if ($num < 1) {
             PaycardLib::paycard_reset();
             throw new Exception(PaycardLib::paycard_errBox(PaycardLib::PAYCARD_TYPE_CREDIT,
@@ -143,14 +142,13 @@ class PaycardDialogs
                                                           "[clear] to cancel"
             ));
         }
-        $request = PaycardLib::paycard_db_fetch_row($search);
+        $request = $this->dbTrans->fetchRow($search);
 
         return $request;
     }
 
     public function getResponse($trans, $transID)
     {
-        $dbTrans = PaycardLib::paycard_db();
         $today = date('Ymd');
         $sql = "SELECT commErr,
                     httpCode,
@@ -163,8 +161,8 @@ class PaycardDialogs
                     AND registerNo=" . $trans[1] ."
                     AND transNo=" . $trans[2] . "
                     AND transID=" . $transID;
-        $search = PaycardLib::paycard_db_query($sql, $dbTrans);
-        $num = PaycardLib::paycard_db_num_rows($search);
+        $search = $this->dbTrans->query($sql);
+        $num = $this->dbTrans->numRows($search);
 
         if ($num < 1) {
             PaycardLib::paycard_reset();
@@ -181,13 +179,12 @@ class PaycardDialogs
                                                          "[clear] to cancel"
             ));
         }
-        $response = PaycardLib::paycard_db_fetch_row($search);
+        $response = $this->dbTrans->fetchRow($search);
         return $response;
     }
 
     public function getTenderLine($trans, $transID)
     {
-        $dbTrans = PaycardLib::paycard_db();
         // look up the transaction tender line-item
         $sql = "SELECT trans_type,
                     trans_subtype,
@@ -195,14 +192,14 @@ class PaycardDialogs
                     voided
                 FROM localtemptrans 
                 WHERE trans_id=" . $transID;
-        $search = PaycardLib::paycard_db_query($sql, $dbTrans);
-        $num = PaycardLib::paycard_db_num_rows($search);
+        $search = $this->dbTrans->query($sql);
+        $num = $this->dbTrans->numRows($search);
         if ($num < 1) {
             $sql = "SELECT * FROM localtranstoday WHERE trans_id=".$transID." and emp_no=".$trans[0]
                 ." and register_no=".$trans[1]." and trans_no=".$trans[2]
-                ." AND datetime >= " . $dbTrans->curdate();
-            $search = PaycardLib::paycard_db_query($sql, $dbTrans);
-            $num = PaycardLib::paycard_db_num_rows($search);
+                ." AND datetime >= " . $this->dbTrans->curdate();
+            $search = $this->dbTrans->query($sql);
+            $num = $this->dbTrans->numRows($search);
             if ($num != 1) {
                 PaycardLib::paycard_reset();
                 throw new Exception(PaycardLib::paycard_errBox(PaycardLib::PAYCARD_TYPE_CREDIT,
@@ -219,13 +216,12 @@ class PaycardDialogs
                                                          "[clear] to cancel"
             ));
         }
-        $lineitem = PaycardLib::paycard_db_fetch_row($search);
+        $lineitem = $this->dbTrans->fetchRow($search);
         return $lineitem;
     }
 
     public function notVoided($trans, $transID)
     {
-        $dbTrans = PaycardLib::paycard_db();
         $today = date('Ymd');
         $sql = "SELECT transID 
                 FROM PaycardTransactions 
@@ -236,8 +232,8 @@ class PaycardDialogs
                     AND transID=" . $transID . "
                     AND transType='VOID'
                     AND xResultCode=1";
-        $search = PaycardLib::paycard_db_query($sql, $dbTrans);
-        $voided = PaycardLib::paycard_db_num_rows($search);
+        $search = $this->dbTrans->query($sql);
+        $voided = $this->dbTrans->numRows($search);
         if ($voided > 0) {
             PaycardLib::paycard_reset();
             throw new Exception(PaycardLib::paycard_errBox(PaycardLib::PAYCARD_TYPE_CREDIT,

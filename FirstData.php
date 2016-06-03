@@ -98,7 +98,7 @@ class FirstData extends BasicCCModule
         $xml = new xmlData($innerXml);
         $request = $this->last_request;
         $this->last_paycard_transaction_id = $request->last_paycard_transaction_id;
-        $response = new PaycardResponse($request, $authResult);
+        $response = new PaycardResponse($request, $authResult, PaycardLib::paycard_db());
 
         $statusMsg = $xml->get("fdggwsapi:TransactionResult");
         $responseCode = $this->statusToCode($statusMsg);
@@ -197,7 +197,7 @@ class FirstData extends BasicCCModule
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND); // database error, nothing sent (ok to retry)
         }
 
-        $request = new PaycardRequest($this->refnum(CoreLocal::get('paycard_id')));
+        $request = new PaycardRequest($this->refnum(CoreLocal::get('paycard_id')), $dbTrans);
         $request->setProcessor('FirstData');
         $mode = 'sale';
         $this->trans_pan['pan'] = CoreLocal::get("paycard_PAN");

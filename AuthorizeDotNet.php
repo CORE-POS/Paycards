@@ -73,7 +73,7 @@ class AuthorizeDotNet extends BasicCCModule
         $xml = new xmlData($authResult['response']);
         $request = $this->last_request;
         $this->last_paycard_transaction_id = $request->last_paycard_transaction_id;
-        $response = new PaycardResponse($request, $authResult);
+        $response = new PaycardResponse($request, $authResult, PaycardLib::paycard_db());
         $validResponse = ($xml->isValid()) ? 1 : 0;
 
         $responseCode = $xml->get("RESPONSECODE");
@@ -140,7 +140,7 @@ class AuthorizeDotNet extends BasicCCModule
         $xml = new xmlData($authResult['response']);
         $request = $this->last_request;
         $this->last_paycard_transaction_id = $request->last_paycard_transaction_id;
-        $response = new PaycardResponse($request, $authResult);
+        $response = new PaycardResponse($request, $authResult, PaycardLib::paycard_db());
         $validResponse = ($xml->isValid()) ? 1 : 0;
 
         $responseCode = $xml->get("RESPONSECODE");
@@ -241,7 +241,7 @@ class AuthorizeDotNet extends BasicCCModule
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND); // database error, nothing sent (ok to retry)
         }
 
-        $request = new PaycardRequest($this->refnum(CoreLocal::get('paycard_id')));
+        $request = new PaycardRequest($this->refnum(CoreLocal::get('paycard_id')), $dbTrans);
         $request->setProcessor('AuthDotNot');
         $mode = (($request->amount < 0) ? 'refund' : 'tender');
         $cardPAN = $this->trans_pan['pan'];
@@ -307,7 +307,7 @@ class AuthorizeDotNet extends BasicCCModule
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND);
         }
 
-        $request = new PaycardVoidRequest($this->refnum(CoreLocal::get('paycard_id')));
+        $request = new PaycardVoidRequest($this->refnum(CoreLocal::get('paycard_id')), $dbTrans);
         $request->setProcessor('AuthDotNot');
 
         $mode = 'void';

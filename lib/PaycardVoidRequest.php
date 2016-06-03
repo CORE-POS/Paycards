@@ -23,16 +23,15 @@
 
 class PaycardVoidRequest extends PaycardRequest
 {
-    public function __construct($refnum)
+    public function __construct($refnum, $dbTrans)
     {
-        parent::__construct($refnum);
+        parent::__construct($refnum, $dbTrans);
         $original = $this->conf->get('paycard_trans');
         $this->original = explode('-', $original);
     }
 
     public function saveRequest()
     {
-        $dbTrans = PaycardLib::paycard_db();
         /**
           populate a void record in PaycardTransactions
         */
@@ -44,7 +43,7 @@ class PaycardVoidRequest extends PaycardRequest
                   SELECT dateID, empNo, registerNo, transNo, transID,
                     paycardTransactionID, processor, refNum,
                     live, cardType, 'VOID', amount, PAN, issuer,
-                    name, manual, " . $dbTrans->now() . "
+                    name, manual, " . $this->dbTrans->now() . "
                   FROM PaycardTransactions
                   WHERE
                     dateID=" . $this->today . "
@@ -52,9 +51,9 @@ class PaycardVoidRequest extends PaycardRequest
                     AND registerNo=" . $this->original[1] . "
                     AND transNo=" . $this->original[2] . "
                     AND transID=" . $this->transID;
-        $initR = $dbTrans->query($initQ);
+        $initR = $this->dbTrans->query($initQ);
         if ($initR) {
-            $this->last_paycard_transaction_id = $dbTrans->insertID();
+            $this->last_paycard_transaction_id = $this->dbTrans->insertID();
         } else {
             throw new Exception('Error saving void request in PaycardTransactions');
         }
@@ -62,7 +61,6 @@ class PaycardVoidRequest extends PaycardRequest
 
     public function findOriginal()
     {
-        $dbTrans = PaycardLib::paycard_db();
         $sql = 'SELECT refNum,
                     xTransactionID,
                     amount,
@@ -78,12 +76,12 @@ class PaycardVoidRequest extends PaycardRequest
                     AND registerNo=' . $this->original[1] . '
                     AND transNo=' . $this->original[2] . '
                     AND transID=' . $this->transID;
-        $res = $dbTrans->query($sql);
-        if ($res === false || $dbTrans->numRows($res) != 1) {
+        $res = $this->dbTrans->query($sql);
+        if ($res === false || $this->dbTrans->numRows($res) != 1) {
             throw new Exception('Could not locate original transaction');
         }
 
-        return $dbTrans->fetchRow($res);
+        return $this->dbTrans->fetchRow($res);
     }
 }
 

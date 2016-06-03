@@ -23,13 +23,10 @@
 
 class PaycardGiftRequest extends PaycardRequest
 {
-    public function __construct($refnum)
+    public function __construct($refnum, $dbTrans)
     {
-        parent::__construct($refnum);
+        parent::__construct($refnum, $dbTrans);
         $this->type = 'PrePaid';
     }
-
-    // override; no legacy saving on gift cards
-    protected function legacySave($dbTrans) { }
 }
 
