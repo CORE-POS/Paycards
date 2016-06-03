@@ -61,13 +61,14 @@ class PaycardLib {
 static public function paycard_live($type = self::PAYCARD_TYPE_UNKNOWN) 
 {
     // these session vars require training mode no matter what card type
-    if( CoreLocal::get("training") != 0 || CoreLocal::get("CashierNo") == 9999)
+    if (CoreLocal::get("training") != 0 || CoreLocal::get("CashierNo") == 9999)
         return 0;
+
     // special session vars for each card type
-    if( $type === self::PAYCARD_TYPE_CREDIT) {
-        if( CoreLocal::get("CCintegrate") != 1)
-            return 0;
+    if ($type === self::PAYCARD_TYPE_CREDIT && CoreLocal::get('CCintegrate') != 1) {
+        return 0;
     }
+
     return 1;
 } // paycard_live()
 
@@ -116,27 +117,17 @@ static public function paycard_moneyFormat($amt) {
     return $sign."$".number_format($amt,2);
 } // paycard_moneyFormat
 
-
 // helper static public function to build error messages
-static public function paycard_errorText($title, $code, $text, $retry, $standalone, $refuse, $carbon, $tellIT, $type) 
+static public function paycardErrorText($title, $code, $retry, $standalone, $carbon, $tellIT, $type) 
 {
     // pick the icon
-    if( $carbon)
-        $msg = "<img src='graphics/blacksquare.gif'> ";
-    else if( $refuse)
-        $msg = "<img src='graphics/bluetri.gif'> ";
-    else
-        $msg = "<img src='graphics/redsquare.gif'> ";
+    $msg = "<img src='graphics/" . ($carbon ? 'blacksquare' : 'redsquare') . ".gif'> ";
     // write the text
     $msg .= "<b>".trim($title)."</b>";
-    //if( $code)
-        $msg .= "<br><font size=-2>(#R.".$code.")</font>";
+    $msg .= "<br><font size=-2>(#R.".$code.")</font>";
     $msg .= "<font size=-1><br><br>";
-    if( $text)
-        $msg .= $text."<br>";
     // write the options
     $opt = "";
-    if( $refuse)     { $opt .= ($opt ? ", or" : "") . " request <b>other payment</b>"; }
     if( $retry)      { $opt .= ($opt ? ", or" : "") . " <b>retry</b>";                 }
     if( $standalone) { $opt .= ($opt ? ", or" : "") . " process in <b>standalone</b>"; }
     if( $carbon) {
@@ -157,34 +148,28 @@ static public function paycard_errorText($title, $code, $text, $retry, $standalo
     }
     $msg .= "[clear] to cancel</font>";
     return $msg;
-} // paycard_errorText()
+}
 
 
 // display a paycard-related error due to cashier mistake
-static public function paycard_msgBox($type, $title, $msg, $action) 
+static public function paycardMsgBox($title, $msg, $action) 
 {
     $header = "IT CORE - Payment Card";
     $boxmsg = "<span class=\"larger\">".trim($title)."</span><p />";
     $boxmsg .= trim($msg)."<p />".trim($action);
     return DisplayLib::boxMsg($boxmsg,$header,True);
-} // paycard_msgBox()
+}
 
 
 // display a paycard-related error due to system, network or other non-cashier mistake
-static public function paycard_errBox($type, $title, $msg, $action) 
+static public function paycardErrBox($title, $msg, $action) 
 {
     return DisplayLib::xboxMsg("<b>".trim($title)."</b><p><font size=-1>".trim($msg)."<p>".trim($action)."</font>");
-} // paycard_errBox()
-
-static private $paycardDB = null;
+} 
 
 static public function paycard_db()
 {
-    if (self::$paycardDB === null) {
-        self::$paycardDB = Database::tDataConnect();
-    }
-
-    return self::$paycardDB;
+    return Database::tDataConnect();
 }
 
 static private function getIssuerOverride($issuer)

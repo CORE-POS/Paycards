@@ -54,9 +54,8 @@ class GoEMerchant extends BasicCCModule
     {
         if ($type == PaycardLib::PAYCARD_TYPE_CREDIT) {
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     public function entered($validate,$json)
@@ -88,15 +87,9 @@ class GoEMerchant extends BasicCCModule
         $dbTrans = PaycardLib::paycard_db();
 
         // prepare some fields to store the parsed response; we'll add more as we verify it
-        $today = date('Ymd'); // numeric date only, it goes in an 'int' field as part of the primary key
         $now = date('Y-m-d H:i:s'); // full timestamp
-        $cashierNo = $this->conf->get("CashierNo");
-        $laneNo = $this->conf->get("laneno");
-        $transNo = $this->conf->get("transno");
-        $transID = $this->conf->get("paycard_id");
         $validResponse = ($xml->isValid()) ? 1 : 0;
 
-        $refNum = $xml->get("ORDER_ID");
         $responseCode = $xml->get("STATUS");
         if (!$responseCode) {
             $validResponse = -3;
@@ -186,15 +179,8 @@ class GoEMerchant extends BasicCCModule
     {
         $xml = new xmlData($authResult['response']);
         // prepare some fields to store the parsed response; we'll add more as we verify it
-        $today = date('Ymd'); // numeric date only, it goes in an 'int' field as part of the primary key
         $now = date('Y-m-d H:i:s'); // full timestamp
-        $cashierNo = $this->conf->get("CashierNo");
-        $laneNo = $this->conf->get("laneno");
-        $transNo = $this->conf->get("transno");
-        $transID = $this->conf->get("paycard_id");
         $amount = $this->conf->get("paycard_amount");
-        $amountText = number_format(abs($amount), 2, '.', '');
-        $refNum = $this->refnum($transID);
 
         $dbTrans = PaycardLib::paycard_db();
         // prepare some fields to store the request and the parsed response; we'll add more as we verify it
@@ -280,15 +266,15 @@ class GoEMerchant extends BasicCCModule
                 // cast to string. tender function expects string input
                 // numeric input screws up parsing on negative values > $0.99
                 $amt = "".(-1*($this->conf->get("paycard_amount")));
-                $t_type = 'CC';
+                $tType = 'CC';
                 if ($this->conf->get('paycard_issuer') == 'American Express') {
-                    $t_type = 'AX';
+                    $tType = 'AX';
                 }
                 // if the transaction has a non-zero paycardTransactionID,
                 // include it in the tender line
-                $record_id = $this->last_paycard_transaction_id;
-                $charflag = ($record_id != 0) ? 'PT' : '';
-                TransRecord::addFlaggedTender("Credit Card", $t_type, $amt, $record_id, $charflag);
+                $recordID = $this->last_paycard_transaction_id;
+                $charflag = ($recordID != 0) ? 'PT' : '';
+                TransRecord::addFlaggedTender("Credit Card", $tType, $amt, $recordID, $charflag);
                 $this->conf->set("boxMsg",
                         "<b>Approved</b>
                         <font size=-1>
@@ -310,8 +296,8 @@ class GoEMerchant extends BasicCCModule
                 }
                 break;
             case PaycardLib::PAYCARD_MODE_VOID:
-                $v = new Void();
-                $v->voidid($this->conf->get("paycard_id"), array());
+                $void = new Void();
+                $void->voidid($this->conf->get("paycard_id"), array());
                 $this->conf->set("boxMsg","<b>Voided</b>
                                            <p><font size=-1>[enter] to continue
                                            <br>\"rp\" to reprint slip</font>");
@@ -325,16 +311,16 @@ class GoEMerchant extends BasicCCModule
     {
         switch ($type) {
             case PaycardLib::PAYCARD_MODE_AUTH: 
-                return $this->send_auth();
+                return $this->sendAuth();
             case PaycardLib::PAYCARD_MODE_VOID: 
-                return $this->send_void(); 
+                return $this->sendVoid(); 
             default:
                 $this->conf->reset();
                 return $this->setErrorMsg(0);
         }
     }    
 
-    private function send_auth()
+    private function sendAuth()
     {
         // initialize
         $dbTrans = PaycardLib::paycard_db();
@@ -354,7 +340,7 @@ class GoEMerchant extends BasicCCModule
         $amountText = number_format(abs($amount), 2, '.', '');
         $mode = (($amount < 0) ? 'retail_alone_credit' : 'retail_sale');
         // standardize transaction type for PaycardTransactions
-        $logged_mode = ($mode == 'retail_sale') ? 'Sale' : 'Return';
+        $loggedMode = ($mode == 'retail_sale') ? 'Sale' : 'Return';
         $manual = ($this->conf->get("paycard_manual") ? 1 : 0);
         $this->trans_pan['pan'] = $this->conf->get("paycard_PAN");
         $cardPAN = $this->trans_pan['pan'];
@@ -422,18 +408,17 @@ class GoEMerchant extends BasicCCModule
                     ?, ?, ?, ?, ?, ?
                 )';
         $ptArgs = array($today, $cashierNo, $laneNo, $transNo, $transID,
-                    'GoEMerchant', $refNum, $live, 'Credit', $logged_mode,
+                    'GoEMerchant', $refNum, $live, 'Credit', $loggedMode,
                     $amountText, $cardPANmasked,
                     $cardIssuer, $cardName, $manual, $now);
         $insP = $dbTrans->prepare($insQ);
         $insR = $dbTrans->execute($insP, $ptArgs);
-        if ($insR) {
-            $this->last_paycard_transaction_id = $dbTrans->insertID();
-        } else {
+        if ($insR === false) {
             $this->conf->reset();
             // internal error, nothing sent (ok to retry)
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND);
         }
+        $this->last_paycard_transaction_id = $dbTrans->insertID();
 
         $xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
         $xml .= "<TRANSACTION>";
@@ -466,7 +451,7 @@ class GoEMerchant extends BasicCCModule
         return $this->curlSend($xml,'POST',True);
     }
 
-    private function send_void()
+    private function sendVoid()
     {
         // initialize
         $dbTrans = PaycardLib::paycard_db();
@@ -478,7 +463,6 @@ class GoEMerchant extends BasicCCModule
 
         // prepare data for the void request
         $today = date('Ymd'); // numeric date only, it goes in an 'int' field as part of the primary key
-        $now = date('Y-m-d H:i:s'); // new timestamp
         $cashierNo = $this->conf->get("CashierNo");
         $laneNo = $this->conf->get("laneno");
         $transNo = $this->conf->get("transno");
@@ -486,7 +470,6 @@ class GoEMerchant extends BasicCCModule
         $amount = $this->conf->get("paycard_amount");
         $amountText = number_format(abs($amount), 2, '.', '');
         $mode = 'void';
-        $manual = ($this->conf->get("paycard_manual") ? 1 : 0);
         $this->trans_pan['pan'] = $this->conf->get("paycard_PAN");
         $cardPAN = $this->trans_pan['pan'];
         $cardPANmasked = PaycardLib::paycard_maskPAN($cardPAN,0,4);
@@ -494,7 +477,6 @@ class GoEMerchant extends BasicCCModule
         $cardExM = substr($this->conf->get("paycard_exp"),0,2);
         $cardExY = substr($this->conf->get("paycard_exp"),2,2);
         $cardName = $this->conf->get("paycard_name");
-        $refNum = $this->refnum($transID);
         $live = 1;
 
         $this->voidTrans = $transID;
@@ -535,7 +517,7 @@ class GoEMerchant extends BasicCCModule
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND); 
         }
         $res = $dbTrans->fetchRow($result);
-        $TransactionID = $res['xTransactionID'];
+        $transactionID = $res['xTransactionID'];
 
         /**
           populate a void record in PaycardTransactions
@@ -573,7 +555,7 @@ class GoEMerchant extends BasicCCModule
         $xml .= "<FIELD KEY=\"gateway_id\">$gatewayID</FIELD>";
         $xml .= "<FIELD KEY=\"operation_type\">$mode</FIELD>";
         $xml .= "<FIELD KEY=\"total_number_transactions\">1</FIELD>";
-        $xml .= "<FIELD KEY=\"reference_number1\">$TransactionID</FIELD>";
+        $xml .= "<FIELD KEY=\"reference_number1\">$transactionID</FIELD>";
         $xml .= "<FIELD KEY=\"credit_amount1\">$amountText</FIELD>";
         $xml .= "</FIELDS>";
         $xml .= "</TRANSACTION>";
@@ -607,9 +589,8 @@ class GoEMerchant extends BasicCCModule
     {
         if (strlen($ref) == 25 && preg_match('/^[0-9]{12}-[0-9]{12}$/', $ref)) {
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     public function lookupTransaction($ref, $local, $mode)
@@ -643,8 +624,8 @@ class GoEMerchant extends BasicCCModule
         $xml .= "</TRANSACTION>";
 
         $this->GATEWAY = "https://secure.goemerchant.com/secure/gateway/xmlgateway.aspx";
-        $curl_result = $this->curlSend($xml, 'POST', true, array(), false);
-        if ($curl_result['curlErr'] != CURLE_OK || $curl_result['curlHTTP'] != 200) {
+        $curlResult = $this->curlSend($xml, 'POST', true, array(), false);
+        if ($curlResult['curlErr'] != CURLE_OK || $curlResult['curlHTTP'] != 200) {
             return array(
                 'output' => DisplayLib::boxMsg('No response from processor', '', true),
                 'confirm_dest' => MiscLib::baseURL() . 'gui-modules/pos2.php',
@@ -658,20 +639,20 @@ class GoEMerchant extends BasicCCModule
             'cancel_dest' => MiscLib::baseURL() . 'gui-modules/pos2.php',
         );
         $info = new Paycards();
-        $url_stem = $info->pluginUrl();
+        $urlStem = $info->pluginUrl();
 
-        $xml_resp = new xmlData($curl_result['response']);
+        $xmlResp = new xmlData($curlResult['response']);
         $status = 'UNKNOWN';
-        if ($xml_resp->get_first('RECORDS_FOUND') == 0) {
+        if ($xmlResp->get_first('RECORDS_FOUND') == 0) {
             $status = 'NOTFOUND';
             $directions = 'Press [enter] to try again, [clear] to stop';
-            $query_string = 'id=' . ($local ? '_l' : '') . $ref . '&mode=' . $mode;
-            $resp['confirm_dest'] = $url_stem . '/gui/PaycardTransLookupPage.php?' . $query_string;
+            $queryString = 'id=' . ($local ? '_l' : '') . $ref . '&mode=' . $mode;
+            $resp['confirm_dest'] = $urlStem . '/gui/PaycardTransLookupPage.php?' . $queryString;
         } else {
-            $responseCode = $xml_resp->get_first('TRANS_STATUS1');;
+            $responseCode = $xmlResp->get_first('TRANS_STATUS1');;
             $resultCode = $responseCode;
             $normalized = $resultCode;
-            $xTransID = $xml_resp->get_first('REFERENCE_NUMBER1');
+            $xTransID = $xmlResp->get_first('REFERENCE_NUMBER1');
             $rMsg = '';
             if ($responseCode == 1) {
                 $status = 'APPROVED';
@@ -683,7 +664,7 @@ class GoEMerchant extends BasicCCModule
                 $normalized = 2;
             } else if ($responseCode == 0) {
                 $status == 'ERROR';
-                $eMsg = $xml_resp->get_first('ERROR1');
+                $eMsg = $xmlResp->get_first('ERROR1');
                 $normalized = 3;
                 if ($eMsg) {
                     $rMsg = substr($eMsg, 0, 100);
@@ -702,8 +683,8 @@ class GoEMerchant extends BasicCCModule
                 // Update PaycardTransactions record to contain
                 // actual processor result and finish
                 // the transaction correctly
-                $db = Database::tDataConnect(); 
-                $upP = $db->prepare("
+                $dbc = Database::tDataConnect(); 
+                $upP = $dbc->prepare("
                     UPDATE PaycardTransactions 
                     SET xResponseCode=?,
                         xResultCode=?,
@@ -725,13 +706,13 @@ class GoEMerchant extends BasicCCModule
                     $ref,
                     $this->conf->get('paycard_id'),
                 );
-                $upR = $db->execute($upP, $args);
+                $dbc->execute($upP, $args);
 
                 if ($status == 'APPROVED') {
                     PaycardLib::paycard_wipe_pan();
                     $this->cleanup(array());
-                    $resp['confirm_dest'] = $url_stem . '/gui/paycardSuccess.php';
-                    $resp['cancel_dest'] = $url_stem . '/gui/paycardSuccess.php';
+                    $resp['confirm_dest'] = $urlStem . '/gui/paycardSuccess.php';
+                    $resp['cancel_dest'] = $urlStem . '/gui/paycardSuccess.php';
                     $directions = 'Press [enter] to continue';
                 } else {
                     $this->conf->reset();
@@ -742,9 +723,9 @@ class GoEMerchant extends BasicCCModule
         switch (strtoupper($status)) {
             case 'APPROVED':
                 $line1 = $status;
-                $line2 = 'Amount: ' . sprintf('%.2f', $xml_resp->get_first('AMOUNT1'));
+                $line2 = 'Amount: ' . sprintf('%.2f', $xmlResp->get_first('AMOUNT1'));
                 $line3 = 'Type: CREDIT';
-                $voided = $xml_resp->get_first('CREDIT_VOID1');
+                $voided = $xmlResp->get_first('CREDIT_VOID1');
                 $line4 = 'Voided: ' . (strtoupper($voided) == 'VOID' ? 'Yes' : 'No');
                 $resp['output'] = DisplayLib::boxMsg($line1 
                                                      . '<br />' . $line2

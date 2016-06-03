@@ -72,28 +72,27 @@ class paycardboxMsgGift extends PaycardProcessPage {
     {
         echo '<div class="baseHeight">';
         // generate message to print
-        $type = $this->conf->get("paycard_type");
         $mode = $this->conf->get("paycard_mode");
         $amt = $this->conf->get("paycard_amount");
         if ($amt == 0) {
             if ($mode == PaycardLib::PAYCARD_MODE_ACTIVATE) {
-                echo PaycardLib::paycard_msgBox($type,"Enter Activation Amount",
+                echo PaycardLib::paycardMsgBox("Enter Activation Amount",
                     "Enter the amount to put on the card",
                     "[clear] to cancel");
             } elseif ($mode == PaycardLib::PAYCARD_MODE_ADDVALUE) {
-                echo PaycardLib::paycard_msgBox($type,"Enter Add-Value Amount",
+                echo PaycardLib::paycardMsgBox("Enter Add-Value Amount",
                     "Enter the amount to put on the card",
                     "[clear] to cancel");
             }
         } elseif (!is_numeric($amt) || $amt < 0.005) {
-            echo PaycardLib::paycard_msgBox($type,"Invalid Amount",
+            echo PaycardLib::paycardMsgBox("Invalid Amount",
                 "Enter a positive amount to put on the card",
                 "[clear] to cancel");
         } elseif ($mode == PaycardLib::PAYCARD_MODE_ACTIVATE) {
-            echo PaycardLib::paycard_msgBox($type,"Activate ".PaycardLib::paycard_moneyFormat($amt)."?","",
+            echo PaycardLib::paycardMsgBox("Activate ".PaycardLib::paycard_moneyFormat($amt)."?","",
                 "[enter] to continue if correct<br>Enter a different amount if incorrect<br>[clear] to cancel");
         } elseif ($mode == PaycardLib::PAYCARD_MODE_ADDVALUE) {
-            echo PaycardLib::paycard_msgBox($type,"Add Value ".PaycardLib::paycard_moneyFormat($amt)."?","",
+            echo PaycardLib::paycardMsgBox("Add Value ".PaycardLib::paycard_moneyFormat($amt)."?","",
                 "[enter] to continue if correct<br>Enter a different amount if incorrect<br>[clear] to cancel");
         }
         $this->conf->set("msgrepeat",2);

@@ -23,10 +23,6 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertInternalType('array', $bm->lookupTransaction('1-1-1', true, 'lookup'));
         $this->assertInternalType('string', $bm->refnum(1));
         $this->assertEquals('', $bm->refnum(9999));
-        $this->assertInternalType('string', $bm->array2post(array('foo'=>'bar')));
-        $soaped = $bm->soapify('action',array('foo'=>'bar'));
-        $this->assertInternalType('string', $soaped);
-        $this->assertInternalType('string', $bm->desoapify('action', $soaped));
         $errors = array(
             PaycardLib::PAYCARD_ERR_NOSEND,
             PaycardLib::PAYCARD_ERR_COMM,

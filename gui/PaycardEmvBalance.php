@@ -87,7 +87,7 @@ function emvSubmit() {
         <div class="baseHeight">
         <?php
         // generate message to print
-        echo PaycardLib::paycard_msgBox(PaycardLib::PAYCARD_TYPE_GIFT,"Check Card Balance?",
+        echo PaycardLib::paycardMsgBox("Check Card Balance?",
             "",
             "[enter] to continue<br>[clear] to cancel");
         ?>

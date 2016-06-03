@@ -34,8 +34,7 @@ class PaycardDialogs
     {
         if ($this->conf->get('CCintegrate') != 1) {
             $this->conf->reset();
-            throw new Exception(PaycardLib::paycard_errBox(PaycardLib::PAYCARD_TYPE_GIFT,
-                                             "Card Integration Disabled",
+            throw new Exception(PaycardLib::paycardErrBox("Card Integration Disabled",
                                              "Please process credit cards in standalone",
                                              "[clear] to cancel"
             ));
@@ -49,20 +48,17 @@ class PaycardDialogs
         $validator = new CardValidator();
         if ($luhn && $validator->validNumber($pan) != 1) {
             $this->conf->reset();
-            throw new Exception(PaycardLib::paycard_errBox(PaycardLib::PAYCARD_TYPE_CREDIT,
-                "Invalid Card Number",
+            throw new Exception(PaycardLib::paycardErrBox("Invalid Card Number",
                 "Swipe again or type in manually",
                 "[clear] to cancel"));
         } elseif (!$this->reader->accepted($pan)) {
             $this->conf->reset();
-            throw new Exception(PaycardLib::paycard_msgBox(PaycardLib::PAYCARD_TYPE_CREDIT,
-                "Unsupported Card Type",
+            throw new Exception(PaycardLib::paycardMsgBox("Unsupported Card Type",
                 "We cannot process " . $this->conf->get("paycard_issuer") . " cards",
                 "[clear] to cancel"));
         } elseif ($expirable && $validator->validExpiration($this->conf->get("paycard_exp")) != 1) {
             $this->conf->reset();
-            throw new Exception(PaycardLib::paycard_errBox(PaycardLib::PAYCARD_TYPE_CREDIT,
-                "Invalid Expiration Date",
+            throw new Exception(PaycardLib::paycardErrBox("Invalid Expiration Date",
                 "The expiration date has passed or was not recognized",
                 "[clear] to cancel"));
         }
@@ -84,15 +80,13 @@ class PaycardDialogs
         $num = $this->dbTrans->numRows($search);
         if ($num < 1) {
             $this->conf->reset();
-            throw new Exception(PaycardLib::paycard_msgBox(PaycardLib::PAYCARD_TYPE_CREDIT,
-                                                         "Card Not Used",
+            throw new Exception(PaycardLib::paycardMsgBox("Card Not Used",
                                                          "That card number was not used in this transaction",
                                                          "[clear] to cancel"
             ));
         } else if ($num > 1) {
             $this->conf->reset();
-            throw new Exception(PaycardLib::paycard_msgBox(PaycardLib::PAYCARD_TYPE_CREDIT,
-                                                         "Multiple Uses",
+            throw new Exception(PaycardLib::paycardMsgBox("Multiple Uses",
                                                          "That card number was used more than once in this transaction; select the payment and press VOID",
                                                          "[clear] to cancel"
             ));
@@ -103,10 +97,9 @@ class PaycardDialogs
 
     public function invalidMode()
     {
-        return PaycardLib::paycard_errBox(PaycardLib::PAYCARD_TYPE_GIFT,
-                                                     "Invalid Mode",
-                                                     "This card type does not support that processing mode",
-                                                     "[clear] to cancel"
+        return PaycardLib::paycardErrBox("Invalid Mode",
+                                         "This card type does not support that processing mode",
+                                         "[clear] to cancel"
         );
     }
 
@@ -129,15 +122,13 @@ class PaycardDialogs
         $num = $this->dbTrans->numRows($search);
         if ($num < 1) {
             $this->conf->reset();
-            throw new Exception(PaycardLib::paycard_errBox(PaycardLib::PAYCARD_TYPE_CREDIT,
-                                                         "Internal Error",
+            throw new Exception(PaycardLib::paycardErrBox("Internal Error",
                                                          "Card request not found, unable to void",
                                                          "[clear] to cancel"
             ));
         } elseif ($num > 1) {
             $this->conf->reset();
-            throw new Exception(PaycardLib::paycard_errBox(PaycardLib::PAYCARD_TYPE_CREDIT,
-                                                          "Internal Error",
+            throw new Exception(PaycardLib::paycardErrBox("Internal Error",
                                                           "Card request not distinct, unable to void",
                                                           "[clear] to cancel"
             ));
@@ -166,15 +157,13 @@ class PaycardDialogs
 
         if ($num < 1) {
             $this->conf->reset();
-            throw new Exception(PaycardLib::paycard_errBox(PaycardLib::PAYCARD_TYPE_CREDIT,
-                                                         "Internal Error",
+            throw new Exception(PaycardLib::paycardErrBox("Internal Error",
                                                          "Card response not found, unable to void",
                                                          "[clear] to cancel"
             ));
         } elseif ($num > 1) {
             $this->conf->reset();
-            throw new Exception(PaycardLib::paycard_errBox(PaycardLib::PAYCARD_TYPE_CREDIT,
-                                                         "Internal Error",
+            throw new Exception(PaycardLib::paycardErrBox("Internal Error",
                                                          "Card response not distinct, unable to void",
                                                          "[clear] to cancel"
             ));
@@ -202,16 +191,14 @@ class PaycardDialogs
             $num = $this->dbTrans->numRows($search);
             if ($num != 1) {
                 $this->conf->reset();
-                throw new Exception(PaycardLib::paycard_errBox(PaycardLib::PAYCARD_TYPE_CREDIT,
-                                                             "Internal Error",
+                throw new Exception(PaycardLib::paycardErrBox("Internal Error",
                                                              "Transaction item not found, unable to void",
                                                              "[clear] to cancel"
                 ));
             }
         } elseif ($num > 1) {
             $this->conf->reset();
-            throw new Exception(PaycardLib::paycard_errBox(PaycardLib::PAYCARD_TYPE_CREDIT,
-                                                         "Internal Error",
+            throw new Exception(PaycardLib::paycardErrBox("Internal Error",
                                                          "Transaction item not distinct, unable to void",
                                                          "[clear] to cancel"
             ));
@@ -236,8 +223,7 @@ class PaycardDialogs
         $voided = $this->dbTrans->numRows($search);
         if ($voided > 0) {
             $this->conf->reset();
-            throw new Exception(PaycardLib::paycard_errBox(PaycardLib::PAYCARD_TYPE_CREDIT,
-                                                         "Unable to Void",
+            throw new Exception(PaycardLib::paycardErrBox("Unable to Void",
                                                          "Card transaction already voided",
                                                          "[clear] to cancel"
             ));
@@ -288,8 +274,7 @@ class PaycardDialogs
         }
 
         if ($error !== false) {
-            throw new Exception(PaycardLib::paycard_errBox(PaycardLib::PAYCARD_TYPE_CREDIT,
-                              $errHeader, $error, $buttons));
+            throw new Exception(PaycardLib::paycardErrBox($errHeader, $error, $buttons));
         }
 
         return true;

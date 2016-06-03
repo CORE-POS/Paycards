@@ -78,10 +78,9 @@ class MercuryE2E extends BasicCCModule
             $e2e = $this->encBlock->parseEncBlock($this->conf->get('paycard_PAN'));
             if (empty($e2e['Block']) || empty($e2e['Key'])){
                 $this->conf->reset();
-                $json['output'] = PaycardLib::paycard_msgBox(PaycardLib::PAYCARD_TYPE_CREDIT,
-                                                             "Swipe Error",
-                                                             "Error reading card. Swipe again.",
-                                                             "[clear] to cancel"
+                $json['output'] = PaycardLib::paycardMsgBox("Swipe Error",
+                                                            "Error reading card. Swipe again.",
+                                                            "[clear] to cancel"
                 );
                 UdpComm::udpSend('termReset');
 

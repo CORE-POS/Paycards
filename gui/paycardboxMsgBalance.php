@@ -56,7 +56,7 @@ class paycardboxMsgBalance extends PaycardProcessPage {
         ?>
         <div class="baseHeight">
         <?php
-        echo PaycardLib::paycard_msgBox(PaycardLib::PAYCARD_TYPE_GIFT,"Check Card Balance?",
+        echo PaycardLib::paycardMsgBox("Check Card Balance?",
             "If you proceed, you <b>cannot void</b> any previous action on this card!",
             "[enter] to continue<br>[clear] to cancel");
         $this->conf->set("msgrepeat",2);

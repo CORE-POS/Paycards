@@ -107,18 +107,15 @@ function emvSubmit()
         <?php
         // generate message to print
         $amt = $this->conf->get("paycard_amount");
-        $type = $this->conf->get("CacheCardType");
         if ($amt > 0) {
-            echo PaycardLib::paycard_msgBox(
-                $type,
+            echo PaycardLib::paycardMsgBox(
                 "Void " . PaycardLib::paycard_moneyFormat($amt) . " Payment?",
                 "Please enter password then",
                 "[enter] to continue voiding or<br>[clear] to cancel the void"
             );
         } else {
-            echo PaycardLib::paycard_msgBox(
-                $type,"
-                Void " . PaycardLib::paycard_moneyFormat($amt) . " Refund?",
+            echo PaycardLib::paycardMsgBox(
+                "Void " . PaycardLib::paycard_moneyFormat($amt) . " Refund?",
                 "Please enter password then",
                 "[enter] to continue voiding or<br>[clear] to cancel the void"
             );

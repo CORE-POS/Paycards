@@ -65,7 +65,7 @@ class PaycardDatacapParser extends Parser
     {
         $ret = $this->default_json();
         if (CoreLocal::get("ttlflag") != 1) { // must subtotal before running card
-            $ret['output'] = PaycardLib::paycard_msgBox('',"No Total",
+            $ret['output'] = PaycardLib::paycardMsgBox("No Total",
                 "Transaction must be totaled before tendering or refunding","[clear] to cancel");
             return $ret;
         }
@@ -100,7 +100,7 @@ class PaycardDatacapParser extends Parser
                     /* try to automatically do fs total */
                     $try = PrehLib::fsEligible();
                     if ($try !== true) {
-                        $ret['output'] = PaycardLib::paycard_msgBox('',"Type Mismatch",
+                        $ret['output'] = PaycardLib::paycardMsgBox("Type Mismatch",
                             "Foodstamp eligible amount inapplicable","[clear] to cancel");
                         $ret['main_frame'] = false;
                         return $ret;

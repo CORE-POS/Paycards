@@ -59,9 +59,8 @@ class MercuryGift extends BasicCCModule
     {
         if ($type == PaycardLib::PAYCARD_TYPE_GIFT) {
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     /* entered($validate)
@@ -73,7 +72,7 @@ class MercuryGift extends BasicCCModule
     public function entered($validate,$json)
     {
         try {
-            $enabled = $this->dialogs->enabledCheck();
+            $this->dialogs->enabledCheck();
 
             // error checks based on processing mode
             if ($this->conf->get("paycard_mode") == PaycardLib::PAYCARD_MODE_VOID) {
@@ -85,7 +84,7 @@ class MercuryGift extends BasicCCModule
 
             // check card data for anything else
             if ($validate) {
-                $valid = $this->dialogs->validateCard($this->conf->get('paycard_PAN'), false, false);
+                $this->dialogs->validateCard($this->conf->get('paycard_PAN'), false, false);
             }
         } catch (Exception $ex) {
             $json['output'] = $ex->getMessage();
@@ -134,11 +133,11 @@ class MercuryGift extends BasicCCModule
             case PaycardLib::PAYCARD_MODE_ACTIVATE:
             case PaycardLib::PAYCARD_MODE_ADDVALUE:
             case PaycardLib::PAYCARD_MODE_AUTH: 
-                return $this->send_auth();
+                return $this->sendAuth();
             case PaycardLib::PAYCARD_MODE_VOID:
-                return $this->send_void();
+                return $this->sendVoid();
             case PaycardLib::PAYCARD_MODE_BALANCE:
-                return $this->send_balance();
+                return $this->sendBalance();
             default:
                 return $this->setErrorMsg(0);
         }
@@ -227,7 +226,7 @@ class MercuryGift extends BasicCCModule
 
     // END INTERFACE METHODS
     
-    private function send_auth($domain="w1.mercurypay.com")
+    private function sendAuth($domain="w1.mercurypay.com")
     {
         // initialize
         $dbTrans = Database::tDataConnect();
@@ -242,7 +241,6 @@ class MercuryGift extends BasicCCModule
         $laneNo = $this->conf->get("laneno");
         $transNo = $this->conf->get("transno");
         $transID = $this->conf->get("paycard_id");
-        $program = 'Gift'; // valutec also has 'Loyalty' cards which store arbitrary point values
         $amount = $this->conf->get("paycard_amount");
         $amountText = number_format(abs($amount), 2, '.', '');
         $mode = "";
@@ -250,14 +248,13 @@ class MercuryGift extends BasicCCModule
         $logged_mode = $mode;
         switch ($this->conf->get("paycard_mode")) {
             case PaycardLib::PAYCARD_MODE_AUTH:
+                $mode = 'tender';
+                $authMethod = 'NoNSFSale';  
+                $logged_mode = 'Sale';
                 if ($amount < 0) {
                     $mode = 'refund';
                     $authMethod = 'Return';
                     $logged_mode = 'Return';
-                } else {
-                    $mode = 'tender';
-                    $authMethod = 'NoNSFSale';  
-                    $logged_mode = 'Sale';
                 }
                 break;
             case PaycardLib::PAYCARD_MODE_ADDVALUE:
@@ -297,11 +294,10 @@ class MercuryGift extends BasicCCModule
                     $amountText, $cardPAN,
                     'Mercury', 'Cardholder', $manual, $now);
         $insR = $dbTrans->query($insQ);
-        if ($insR) {
-            $this->last_paycard_transaction_id = $dbTrans->insertID();
-        } else {
+        if ($insR === false) {
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND); // internal error, nothing sent (ok to retry)
         }
+        $this->last_paycard_transaction_id = $dbTrans->insertID();
 
         $msgXml = "<?xml version=\"1.0\"".'?'.">
             <TStream>
@@ -327,16 +323,15 @@ class MercuryGift extends BasicCCModule
             array("tran"=>$msgXml,"pw"=>$password),
             "http://www.mercurypay.com");
 
+        $this->GATEWAY = "https://$domain/ws/ws.asmx";
         if ($this->conf->get("training") == 1) {
             $this->GATEWAY = "https://w1.mercurydev.net/ws/ws.asmx";
-        } else {
-            $this->GATEWAY = "https://$domain/ws/ws.asmx";
         }
 
         return $this->curlSend($soaptext,'SOAP');
     }
 
-    private function send_void($domain="w1.mercurypay.com")
+    private function sendVoid($domain="w1.mercurypay.com")
     {
         // initialize
         $dbTrans = Database::tDataConnect();
@@ -346,15 +341,12 @@ class MercuryGift extends BasicCCModule
 
         // prepare data for the void request
         $today = date('Ymd'); // numeric date only, it goes in an 'int' field as part of the primary key
-        $now = date('Y-m-d H:i:s'); // full timestamp
         $cashierNo = $this->conf->get("CashierNo");
         $laneNo = $this->conf->get("laneno");
         $transNo = $this->conf->get("transno");
         $transID = $this->conf->get("paycard_id");
-        $program = 'Gift'; // valutec also has 'Loyalty' cards which store arbitrary point values
         $amount = $this->conf->get("paycard_amount");
         $amountText = number_format(abs($amount), 2, '.', '');
-        $mode = 'void';
         $cardPAN = $this->getPAN();
         $cardTr2 = $this->getTrack2();
         $identifier = date('mdHis'); // the void itself needs a unique identifier, so just use a timestamp minus the year (10 digits only)
@@ -432,11 +424,10 @@ class MercuryGift extends BasicCCModule
                     AND transNo=" . $transNo . "
                     AND transID=" . $transID;
         $initR = $dbTrans->query($initQ);
-        if ($initR) {
-            $this->last_paycard_transaction_id = $dbTrans->insertID();
-        } else {
+        if ($initR === false) {
             return PaycardLib::PAYCARD_ERR_NOSEND; // database error, nothing sent (ok to retry)
         }
+        $this->last_paycard_transaction_id = $dbTrans->insertID();
 
         $msgXml = "<?xml version=\"1.0\"".'?'.">
             <TStream>
@@ -461,20 +452,17 @@ class MercuryGift extends BasicCCModule
             array("tran"=>$msgXml,"pw"=>$password),
             "http://www.mercurypay.com");
 
+        $this->GATEWAY = "https://$domain/ws/ws.asmx";
         if ($this->conf->get("training") == 1) {
             $this->GATEWAY = "https://w1.mercurydev.net/ws/ws.asmx";
-        } else {
-            $this->GATEWAY = "https://$domain/ws/ws.asmx";
         }
 
         return $this->curlSend($soaptext,'SOAP');
     }
 
-    private function send_balance($domain="w1.mercurypay.com")
+    private function sendBalance($domain="w1.mercurypay.com")
     {
         // prepare data for the request
-        $cashierNo = $this->conf->get("CashierNo");
-        $program = 'Gift'; // valutec also has 'Loyalty' cards which store arbitrary point values
         $cardPAN = $this->getPAN();
         $cardTr2 = $this->getTrack2();
         $identifier = date('mdHis'); // the balance check itself needs a unique identifier, so just use a timestamp minus the year (10 digits only)
@@ -501,10 +489,9 @@ class MercuryGift extends BasicCCModule
             array("tran"=>$msgXml,"pw"=>$password),
             "http://www.mercurypay.com");
 
+        $this->GATEWAY = "https://$domain/ws/ws.asmx";
         if ($this->conf->get("training") == 1) {
             $this->GATEWAY = "https://w1.mercurydev.net/ws/ws.asmx";
-        } else {
-            $this->GATEWAY = "https://$domain/ws/ws.asmx";
         }
 
         return $this->curlSend($soaptext,'SOAP');
@@ -536,11 +523,7 @@ class MercuryGift extends BasicCCModule
         // prepare data for the request
         $today = date('Ymd'); // numeric date only, it goes in an 'int' field as part of the primary key
         $now = date('Y-m-d H:i:s'); // full timestamp
-        $cashierNo = $this->conf->get("CashierNo");
-        $laneNo = $this->conf->get("laneno");
-        $transNo = $this->conf->get("transno");
         $transID = $this->conf->get("paycard_id");
-        $program = 'Gift';
         $identifier = $this->valutecIdentifier($transID); // valutec allows 10 digits; this uses lanenum-transnum-transid since we send cashiernum in another field
 
         $validResponse = ($xml->isValid()) ? 1 : 0;
@@ -557,9 +540,9 @@ class MercuryGift extends BasicCCModule
             } else {
                 if (!$xml->get('CMDSTATUS')) {
                     $validResponse = -2; // response was parsed as XML but fields didn't match
-                } else if (!$xml->get('TRANTYPE')) {
+                } elseif (!$xml->get('TRANTYPE')) {
                     $validResponse = -3; // response was parsed as XML but fields didn't match
-                } else if (!$xml->get('INVOICENO')) {
+                } elseif (!$xml->get('INVOICENO')) {
                     $validResponse = -4; // response was parsed as XML but fields didn't match
                 }
             }
@@ -573,11 +556,11 @@ class MercuryGift extends BasicCCModule
             $normalized = 1;
             $resultCode = 1;
             $rMsg = 'Approved';
-        } else if ($status == 'Declined') {
+        } elseif ($status == 'Declined') {
             $normalized = 2;
             $resultCode = 2;
             $rMsg = 'Declined';
-        } else if ($status == 'Error') {
+        } elseif ($status == 'Error') {
             $normalized = 3;
             $resultCode = 0;
             $rMsg = substr($errorMsg, 0, 100);
@@ -618,7 +601,7 @@ class MercuryGift extends BasicCCModule
                 if (!$this->second_try) {
                     $this->second_try = true;
 
-                    return $this->send_auth("w2.backuppay.com");
+                    return $this->sendAuth("w2.backuppay.com");
                 } else {
                     $this->conf->set("boxMsg","No response from processor
                                                <br />The transaction did not go through"
@@ -684,15 +667,9 @@ class MercuryGift extends BasicCCModule
         // prepare data for the void request
         $today = date('Ymd'); // numeric date only, it goes in an 'int' field as part of the primary key
         $now = date('Y-m-d H:i:s'); // full timestamp
-        $cashierNo = $this->conf->get("CashierNo");
-        $laneNo = $this->conf->get("laneno");
-        $transNo = $this->conf->get("transno");
         $transID = $this->conf->get("paycard_id");
         $amount = $this->conf->get("paycard_amount");
-        $amountText = number_format(abs($amount), 2, '.', '');
-        $mode = 'void';
         $authcode = $this->temp;
-        $program = "Gift";
 
         $validResponse = 0;
         // verify that echo'd fields match our request
@@ -715,11 +692,11 @@ class MercuryGift extends BasicCCModule
             $normalized = 1;
             $resultCode = 1;
             $rMsg = 'Approved';
-        } else if ($status == 'Declined') {
+        } elseif ($status == 'Declined') {
             $normalized = 2;
             $resultCode = 2;
             $rMsg = 'Declined';
-        } else if ($status == 'Error') {
+        } elseif ($status == 'Error') {
             $normalized = 3;
             $resultCode = 0;
             $rMsg = substr($xml->get_first('TEXTRESPONSE'), 0, 100);
@@ -758,7 +735,7 @@ class MercuryGift extends BasicCCModule
                 if (!$this->second_try){
                     $this->second_try = true;
 
-                    return $this->send_void("w2.backuppay.com");
+                    return $this->sendVoid("w2.backuppay.com");
                 } else {
                     $this->conf->set("boxMsg","No response from processor<br />
                                 The transaction did not go through");
@@ -798,14 +775,13 @@ class MercuryGift extends BasicCCModule
         $resp = $this->desoapify("GiftTransactionResult",
             $balResult["response"]);
         $xml = new xmlData($resp);
-        $program = 'Gift';
 
         if ($balResult['curlErr'] != CURLE_OK || $balResult['curlHTTP'] != 200) {
             if ($balResult['curlHTTP'] == '0'){
                 if (!$this->second_try) {
                     $this->second_try = true;
 
-                    return $this->send_balance("w2.backuppay.com");
+                    return $this->sendBalance("w2.backuppay.com");
                 } else {
                     $this->conf->set("boxMsg","No response from processor<br />
                                 The transaction did not go through");
@@ -862,36 +838,32 @@ class MercuryGift extends BasicCCModule
     {
         if ($this->conf->get("training") == 1) {
             return "595901";
-        } else {
-            return MERCURY_GTERMINAL_ID;
         }
+        return MERCURY_GTERMINAL_ID;
     }
 
     private function getPw()
     {
         if ($this->conf->get("training") == 1) {
             return "xyz";
-        } else {
-            return MERCURY_GPASSWORD;
         }
+        return MERCURY_GPASSWORD;
     }
 
     private function getPAN()
     {
         if ($this->conf->get("training") == 1) {
             return "6050110000000296951";
-        } else {
-            return $this->conf->get("paycard_PAN");
         }
+        return $this->conf->get("paycard_PAN");
     }
 
     private function getTrack2()
     {
         if ($this->conf->get("training") == 1) {
             return false;
-        } else {
-            return $this->conf->get("paycard_tr2");
         }
+        return $this->conf->get("paycard_tr2");
     }
 }
 

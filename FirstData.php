@@ -320,7 +320,7 @@ class FirstData extends BasicCCModule
       @param $namespace include an xmlns attribute
       @return soap string
     */
-    public function soapify($action,$objs,$namespace="",$encode_tags=True){
+    protected function soapify($action,$objs,$namespace="",$encode_tags=True){
         $ret = "<?xml version=\"1.0\"?>
             <SOAP-ENV:Envelope";
         foreach ($this->SOAP_ENVELOPE_ATTRS as $attr){

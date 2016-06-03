@@ -124,8 +124,7 @@ function emvSubmit()
             $this->addOnloadCommand("\$('#formlocal').append(\$('<input type=\"hidden\" name=\"amount\" />').val({$this->amount}));\n");
         }
         // generate message to print
-        echo PaycardLib::paycard_msgBox(
-                PaycardLib::PAYCARD_TYPE_GIFT,
+        echo PaycardLib::paycardMsgBox(
                 $title,
                 '',
                 $msg

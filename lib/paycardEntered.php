@@ -79,10 +79,10 @@ class paycardEntered extends Parser
         // error checks based on transaction
         if ($mode == PaycardLib::PAYCARD_MODE_AUTH) {
             if( $this->conf->get("ttlflag") != 1) { // must subtotal before running card
-                throw new Exception(PaycardLib::paycard_msgBox($type,"No Total",
+                throw new Exception(PaycardLib::paycardMsgBox("No Total",
                     "Transaction must be totaled before tendering or refunding","[clear] to cancel"));
             } else if( abs($this->conf->get("amtdue")) < 0.005) { // can't tender for more than due
-                throw new Exception(PaycardLib::paycard_msgBox($type,"No Total",
+                throw new Exception(PaycardLib::paycardMsgBox("No Total",
                     "Nothing to tender or refund","[clear] to cancel"));
             }
         }
@@ -99,7 +99,7 @@ class paycardEntered extends Parser
                 /* try to automatically do fs total */
                 $try = PrehLib::fsEligible();
                 if ($try !== True){
-                    throw new Exception(PaycardLib::paycard_msgBox($type,"Type Mismatch",
+                    throw new Exception(PaycardLib::paycardMsgBox("Type Mismatch",
                         "Foodstamp eligible amount inapplicable","[clear] to cancel"));
                 } 
             }
@@ -107,7 +107,7 @@ class paycardEntered extends Parser
               Always validate amount as non-zero
             */
             if ($this->conf->get('fsEligible') <= 0.005 && $this->conf->get('fsEligible') >= -0.005) {
-                throw new Exception(PaycardLib::paycard_msgBox($type,_('Zero Total'),
+                throw new Exception(PaycardLib::paycardMsgBox(_('Zero Total'),
                     "Foodstamp eligible amount is zero","[clear] to cancel"));
                 UdpComm::udpSend('termReset');
             } 
@@ -138,7 +138,7 @@ class paycardEntered extends Parser
             if ($this->conf->get("paycard_manual")) {
                 // make sure it's numeric
                 if (!ctype_digit($card) || strlen($card) < 18) { // shortest known card # is 14 digits, plus MMYY
-                    throw new Exception(PaycardLib::paycard_msgBox($type,"Manual Entry Unknown",
+                    throw new Exception(PaycardLib::paycardMsgBox("Manual Entry Unknown",
                         "Please enter card data like:<br>CCCCCCCCCCCCCCCCMMYY","[clear] to cancel"));
                 }
                 // split up input (and check for the Concord test card)
@@ -160,7 +160,7 @@ class paycardEntered extends Parser
                 // swiped magstripe (reference to ISO format at end of this file)
                 $stripe = $reader->magstripe($card);
                 if (!is_array($stripe)) {
-                    throw new Exception(PaycardLib::paycard_errBox($type,$this->conf->get("paycard_manual")."Card Data Invalid","Please swipe again or type in manually","[clear] to cancel"));
+                    throw new Exception(PaycardLib::paycardErrBox($this->conf->get("paycard_manual")."Card Data Invalid","Please swipe again or type in manually","[clear] to cancel"));
                 }
                 $this->conf->set("paycard_PAN",$stripe["pan"]);
                 $this->conf->set("paycard_exp",$stripe["exp"]);
@@ -184,7 +184,7 @@ class paycardEntered extends Parser
 
             // if we knew the type coming in, make sure it agrees
             if ($type != PaycardLib::PAYCARD_TYPE_UNKNOWN && $type != $this->conf->get("paycard_type")) {
-                throw new Exception(PaycardLib::paycard_msgBox($type,"Type Mismatch",
+                throw new Exception(PaycardLib::paycardMsgBox("Type Mismatch",
                     "Card number does not match card type","[clear] to cancel"));
             }
         } catch (Exception $ex) {
@@ -200,7 +200,7 @@ class paycardEntered extends Parser
                 return $myObj->entered($validate,$ret);
         }
 
-        $ret['output'] = PaycardLib::paycard_errBox(PaycardLib::PAYCARD_TYPE_UNKNOWN,"Unknown Card Type ".$this->conf->get("paycard_type"),"","[clear] to cancel");
+        $ret['output'] = PaycardLib::paycardErrBox("Unknown Card Type ".$this->conf->get("paycard_type"),"","[clear] to cancel");
         return $ret;
     }
 
