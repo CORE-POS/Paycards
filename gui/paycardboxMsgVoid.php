@@ -63,11 +63,11 @@ class paycardboxMsgVoid extends PaycardProcessPage
         } elseif ($this->conf->get("paycard_mode") == PaycardLib::PAYCARD_MODE_AUTH) {
             // call paycard_void on first load to set up
             // transaction and check for problems
-            $trans_id = $this->conf->get("paycard_id");
+            $transID = $this->conf->get("paycard_id");
             foreach($this->conf->get("RegisteredPaycardClasses") as $rpc){
                 $myObj = new $rpc();
                 if ($myObj->handlesType($this->conf->get("paycard_type"))){
-                    $ret = $myObj->paycardVoid($trans_id);
+                    $ret = $myObj->paycardVoid($transID);
                     if (isset($ret['output']) && !empty($ret['output'])){
                         $this->conf->set("boxMsg",$ret['output']);
                         $this->change_page($this->page_url."gui-modules/boxMsg2.php");

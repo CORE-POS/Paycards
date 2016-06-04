@@ -80,23 +80,22 @@ class PaycardEmvCaAdmin extends NoInputCorePage
                 $this->conf->set('strRemembered', '');
                 $this->change_page(MiscLib::baseURL() . 'gui-modules/boxMsg2.php');
                 return false;
-            } else {
-                $print_class = $this->conf->get('ReceiptDriver');
-                if ($print_class === '' || !class_exists($print_class)) {
-                    $print_class = 'ESCPOSPrintHandler';
-                }
-                $PRINT_OBJ = new $print_class();
-                $receipt_body = implode("\n", $resp['receipt']);
-                $receipt_body .= "\n\n\n\n\n\n\n";
-                $receipt_body .= chr(27).chr(105);
-                if (session_id() != '') {
-                    session_write_close();
-                }
-                $PRINT_OBJ->writeLine($receipt_body);
-                $this->change_page($this->page_url."gui-modules/pos2.php");
-
-                return false;
             }
+            $printClass = $this->conf->get('ReceiptDriver');
+            if ($printClass === '' || !class_exists($printClass)) {
+                $printClass = 'ESCPOSPrintHandler';
+            }
+            $PRINTOBJ = new $printClass();
+            $receiptBody = implode("\n", $resp['receipt']);
+            $receiptBody .= "\n\n\n\n\n\n\n";
+            $receiptBody .= chr(27).chr(105);
+            if (session_id() != '') {
+                session_write_close();
+            }
+            $PRINTOBJ->writeLine($receiptBody);
+            $this->change_page($this->page_url."gui-modules/pos2.php");
+
+            return false;
         }
 
         return true;
@@ -159,7 +158,7 @@ function emvSubmit() {
         <div class="centeredDisplay colored rounded">
         <span class="larger">process admin transaction</span>
         <form name="selectform" method="post" id="selectform"
-            action="<?php echo $_SERVER['PHP_SELF']; ?>">
+            action="<?php echo filter_input(INPUT_SERVER, 'PHP_SELF'); ?>">
         <?php if ($this->conf->get('touchscreen')) { ?>
         <button type="button" class="pos-button coloredArea"
             onclick="scrollDown('#selectlist');">
@@ -169,11 +168,11 @@ function emvSubmit() {
         <select id="selectlist" name="selectlist" size="5" style="width: 10em;"
             onblur="$('#selectlist').focus()">
         <?php
-        $i = 0;
+        $first = true;
         foreach ($this->menu as $val => $label) {
             printf('<option %s value="%s">%s</option>',
-                ($i == 0 ? 'selected' : ''), $val, $label);
-            $i++;
+                ($first ? 'selected' : ''), $val, $label);
+            $first = false;
         }
         ?>
         </select>

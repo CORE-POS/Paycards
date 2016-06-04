@@ -58,9 +58,9 @@ class paycardEntered extends Parser
         $ret = array();
         if( substr($str,0,2) == "PV") {
             $ret = $this->paycard_entered(PaycardLib::PAYCARD_MODE_BALANCE, substr($str,2), $this->manual, $this->swipetype);
-        } else if( substr($str,0,2) == "AV") {
+        } elseif( substr($str,0,2) == "AV") {
             $ret = $this->paycard_entered(PaycardLib::PAYCARD_MODE_ADDVALUE, substr($str,2), $this->manual, $this->swipetype);
-        } else if( substr($str,0,2) == "AC") {
+        } elseif( substr($str,0,2) == "AC") {
             $ret = $this->paycard_entered(PaycardLib::PAYCARD_MODE_ACTIVATE, substr($str,2), $this->manual, $this->swipetype);
         } else {
             $ret = $this->paycard_entered(PaycardLib::PAYCARD_MODE_AUTH, $str, $this->manual, $this->swipetype);
@@ -74,14 +74,14 @@ class paycardEntered extends Parser
         return $ret;
     }
 
-    private function checkTotal($mode, $type)
+    private function checkTotal($mode)
     {
         // error checks based on transaction
         if ($mode == PaycardLib::PAYCARD_MODE_AUTH) {
             if( $this->conf->get("ttlflag") != 1) { // must subtotal before running card
                 throw new Exception(PaycardLib::paycardMsgBox("No Total",
                     "Transaction must be totaled before tendering or refunding","[clear] to cancel"));
-            } else if( abs($this->conf->get("amtdue")) < 0.005) { // can't tender for more than due
+            } elseif( abs($this->conf->get("amtdue")) < 0.005) { // can't tender for more than due
                 throw new Exception(PaycardLib::paycardMsgBox("No Total",
                     "Nothing to tender or refund","[clear] to cancel"));
             }
@@ -132,7 +132,7 @@ class paycardEntered extends Parser
         $this->conf->set("paycard_manual",($manual ? 1 : 0));
 
         try {
-            $this->checkTotal($mode, $type);
+            $this->checkTotal($mode);
 
             // parse card data
             if ($this->conf->get("paycard_manual")) {

@@ -27,9 +27,8 @@ if (!class_exists('AutoLoader')) include_once(dirname(__FILE__).'/../../../lib/A
 
 class PaycardEmvVoid extends PaycardProcessPage 
 {
-    private $prompt = false;
     private $id = false;
-    private $run_transaction = false;
+    private $runTransaction = false;
 
     function preprocess()
     {
@@ -64,7 +63,7 @@ class PaycardEmvVoid extends PaycardProcessPage
             } elseif (Authenticate::checkPassword($input)) {
                 $this->action = "onsubmit=\"return false;\"";    
                 $this->addOnloadCommand("emvSubmit();");
-                $this->run_transaction = true;
+                $this->runTransaction = true;
             }
             // if we're still here, we haven't accepted a valid amount yet; display prompt again
         } elseif (FormLib::get('xml-resp') !== '') {
@@ -78,7 +77,7 @@ class PaycardEmvVoid extends PaycardProcessPage
 
     function head_content()
     {
-        if (!$this->run_transaction) {
+        if (!$this->runTransaction) {
             return '';
         }
         $e2e = new MercuryE2E();

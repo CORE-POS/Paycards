@@ -619,7 +619,7 @@ class MercuryGift extends BasicCCModule
 
         // put the parsed response into session so the caller, receipt printer, etc can get the data they need
         $this->conf->set("paycard_response",array());
-        $this->conf->set("paycard_response",$xml->array_dump());
+        $this->conf->set("paycard_response",$xml->arrayDump());
         $temp = $this->conf->get("paycard_response");
         $temp["Balance"] = isset($temp['BALANCE']) ? $temp["BALANCE"] : 0;
         $this->conf->set("paycard_response",$temp);
@@ -747,7 +747,7 @@ class MercuryGift extends BasicCCModule
 
         // put the parsed response into session so the caller, receipt printer, etc can get the data they need
         $this->conf->set("paycard_response",array());
-        $this->conf->set("paycard_response",$xml->array_dump());
+        $this->conf->set("paycard_response",$xml->arrayDump());
         $temp = $this->conf->get("paycard_response");
         $temp["Balance"] = isset($temp['BALANCE']) ? $temp["BALANCE"] : 0;
         $this->conf->set("paycard_response",$temp);
@@ -786,7 +786,7 @@ class MercuryGift extends BasicCCModule
         }
 
         $this->conf->set("paycard_response",array());
-        $this->conf->set("paycard_response",$xml->array_dump());
+        $this->conf->set("paycard_response",$xml->arrayDump());
         $resp = $this->conf->get("paycard_response");
         if (isset($resp["BALANCE"])) {
             $resp["Balance"] = $resp["BALANCE"];

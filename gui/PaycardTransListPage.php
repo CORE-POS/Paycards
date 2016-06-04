@@ -32,17 +32,16 @@ class PaycardTransListPage extends NoInputCorePage
         $this->conf = new PaycardConf();
         // check for posts before drawing anything, so we can redirect
         if (FormLib::get('selectlist', false) !== false) {
-            $id = FormLib::get('selectlist');
+            $ptid = FormLib::get('selectlist');
 
-            if ($id == 'CL' || $id == '') {
+            if ($ptid == 'CL' || $ptid == '') {
                 $this->change_page($this->page_url."gui-modules/pos2.php");
-
-                return false;
-            } else {
-                $this->change_page('PaycardTransLookupPage.php?id=' . $id . '&mode=lookup');
-
                 return false;
             }
+
+            $this->change_page('PaycardTransLookupPage.php?id=' . $ptid . '&mode=lookup');
+            return false;
+
         } // post?
         return True;
     }
@@ -51,11 +50,11 @@ class PaycardTransListPage extends NoInputCorePage
     {
         $local = array();
         $other = array();
-        $db = Database::tDataConnect();
+        $dbc = Database::tDataConnect();
         $localQ = 'SELECT amount, PAN, refNum FROM PaycardTransactions GROUP BY amount, PAN, refNum';
-        $localR = $db->query($localQ);
-        while($w = $db->fetchRow($localR)) {
-            $local['_l' . $w['refNum']] = '(CURRENT)' . $w['PAN'] . ' : ' . sprintf('%.2f', $w['amount']);
+        $localR = $dbc->query($localQ);
+        while($row = $dbc->fetchRow($localR)) {
+            $local['_l' . $row['refNum']] = '(CURRENT)' . $row['PAN'] . ' : ' . sprintf('%.2f', $row['amount']);
         }
         if ($this->conf->get('standalone') == 0) {
 
@@ -63,7 +62,7 @@ class PaycardTransListPage extends NoInputCorePage
             $sec = Authenticate::getPermission($emp);
             $supervisor = $sec >= 30 ? true : false;
 
-            $db = Database::mDataConnect();
+            $dbc = Database::mDataConnect();
             $otherQ = 'SELECT MIN(requestDatetime) as dt, amount, PAN, refNum,
                         empNo AS cashierNo, registerNo AS laneNo, transNo
                         FROM PaycardTransactions 
@@ -74,11 +73,11 @@ class PaycardTransListPage extends NoInputCorePage
             }
             $otherQ .= ' GROUP BY amount, PAN, refNum
                         ORDER BY requestDatetime DESC';
-            $otherR = $db->query($otherQ);
-            while($w = $db->fetchRow($otherR)) {
-                $other[$w['refNum']] = $w['dt'] . ' : ' 
-                                        . $w['cashierNo'] . '-' . $w['laneNo'] . '-' . $w['transNo'] . ' : ' 
-                                        . sprintf('%.2f', $w['amount']);
+            $otherR = $dbc->query($otherQ);
+            while($row = $dbc->fetchRow($otherR)) {
+                $other[$row['refNum']] = $row['dt'] . ' : ' 
+                                        . $row['cashierNo'] . '-' . $row['laneNo'] . '-' . $row['transNo'] . ' : ' 
+                                        . sprintf('%.2f', $row['amount']);
             }
         }
         ?>

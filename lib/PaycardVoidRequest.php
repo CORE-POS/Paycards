@@ -52,11 +52,10 @@ class PaycardVoidRequest extends PaycardRequest
                     AND transNo=" . $this->original[2] . "
                     AND transID=" . $this->transID;
         $initR = $this->dbTrans->query($initQ);
-        if ($initR) {
-            $this->last_paycard_transaction_id = $this->dbTrans->insertID();
-        } else {
+        if ($initR === false) {
             throw new Exception('Error saving void request in PaycardTransactions');
         }
+        $this->last_paycard_transaction_id = $this->dbTrans->insertID();
     }
 
     public function findOriginal()

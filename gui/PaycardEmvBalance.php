@@ -28,7 +28,7 @@ if (!class_exists('AutoLoader')) include_once(dirname(__FILE__).'/../../../lib/A
 class PaycardEmvBalance extends PaycardProcessPage 
 {
     private $prompt = false;
-    private $run_transaction = false;
+    private $runTransaction = false;
 
     function preprocess()
     {
@@ -46,7 +46,7 @@ class PaycardEmvBalance extends PaycardProcessPage
                 if ($input == 'MANUAL') {
                     $this->prompt = true;
                 }
-                $this->run_transaction = true;
+                $this->runTransaction = true;
             }
             // if we're still here, we haven't accepted a valid amount yet; display prompt again
         } elseif (FormLib::get('xml-resp') !== '') {
@@ -60,7 +60,7 @@ class PaycardEmvBalance extends PaycardProcessPage
 
     function head_content()
     {
-        if (!$this->run_transaction) {
+        if (!$this->runTransaction) {
             return '';
         }
         $e2e = new MercuryE2E();

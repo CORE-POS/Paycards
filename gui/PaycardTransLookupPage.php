@@ -70,11 +70,11 @@ class PaycardTransLookupPage extends BasicCorePage
     {
         $this->input_header('onsubmit="PaycardTransLookupPage.formCallback();return false;"');
         echo '<div class="baseHeight">';
-        $id = FormLib::get('id', 0);
+        $ptid = FormLib::get('id', 0);
         $local = false;
-        if (substr($id, 0, 2) == '_l') {
+        if (substr($ptid, 0, 2) == '_l') {
             $local = true;
-            $id = substr($id, 2);
+            $ptid = substr($ptid, 2);
         }
         $mode = FormLib::get('mode', 'lookup');
         $msg = 'Looking up transaction';
@@ -84,7 +84,7 @@ class PaycardTransLookupPage extends BasicCorePage
         echo DisplayLib::boxMsg($msg . '<br />Please wait', '', true);
         echo '</div>'; // baseHeight
 
-        printf('<input type="hidden" id="refNum" value="%s" />', $id);
+        printf('<input type="hidden" id="refNum" value="%s" />', $ptid);
         printf('<input type="hidden" id="local" value="%d" />', ($local) ? 1 : 0);
         printf('<input type="hidden" id="lookupMode" value="%s" />', $mode);
 

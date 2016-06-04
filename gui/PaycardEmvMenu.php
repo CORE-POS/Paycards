@@ -32,7 +32,7 @@ class PaycardEmvMenu extends NoInputCorePage
         'EBT' => 'EBT',
         'GIFT' => 'Gift',
     );
-    private $clear_to_home = 1;
+    private $clearToHome = 1;
     
     function preprocess()
     {
@@ -70,7 +70,7 @@ class PaycardEmvMenu extends NoInputCorePage
                         'PVEF' => 'Food Balance',
                         'PVEC' => 'Cash Balance',
                     );
-                    $this->clear_to_home = 0;
+                    $this->clearToHome = 0;
                     break;
                 case 'GIFT':
                     $this->menu = array(
@@ -79,7 +79,7 @@ class PaycardEmvMenu extends NoInputCorePage
                         'AVGD' => 'Reload Card',
                         'PVGD' => 'Check Balance',
                     );
-                    $this->clear_to_home = 0;
+                    $this->clearToHome = 0;
                     break;
                 case 'CL':
                 default:
@@ -126,7 +126,7 @@ class PaycardEmvMenu extends NoInputCorePage
         <span class="larger">process card transaction</span>
         <form name="selectform" method="post" id="selectform"
             action="<?php echo filter_input(INPUT_SERVER, 'PHP_SELF'); ?>">
-        <input type="hidden" name="clear-to-home" value="<?php echo $this->clear_to_home; ?>" />
+        <input type="hidden" name="clear-to-home" value="<?php echo $this->clearToHome; ?>" />
         <?php if ($this->conf->get('touchscreen')) { ?>
         <button type="button" class="pos-button coloredArea"
             onclick="scrollDown('#selectlist');">

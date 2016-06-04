@@ -43,12 +43,10 @@ class paycardboxMsgGift extends PaycardProcessPage {
     
             // when (de)activating/adding-value, double check that the current amount is acceptable
             // before checking input (similar logic is later when generating the message)
-            $amtValid = false;
             $amt = $this->conf->get("paycard_amount");
+            $amtValid = true;
             if (!is_numeric($amt) || $amt < 0.005) {
-            } else {
-                // all errors are caught above; here, the amount is okay
-                $amtValid = true;
+                $amtValid = false;
             }
     
             // no input is confirmation to proceed

@@ -94,9 +94,9 @@ class PaycardResponse
         $this->token['acq'] = $acq;
     }
 
-    public function setBalance($b)
+    public function setBalance($bal)
     {
-        $this->balance = $b;
+        $this->balance = $bal;
     }
 
     public function setValid($valid)

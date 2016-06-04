@@ -9,7 +9,7 @@ class BetterXmlData
         $this->xpath = new DOMXPath($this->dom);
     }
 
-    public function query($query, $as_array=false)
+    public function query($query, $asArray=false)
     {
         $res = $this->xpath->query($query);
         // bad query
@@ -27,19 +27,19 @@ class BetterXmlData
 
         // multiple results:
         // send as array or series of lines
-        if ($as_array) {
+        if ($asArray) {
             $ret = array();
             foreach ($res as $node) {
                 $ret[] = $node->textContent;
             }
             return $ret;
-        } else {
-            $ret = '';
-            foreach ($res as $node) {
-                $ret .= $node->textContent . "\n";
-            }
-            return $ret;
         }
+
+        $ret = '';
+        foreach ($res as $node) {
+            $ret .= $node->textContent . "\n";
+        }
+        return $ret;
     }
 }
 

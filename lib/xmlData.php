@@ -65,19 +65,17 @@ class xmlData {
         $tagname = strtoupper($tagname);
         if (!isset($this->DATA["$tagname"]))
             return False;
-        if (count($this->DATA["$tagname"]) == 1){
-            if (isset($this->DATA["$tagname"][0]["chardata"]))
+        if (count($this->DATA["$tagname"]) == 1) {
+            if (isset($this->DATA["$tagname"][0]["chardata"])) {
                 return $this->DATA["$tagname"][0]["chardata"];
-            else
-                return False;
-            
+            }
+            return False;
         }
-        else {
-            $ret = array();
-            foreach ($this->DATA["$tagname"] as $d)
-                array_push($ret,$d["chardata"]);
-            return $ret;
+        $ret = array();
+        foreach ($this->DATA["$tagname"] as $d) {
+            array_push($ret,$d["chardata"]);
         }
+        return $ret;
     }
 
     /**
@@ -98,14 +96,13 @@ class xmlData {
     */
     function get_first($tagname){
         $tagname = strtoupper($tagname);
-        if (!isset($this->DATA["$tagname"]))
-            return False;
-        else {
-            if (isset($this->DATA["$tagname"][0]["chardata"]))
-                return $this->DATA["$tagname"][0]["chardata"];
-            else
-                return False;
+        if (!isset($this->DATA["$tagname"])) {
+            return false;
         }
+        if (isset($this->DATA["$tagname"][0]["chardata"])) {
+            return $this->DATA["$tagname"][0]["chardata"];
+        }
+        return false;
     }
 
     /**
@@ -114,7 +111,7 @@ class xmlData {
     
       Debugging method
     */
-    function array_dump(){
+    function arrayDump(){
         $ret = array();
         foreach ($this->DATA as $field=>$value){
             if (isset($value[0]) &&

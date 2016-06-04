@@ -911,7 +911,7 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(false, $obj->get_first('Fake'));
         $this->assertEquals(true, $obj->isValid());
         $this->assertEquals(array('Bar','Baz','Baz'), $obj->get('Foo'));
-        $obj->array_dump();
+        $obj->arrayDump();
     }
 
     public function testCaAdmin()

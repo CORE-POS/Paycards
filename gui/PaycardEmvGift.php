@@ -28,7 +28,7 @@ if (!class_exists('AutoLoader')) include_once(dirname(__FILE__).'/../../../lib/A
 class PaycardEmvGift extends PaycardProcessPage 
 {
     private $prompt = false;
-    private $run_transaction = false;
+    private $runTransaction = false;
     private $amount = false;
     private $mode = false;
 
@@ -70,7 +70,7 @@ class PaycardEmvGift extends PaycardProcessPage
                 if ($input == 'MANUAL') {
                     $this->prompt = true;
                 }
-                $this->run_transaction = true;
+                $this->runTransaction = true;
             } elseif ($input != "" && is_numeric($input)) {
                 // any other input is an alternate amount
                 $this->amount = $input / 100.00;
@@ -87,7 +87,7 @@ class PaycardEmvGift extends PaycardProcessPage
 
     function head_content()
     {
-        if (!$this->run_transaction) {
+        if (!$this->runTransaction) {
             return '';
         }
         $e2e = new MercuryE2E();
