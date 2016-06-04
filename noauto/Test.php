@@ -1282,5 +1282,12 @@ class Test extends PHPUnit_Framework_TestCase
 
         $req = new PaycardGiftRequest('1-1-1', Database::tDataConnect());
     }
+
+    public function testAjax()
+    {
+        $ajax = new AjaxPaycardAuth();
+        $json = $ajax->ajax();
+        $this->assertNotEquals(false, strstr($json['main_frame'], 'boxMsg2.php'));
+    }
 }
 

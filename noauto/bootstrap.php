@@ -14,6 +14,13 @@ if (!class_exists('Plugin', false)) {
     }
 }
 
+if (!class_exists('AjaxCallback', false)) {
+    class AjaxCallback
+    {
+        public static function run(){}
+    }
+}
+
 if (!class_exists('Notifier', false)) {
     class Notifier {}
 }

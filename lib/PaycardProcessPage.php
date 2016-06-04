@@ -106,7 +106,7 @@ class PaycardProcessPage extends BasicCorePage
         ?>
         <script type="text/javascript">
         function paycard_submitWrapper(){
-            $.ajax({url: '<?php echo $pluginInfo->pluginUrl(); ?>/ajax/ajax-paycard-auth.php',
+            $.ajax({url: '<?php echo $pluginInfo->pluginUrl(); ?>/ajax/AjaxPaycardAuth.php',
                 cache: false,
                 type: 'post',
                 dataType: 'json'
