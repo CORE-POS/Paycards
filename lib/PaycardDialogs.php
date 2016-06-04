@@ -237,7 +237,7 @@ class PaycardDialogs
         $error = false;
         if ($response['commErr'] != 0 || $response['httpCode'] != 200 || $response['validResponse'] != 1) {
             $error = _("Card transaction not successful");
-        } elseif ($request['live'] != PaycardLib::paycard_live(PaycardLib::PAYCARD_TYPE_CREDIT)) {
+        } elseif ($request['live'] != $this->paycardLive(PaycardLib::PAYCARD_TYPE_CREDIT)) {
             // this means the transaction was submitted to the test platform, but we now think we're in live mode, or vice-versa
             // I can't imagine how this could happen (short of serious $_SESSION corruption), but worth a check anyway.. --atf 7/26/07
             $error = _("Processor platform mismatch");
@@ -279,5 +279,27 @@ class PaycardDialogs
 
         return true;
     }
+
+    /**
+      Check whether paycards of a given type are enabled
+      @param $type is a paycard type constant
+      @return
+       - 1 if type is enabled
+       - 0 if type is disabled
+    */
+    public function paycardLive($type = PaycardLib::PAYCARD_TYPE_UNKNOWN) 
+    {
+        // these session vars require training mode no matter what card type
+        if ($this->conf->get("training") != 0 || $this->conf->get("CashierNo") == 9999)
+            return 0;
+
+        // special session vars for each card type
+        if ($type === PaycardLib::PAYCARD_TYPE_CREDIT && $this->conf->get('CCintegrate') != 1) {
+            return 0;
+        }
+
+        return 1;
+    }
+
 }
 

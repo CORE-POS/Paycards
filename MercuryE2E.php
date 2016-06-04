@@ -363,7 +363,8 @@ class MercuryE2E extends BasicCCModule
                     $this->conf->set("fntlflag",0);
                     Database::setglobalvalue("FntlFlag", 0);
                 }
-                list($tender_code, $tender_description) = PaycardLib::getTenderInfo($type, $this->conf->get('paycard_issuer'));
+                $tInfo = new PaycardTenders($this->conf);
+                list($tender_code, $tender_description) = $tInfo->getTenderInfo($type, $this->conf->get('paycard_issuer'));
 
                 // if the transaction has a non-zero paycardTransactionID,
                 // include it in the tender line
@@ -1277,7 +1278,7 @@ class MercuryE2E extends BasicCCModule
             if ($status == 'Approved') {
                 $responseCode = 1;
                 $normalized = 1;
-                PaycardLib::paycard_wipe_pan();
+                $this->conf->wipePAN();
                 $this->cleanup(array());
                 $resp['confirm_dest'] = $url_stem . '/gui/paycardSuccess.php';
                 $resp['cancel_dest'] = $url_stem . '/gui/paycardSuccess.php';

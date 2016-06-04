@@ -51,62 +51,6 @@ class PaycardLib {
     const PAYCARD_ERR_NSF_RETRY        =-7;
     const PAYCARD_ERR_TRY_VERIFY    =-8;
 
-/**
-  Check whether paycards of a given type are enabled
-  @param $type is a paycard type constant
-  @return
-   - 1 if type is enabled
-   - 0 if type is disabled
-*/
-static public function paycard_live($type = self::PAYCARD_TYPE_UNKNOWN) 
-{
-    // these session vars require training mode no matter what card type
-    if (CoreLocal::get("training") != 0 || CoreLocal::get("CashierNo") == 9999)
-        return 0;
-
-    // special session vars for each card type
-    if ($type === self::PAYCARD_TYPE_CREDIT && CoreLocal::get('CCintegrate') != 1) {
-        return 0;
-    }
-
-    return 1;
-} // paycard_live()
-
-/**
-  Clear card data variables from session
-
-  <b>Storing card data in session is
-  not recommended</b>.
-*/
-static public function paycard_wipe_pan()
-{
-    CoreLocal::set("paycard_tr1",false);
-    CoreLocal::set("paycard_tr2",false);
-    CoreLocal::set("paycard_tr3",false);
-    CoreLocal::set("paycard_PAN",'');
-    CoreLocal::set("paycard_exp",'');
-}
-
-// return a card number with digits replaced by *s, except for some number of leading or tailing digits as requested
-static public function paycard_maskPAN($pan,$first,$last) {
-    $mask = "";
-    // sanity check
-    $len = strlen($pan);
-    if( $first + $last >= $len)
-        return $pan;
-    // prepend requested digits
-    if( $first > 0)
-        $mask .= substr($pan, 0, $first);
-    // mask middle
-    $mask .= str_repeat("*", $len - ($first+$last));
-    // append requested digits
-    if( $last > 0)
-        $mask .= substr($pan, -$last);
-    
-    return $mask;
-} // paycard_maskPAN()
-
-
 // helper static public function to format money amounts pre-php5
 static public function paycard_moneyFormat($amt) {
     $sign = "";
@@ -172,104 +116,14 @@ static public function paycard_db()
     return Database::tDataConnect();
 }
 
-static private function getIssuerOverride($issuer)
-{
-    if (CoreLocal::get('PaycardsTenderCodeVisa') && $issuer == 'Visa') {
-        return array(CoreLocal::get('PaycardsTenderCodeVisa'));
-    } elseif (CoreLocal::get('PaycardsTenderCodeMC') && $issuer == 'MasterCard') {
-        return array(CoreLocal::get('PaycardsTenderCodeMC'));
-    } elseif (CoreLocal::get('PaycardsTenderCodeDiscover') && $issuer == 'Discover') {
-        return array(CoreLocal::get('PaycardsTenderCodeDiscover'));
-    } elseif (CoreLocal::get('PaycardsTenderCodeAmex') && $issuer == 'American Express') {
-        return array(CoreLocal::get('PaycardsTenderCodeAmex'));
-    } else {
-        return false;
-    }
-}
-
-static private function getTenderConfig($type)
-{ 
-    switch ($type) {
-        case 'DEBIT':
-            return array(
-                array(CoreLocal::get('PaycardsTenderCodeDebit')),
-                'DC',
-                'Debit Card',
-            );
-        case 'EBTCASH':
-            return array(
-                array(CoreLocal::get('PaycardsTenderCodeEbtCash')),
-                'EC',
-                'EBT Cash',
-            );
-        case 'EBTFOOD':
-            return array(
-                array(CoreLocal::get('PaycardsTenderCodeEbtFood')),
-                'EF',
-                'EBT Food',
-            );
-        case 'EMV':
-            return array(
-                array(CoreLocal::get('PaycardsTenderCodeEmv')),
-                'CC',
-                'Credit Card',
-            );
-        case 'GIFT':
-        case 'PREPAID':
-            return array(
-                array(CoreLocal::get('PaycardsTenderCodeGift')),
-                'GD',
-                'Gift Card',
-            );
-        case 'CREDIT':
-        default:
-            return array(
-                array(CoreLocal::get('PaycardsTenderCodeCredit')),
-                'CC',
-                'Credit Card',
-            );
-    }
-}
-
-/**
-  Lookup user-configured tender
-  Failover to defaults if tender does not exist
-  Since we already have an authorization at this point,
-  adding a default tender record to the transaction
-  is better than issuing an error message
-*/
-static public function getTenderInfo($type, $issuer)
-{
-    $dbc = Database::pDataConnect();
-    $lookup = $dbc->prepare('
-        SELECT TenderName,
-            TenderCode
-        FROM tenders
-        WHERE TenderCode = ?');
-    
-    list($args, $default_code, $default_description) = self::getTenderConfig($type);
-    $override = self::getIssuerOverride($issuer);
-    if ($override !== false) {
-        $args = $override;
-    }
-    
-    $found = $dbc->execute($lookup, $args);
-    if ($found === false || $dbc->numRows($found) == 0) {
-        return array($default_code, $default_description);
-    } else {
-        $row = $dbc->fetchRow($found);
-        return array($row['TenderCode'], $row['TenderName']);
-    }
-}
-
 static public function setupAuthJson($json)
 {
     if (CoreLocal::get("paycard_amount") == 0) {
         CoreLocal::set("paycard_amount",CoreLocal::get("amtdue"));
     }
     CoreLocal::set("paycard_id",CoreLocal::get("LastID")+1); // kind of a hack to anticipate it this way..
-    $plugin_info = new Paycards();
-    $json['main_frame'] = $plugin_info->pluginUrl().'/gui/paycardboxMsgAuth.php';
+    $pluginInfo = new Paycards();
+    $json['main_frame'] = $pluginInfo->pluginUrl().'/gui/paycardboxMsgAuth.php';
     $json['output'] = '';
 
     return $json;
@@ -280,12 +134,12 @@ static public function validateAmount()
     $amt = CoreLocal::get('paycard_amount');
     $due = CoreLocal::get("amtdue");
     $type = CoreLocal::get("CacheCardType");
-    $cb = CoreLocal::get('CacheCardCashBack');
-    $balance_limit = CoreLocal::get('PaycardRetryBalanceLimit');
+    $cashback = CoreLocal::get('CacheCardCashBack');
+    $balanceLimit = CoreLocal::get('PaycardRetryBalanceLimit');
     if ($type == 'EBTFOOD') {
         $due = CoreLocal::get('fsEligible');
     }
-    if ($cb > 0) $amt -= $cb;
+    if ($cashback > 0) $amt -= $cashback;
     if (!is_numeric($amt) || abs($amt) < 0.005) {
         return array(false, 'Enter a different amount');
     } elseif ($amt > 0 && $due < 0) {
@@ -294,9 +148,9 @@ static public function validateAmount()
         return array(false, 'Enter a positive amount');
     } elseif (($amt-$due)>0.005 && $type != 'DEBIT' && $type != 'EBTCASH') {
         return array(false, 'Cannot exceed amount due');
-    } elseif (($amt-$due-0.005)>$cb && ($type == 'DEBIT' || $type == 'EBTCASH')) {
+    } elseif (($amt-$due-0.005)>$cashback && ($type == 'DEBIT' || $type == 'EBTCASH')) {
         return array(false, 'Cannot exceed amount due plus cashback');
-    } elseif ($balance_limit > 0 && ($amt-$balance_limit) > 0.005) {
+    } elseif ($balanceLimit > 0 && ($amt-$balanceLimit) > 0.005) {
         return array(false, 'Cannot exceed card balance');
     } else {
         return array(true, 'valid');

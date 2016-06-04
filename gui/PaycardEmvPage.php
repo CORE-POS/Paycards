@@ -28,7 +28,7 @@ if (!class_exists('AutoLoader')) include_once(dirname(__FILE__).'/../../../lib/A
 class PaycardEmvPage extends PaycardProcessPage 
 {
     private $prompt = false;
-    private $run_transaction = false;
+    private $runTransaction = false;
 
     function preprocess()
     {
@@ -50,14 +50,14 @@ class PaycardEmvPage extends PaycardProcessPage
                 $this->change_page($this->page_url."gui-modules/pos2.php");
                 return False;
             } elseif ($input == "" || $input == 'MANUAL' || $input === 'M') {
-                list($valid, $msg) = PaycardLib::validateAmount();
+                list($valid, ) = PaycardLib::validateAmount();
                 if ($valid) {
                     $this->action = "onsubmit=\"return false;\"";    
                     $this->addOnloadCommand("emvSubmit();");
                     if ($input == 'MANUAL' || $input === 'M') {
                         $this->prompt = true;
                     }
-                    $this->run_transaction = true;
+                    $this->runTransaction = true;
                 }
             } elseif ( $input != "" && substr($input,-2) != "CL") {
                 // any other input is an alternate amount
@@ -83,7 +83,7 @@ class PaycardEmvPage extends PaycardProcessPage
         $url = MiscLib::baseURL();
         echo '<script type="text/javascript" src="' . $url . '/js/singleSubmit.js"></script>';
         echo '<script type="text/javascript" src="../js/emv.js"></script>';
-        if (!$this->run_transaction) {
+        if (!$this->runTransaction) {
             return '';
         }
         $e2e = new MercuryE2E();
@@ -109,16 +109,15 @@ function emvSubmit() {
         <div class="baseHeight">
         <?php
         // generate message to print
-        $mode = $this->conf->get("paycard_mode");
         $amt = $this->conf->get("paycard_amount");
-        $cb = $this->conf->get('CacheCardCashBack');
-        $balance_limit = $this->conf->get('PaycardRetryBalanceLimit');
-        if ($cb > 0) $amt -= $cb;
+        $cashback = $this->conf->get('CacheCardCashBack');
+        $balanceLimit = $this->conf->get('PaycardRetryBalanceLimit');
+        if ($cashback > 0) $amt -= $cashback;
         list($valid, $validmsg) = PaycardLib::validateAmount();
         if ($valid === false) {
             echo PaycardLib::paycardMsgBox("Invalid Amount: $amt",
                 $validmsg, "[clear] to cancel");
-        } else if ($balance_limit > 0) {
+        } else if ($balanceLimit > 0) {
             $msg = "Tender ".PaycardLib::paycard_moneyFormat($amt);
             if ($this->conf->get("CacheCardType") != "") {
                 $msg .= " as ".$this->conf->get("CacheCardType");
@@ -126,7 +125,7 @@ function emvSubmit() {
                 $msg .= ' as GIFT';
             }
             echo PaycardLib::paycardMsgBox($msg."?","",
-                    "Card balance is {$balance_limit}<br>
+                    "Card balance is {$balanceLimit}<br>
                     [enter] to continue if correct<br>Enter a different amount if incorrect<br>
                     [clear] to cancel");
         } elseif ( $amt > 0) {
@@ -136,8 +135,8 @@ function emvSubmit() {
             } elseif ($this->conf->get('paycard_type') == PaycardLib::PAYCARD_TYPE_GIFT) {
                 $msg .= ' as GIFT';
             }
-            if ($cb > 0) {
-                $msg .= ' (CB:'.PaycardLib::paycard_moneyFormat($cb).')';
+            if ($cashback > 0) {
+                $msg .= ' (CB:'.PaycardLib::paycard_moneyFormat($cashback).')';
             }
             $msg .= '?';
             if ($this->conf->get('CacheCardType') == 'EBTFOOD' && abs($this->conf->get('subtotal') - $this->conf->get('fsEligible')) > 0.005) {

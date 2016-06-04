@@ -30,4 +30,19 @@ class PaycardConf
         $this->set("paycard_trans",'');
         $this->set('PaycardRetryBalanceLimit', 0);
     }
+
+    /**
+      Clear card data variables from session
+
+      <b>Storing card data in session is
+      not recommended</b>.
+    */
+    public function wipePAN()
+    {
+        $this->set("paycard_tr1",false);
+        $this->set("paycard_tr2",false);
+        $this->set("paycard_tr3",false);
+        $this->set("paycard_PAN",'');
+        $this->set("paycard_exp",'');
+    }
 }

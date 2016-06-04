@@ -40,39 +40,36 @@ class PaycardEmvSuccess extends BasicCorePage
             // capture file if present; otherwise re-request 
             // signature via terminal
             if (FormLib::get('doCapture') == 1 && $input == '') {
-                if (file_exists(FormLib::get('bmpfile'))) {
-                    $bmp = file_get_contents(FormLib::get('bmpfile'));
-                    $format = 'BMP';
-                    $imgContent = $bmp;
-
-                    $dbc = Database::tDataConnect();
-                    $capQ = 'INSERT INTO CapturedSignature
-                                (tdate, emp_no, register_no, trans_no,
-                                 trans_id, filetype, filecontents)
-                             VALUES
-                                (?, ?, ?, ?,
-                                 ?, ?, ?)';
-                    $capP = $dbc->prepare($capQ);
-                    $args = array(
-                        date('Y-m-d H:i:s'),
-                        $this->conf->get('CashierNo'),
-                        $this->conf->get('laneno'),
-                        $this->conf->get('transno'),
-                        $this->conf->get('paycard_id'),
-                        $format,
-                        $imgContent,
-                    );
-                    $dbc->execute($capP, $args);
-
-                    unlink(FormLib::get('bmpfile'));
-                    // continue to below. finishing transaction is the same
-                    // as with paper signature slip
-
-                } else {
+                if (!file_exists(FormLib::get('bmpfile'))) {
                     UdpComm::udpSend('termSig');
-
                     return true;
                 }
+                $bmp = file_get_contents(FormLib::get('bmpfile'));
+                $format = 'BMP';
+                $imgContent = $bmp;
+
+                $dbc = Database::tDataConnect();
+                $capQ = 'INSERT INTO CapturedSignature
+                            (tdate, emp_no, register_no, trans_no,
+                             trans_id, filetype, filecontents)
+                         VALUES
+                            (?, ?, ?, ?,
+                             ?, ?, ?)';
+                $capP = $dbc->prepare($capQ);
+                $args = array(
+                    date('Y-m-d H:i:s'),
+                    $this->conf->get('CashierNo'),
+                    $this->conf->get('laneno'),
+                    $this->conf->get('transno'),
+                    $this->conf->get('paycard_id'),
+                    $format,
+                    $imgContent,
+                );
+                $dbc->execute($capP, $args);
+
+                unlink(FormLib::get('bmpfile'));
+                // continue to below. finishing transaction is the same
+                // as with paper signature slip
             }
 
             $mode = $this->conf->get("paycard_mode");
@@ -92,8 +89,6 @@ class PaycardEmvSuccess extends BasicCorePage
                     ($peek !== false && isset($peek['trans_type']) && $peek['trans_type'] == 'T')) {
                     $qstr = '?reginput=TO&repeat=1';
                     $this->conf->set('paycardTendered', true);
-                } else {
-                    TransRecord::debugLog('Not Tendering Out (mode): ' . print_r($mode, true));
                 }
 
                 // only reset terminal if the terminal was used for the transaction

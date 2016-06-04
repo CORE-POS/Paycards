@@ -336,5 +336,25 @@ class CardReader
         $output['tr3'] = $tr3;
         return $output;
     }
+
+    // return a card number with digits replaced by *s, except for some number of leading or tailing digits as requested
+    public function maskPAN($pan,$first,$last) 
+    {
+        $mask = "";
+        // sanity check
+        $len = strlen($pan);
+        if( $first + $last >= $len)
+            return $pan;
+        // prepend requested digits
+        if( $first > 0)
+            $mask .= substr($pan, 0, $first);
+        // mask middle
+        $mask .= str_repeat("*", $len - ($first+$last));
+        // append requested digits
+        if( $last > 0)
+            $mask .= substr($pan, -$last);
+        
+        return $mask;
+    }
 }
 

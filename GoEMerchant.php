@@ -343,7 +343,8 @@ class GoEMerchant extends BasicCCModule
         $manual = ($this->conf->get("paycard_manual") ? 1 : 0);
         $this->trans_pan['pan'] = $this->conf->get("paycard_PAN");
         $cardPAN = $this->trans_pan['pan'];
-        $cardPANmasked = PaycardLib::paycard_maskPAN($cardPAN,0,4);
+        $reader = new CardReader();
+        $cardPANmasked = $reader->maskPAN($cardPAN,0,4);
         $cardIssuer = $this->conf->get("paycard_issuer");
         $cardExM = substr($this->conf->get("paycard_exp"),0,2);
         $cardExY = substr($this->conf->get("paycard_exp"),2,2);
@@ -471,7 +472,8 @@ class GoEMerchant extends BasicCCModule
         $mode = 'void';
         $this->trans_pan['pan'] = $this->conf->get("paycard_PAN");
         $cardPAN = $this->trans_pan['pan'];
-        $cardPANmasked = PaycardLib::paycard_maskPAN($cardPAN,0,4);
+        $reader = new CardReader();
+        $cardPANmasked = $reader->maskPAN($cardPAN,0,4);
         $cardIssuer = $this->conf->get("paycard_issuer");
         $cardExM = substr($this->conf->get("paycard_exp"),0,2);
         $cardExY = substr($this->conf->get("paycard_exp"),2,2);
@@ -704,7 +706,7 @@ class GoEMerchant extends BasicCCModule
                 $dbc->execute($upP, $args);
 
                 if ($status == 'APPROVED') {
-                    PaycardLib::paycard_wipe_pan();
+                    $this->conf->wipePAN();
                     $this->cleanup(array());
                     $resp['confirm_dest'] = $urlStem . '/gui/paycardSuccess.php';
                     $resp['cancel_dest'] = $urlStem . '/gui/paycardSuccess.php';

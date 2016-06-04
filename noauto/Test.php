@@ -462,8 +462,6 @@ class Test extends PHPUnit_Framework_TestCase
     {
         $reader = new CardReader();
 
-        PaycardLib::paycard_wipe_pan();
-        PaycardLib::paycard_live();
         $this->assertEquals(PaycardLib::PAYCARD_TYPE_CREDIT, $reader->type('4111111111111111'));
 
         // from: http://www.gae.ucm.es/~padilla/extrawork/magexam1.html
@@ -480,14 +478,7 @@ class Test extends PHPUnit_Framework_TestCase
 
         $this->assertEquals(1, $reader->accepted('6008750'. str_repeat('0', 11)));
 
-        CoreLocal::set('training', '');
-        CoreLocal::set('CashierNo', '');
-        CoreLocal::set('CCintegrate', 1);
-        $this->assertEquals(1, PaycardLib::paycard_live(PaycardLib::PAYCARD_TYPE_CREDIT));
-        CoreLocal::set('CCintegrate', '');
-        $this->assertEquals(0, PaycardLib::paycard_live(PaycardLib::PAYCARD_TYPE_CREDIT));
-
-        $this->assertEquals('4111********1111', PaycardLib::paycard_maskPAN('4111111111111111', 4, 4));
+        $this->assertEquals('4111********1111', $reader->maskPAN('4111111111111111', 4, 4));
 
         CoreLocal::set('CacheCardType', 'EBTFOOD');
         CoreLocal::set('paycard_amount', 1);
@@ -511,9 +502,10 @@ class Test extends PHPUnit_Framework_TestCase
         CoreLocal::set('PaycardRetryBalanceLimit', '');
         CoreLocal::set('CacheCardType', '');
 
-        $this->assertInternalType('array', PaycardLib::getTenderInfo('EMV', 'Visa'));
+        $tInfo = new PaycardTenders(new PaycardConf());
+        $this->assertInternalType('array', $tInfo->getTenderInfo('EMV', 'Visa'));
         SQLManager::addResult(array('TenderCode'=>'TC', 'TenderName'=>'Foo'));
-        $this->assertInternalType('array', PaycardLib::getTenderInfo('GIFT', 'Visa'));
+        $this->assertInternalType('array', $tInfo->getTenderInfo('GIFT', 'Visa'));
         SQLManager::clear();
 
         CoreLocal::set('paycard_amount', 'foo');
@@ -530,7 +522,7 @@ class Test extends PHPUnit_Framework_TestCase
         foreach ($overrides as $abbr => $issuer) {
             $code = substr(strtoupper($abbr), 0, 2);
             CoreLocal::set('PaycardsTenderCode' . $abbr, $code);
-            $info = PaycardLib::getTenderInfo('CREDIT', $issuer);
+            $info = $tInfo->getTenderInfo('CREDIT', $issuer);
             CoreLocal::set('PaycardsTenderCode' . $abbr, '');
         }
     }
@@ -1203,7 +1195,7 @@ class Test extends PHPUnit_Framework_TestCase
             'xResponseCode' => 1,
             'xTransactionID' => 1,
         );
-        $request = array('live'=>PaycardLib::paycard_live(PaycardLib::PAYCARD_TYPE_CREDIT));
+        $request = array('live'=>$d->paycardLive(PaycardLib::PAYCARD_TYPE_CREDIT));
         $lineitem = array(
             'trans_type'=>'T',
             'trans_subtype'=>'CC',
@@ -1240,6 +1232,14 @@ class Test extends PHPUnit_Framework_TestCase
         try {
             $d->validateVoid($request, $response, $lineitem);
         } catch (Exception $ex) {}
+
+        $d->paycardLive();
+        CoreLocal::set('training', '');
+        CoreLocal::set('CashierNo', '');
+        CoreLocal::set('CCintegrate', 1);
+        $this->assertEquals(1, $d->paycardLive(PaycardLib::PAYCARD_TYPE_CREDIT));
+        CoreLocal::set('CCintegrate', '');
+        $this->assertEquals(0, $d->paycardLive(PaycardLib::PAYCARD_TYPE_CREDIT));
     }
 
     public function testReqResp()

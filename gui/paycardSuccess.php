@@ -26,12 +26,12 @@ if (!class_exists('AutoLoader')) include_once(dirname(__FILE__).'/../../../lib/A
 
 class paycardSuccess extends BasicCorePage 
 {
-    private $bmp_path;
+    private $bmpPath;
 
     function preprocess()
     {
         $this->conf = new PaycardConf();
-        $this->bmp_path = $this->page_url . 'scale-drivers/drivers/NewMagellan/ss-output/tmp/';
+        $this->bmpPath = $this->page_url . 'scale-drivers/drivers/NewMagellan/ss-output/tmp/';
 
         // check for input
         if (FormLib::get('reginput', false) !== false) {
@@ -40,44 +40,40 @@ class paycardSuccess extends BasicCorePage
             // capture file if present; otherwise re-request 
             // signature via terminal
             if (FormLib::get('doCapture') == 1 && $input == '') {
-                if (file_exists(FormLib::get('bmpfile'))) {
-                    $bmp = file_get_contents(FormLib::get('bmpfile'));
-                    $format = 'BMP';
-                    $img_content = $bmp;
-
-                    $dbc = Database::tDataConnect();
-                    $capQ = 'INSERT INTO CapturedSignature
-                                (tdate, emp_no, register_no, trans_no,
-                                 trans_id, filetype, filecontents)
-                             VALUES
-                                (?, ?, ?, ?,
-                                 ?, ?, ?)';
-                    $capP = $dbc->prepare($capQ);
-                    $args = array(
-                        date('Y-m-d H:i:s'),
-                        $this->conf->get('CashierNo'),
-                        $this->conf->get('laneno'),
-                        $this->conf->get('transno'),
-                        $this->conf->get('paycard_id'),
-                        $format,
-                        $img_content,
-                    );
-                    $capR = $dbc->execute($capP, $args);
-
-                    unlink(FormLib::get('bmpfile'));
-                    // continue to below. finishing transaction is the same
-                    // as with paper signature slip
-
-                } else {
+                if (!file_exists(FormLib::get('bmpfile'))) {
                     UdpComm::udpSend('termSig');
 
                     return true;
                 }
+                $bmp = file_get_contents(FormLib::get('bmpfile'));
+                $format = 'BMP';
+                $imgContent = $bmp;
+
+                $dbc = Database::tDataConnect();
+                $capQ = 'INSERT INTO CapturedSignature
+                            (tdate, emp_no, register_no, trans_no,
+                             trans_id, filetype, filecontents)
+                         VALUES
+                            (?, ?, ?, ?,
+                             ?, ?, ?)';
+                $capP = $dbc->prepare($capQ);
+                $args = array(
+                    date('Y-m-d H:i:s'),
+                    $this->conf->get('CashierNo'),
+                    $this->conf->get('laneno'),
+                    $this->conf->get('transno'),
+                    $this->conf->get('paycard_id'),
+                    $format,
+                    $imgContent,
+                );
+                $dbc->execute($capP, $args);
+
+                unlink(FormLib::get('bmpfile'));
+                // continue to below. finishing transaction is the same
+                // as with paper signature slip
             }
 
             $mode = $this->conf->get("paycard_mode");
-            $type = $this->conf->get("paycard_type");
-            $tender_id = $this->conf->get("paycard_id");
             if ($input == "") { // [enter] exits this screen
                 // remember the mode, type and transid before we reset them
                 $this->conf->set("boxMsg","");
@@ -94,8 +90,6 @@ class paycardSuccess extends BasicCorePage
                     $this->conf->set("strRemembered","TO");
                     $this->conf->set("msgrepeat",1);
                     $this->conf->set('paycardTendered', true);
-                } else {
-                    TransRecord::debugLog('Not Tendering Out (mode): ' . print_r($mode, true));
                 }
 
                 // only reset terminal if the terminal was used for the transaction
@@ -112,8 +106,8 @@ class paycardSuccess extends BasicCorePage
                 return false;
             } elseif ($mode == PaycardLib::PAYCARD_MODE_AUTH && $input == "VD" 
                 && ($this->conf->get('CacheCardType') == 'CREDIT' || $this->conf->get('CacheCardType') == '')){
-                $plugin_info = new Paycards();
-                $this->change_page($plugin_info->pluginUrl()."/gui/paycardboxMsgVoid.php");
+                $pluginInfo = new Paycards();
+                $this->change_page($pluginInfo->pluginUrl()."/gui/paycardboxMsgVoid.php");
                 return false;
             }
         }
@@ -168,7 +162,7 @@ class paycardSuccess extends BasicCorePage
         }
         function parseWrapper(str) {
             if (str.substring(0, 7) == 'TERMBMP') {
-                var fn = '<?php echo $this->bmp_path; ?>' + str.substring(7);
+                var fn = '<?php echo $this->bmpPath; ?>' + str.substring(7);
                 $('<input>').attr({
                     type: 'hidden',
                     name: 'bmpfile',
@@ -219,7 +213,7 @@ class paycardSuccess extends BasicCorePage
 
     function body_content()
     {
-        $this->input_header("onsubmit=\"return submitWrapper();\" action=\"".$_SERVER['PHP_SELF']."\"");
+        $this->input_header("onsubmit=\"return submitWrapper();\" action=\"".filter_input(INPUT_SERVER,'PHP_SELF')."\"");
         echo '<div class="baseHeight">';
         if ($this->doSigCapture()) {
             $reginput = FormLib::get('reginput');
@@ -260,8 +254,8 @@ HTML;
         echo DisplayLib::printfooter();
         echo "</div>";
 
-        $rp_type = $this->rpType($this->conf->get('paycard_type'));
-        printf("<input type=\"hidden\" id=\"rp_type\" value=\"%s\" />",$rp_type);
+        $rpType = $this->rpType($this->conf->get('paycard_type'));
+        printf("<input type=\"hidden\" id=\"rp_type\" value=\"%s\" />",$rpType);
     }
     
     private function rpType($type)

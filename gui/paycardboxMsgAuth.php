@@ -89,16 +89,15 @@ class paycardboxMsgAuth extends PaycardProcessPage {
         <div class="baseHeight">
         <?php
         // generate message to print
-        $mode = $this->conf->get("paycard_mode");
         $amt = $this->conf->get("paycard_amount");
-        $cb = $this->conf->get('CacheCardCashBack');
-        $balance_limit = $this->conf->get('PaycardRetryBalanceLimit');
-        if ($cb > 0) $amt -= $cb;
+        $cashback = $this->conf->get('CacheCardCashBack');
+        $balanceLimit = $this->conf->get('PaycardRetryBalanceLimit');
+        if ($cashback > 0) $amt -= $cashback;
         list($valid, $validmsg) = PaycardLib::validateAmount();
         if ($valid === false) {
             echo PaycardLib::paycardMsgBox("Invalid Amount: $amt",
                 $validmsg, "[clear] to cancel");
-        } elseif ($balance_limit > 0) {
+        } elseif ($balanceLimit > 0) {
             $msg = "Tender ".PaycardLib::paycard_moneyFormat($amt);
             if ($this->conf->get("CacheCardType") != "") {
                 $msg .= " as ".$this->conf->get("CacheCardType");
@@ -106,7 +105,7 @@ class paycardboxMsgAuth extends PaycardProcessPage {
                 $msg .= ' as GIFT';
             }
             echo PaycardLib::paycardMsgBox($msg."?","",
-                    "Card balance is {$balance_limit}<br>
+                    "Card balance is {$balanceLimit}<br>
                     [enter] to continue if correct<br>Enter a different amount if incorrect<br>
                     [clear] to cancel");
         } elseif ($amt > 0) {
@@ -116,8 +115,8 @@ class paycardboxMsgAuth extends PaycardProcessPage {
             } elseif ($this->conf->get('paycard_type') == PaycardLib::PAYCARD_TYPE_GIFT) {
                 $msg .= ' as GIFT';
             }
-            if ($cb > 0) {
-                $msg .= ' (CB:'.PaycardLib::paycard_moneyFormat($cb).')';
+            if ($cashback > 0) {
+                $msg .= ' (CB:'.PaycardLib::paycard_moneyFormat($cashback).')';
             }
             $msg .= '?';
             if ($this->conf->get('CacheCardType') == 'EBTFOOD' && abs($this->conf->get('subtotal') - $this->conf->get('fsEligible')) > 0.005) {
