@@ -52,10 +52,6 @@ class AjaxPaycardAuth extends AjaxCallback
             // card shows balance < requested amount
             // try again with lesser amount
             $json['main_frame'] = $pluginInfo->pluginUrl().'/gui/paycardboxMsgAuth.php';
-        } elseif ($result === PaycardLib::PAYCARD_ERR_TRY_VERIFY) {
-            // communication error. query processor about
-            // transaction status.
-            $json['main_frame'] = $pluginInfo->pluginUrl().'/gui/PaycardTransLookupPage.php?mode=verify&id=_l'.$myObj->last_ref_num;
         } else {
             $pconf->reset();
             $pconf->set("msgrepeat",0);

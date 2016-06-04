@@ -628,13 +628,19 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(false, $page->preprocess());
         $page->body_content();
         CoreLocal::set('PaycardRetryBalanceLimit', '');
+        CoreLocal::set('amtdue', 1);
+        CoreLocal::set('paycard_amount', 1);
         $page->body_content();
         CoreLocal::set('CacheCardType', 'EBTFOOD');
         CoreLocal::set('fsEligible', 1);
         CoreLocal::set('subtotal', 1);
+        CoreLocal::set('amtdue', 1);
+        CoreLocal::set('paycard_amount', 1);
         $page->body_content();
         CoreLocal::set('CacheCardType', '');
         CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_GIFT);
+        CoreLocal::set('amtdue', 1);
+        CoreLocal::set('paycard_amount', 1);
         $page->body_content();
         CoreLocal::set('amtdue', -1);
         CoreLocal::set('paycard_amount', -1);
@@ -1290,6 +1296,15 @@ class Test extends PHPUnit_Framework_TestCase
         $ajax = new AjaxPaycardAuth();
         $json = $ajax->ajax();
         $this->assertNotEquals(false, strstr($json['main_frame'], 'boxMsg2.php'));
+        CoreLocal::set('RegisteredPaycardClasses', array('AuthorizeDotNet'));
+        CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_CREDIT);
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
+        CoreLocal::set('paycard_amount', 1);
+        CoreLocal::set('paycard_PAN', '4111111111111111');
+        CoreLocal::set('paycard_exp', date('my'));
+        BasicCCModule::mockResponse(file_get_contents(__DIR__ . '/responses/adn.auth.approved.xml'));
+        $json = $ajax->ajax();
+        $this->assertNotEquals(false, strstr($json['main_frame'], 'paycardSuccess.php'));
     }
 }
 
