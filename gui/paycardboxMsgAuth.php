@@ -100,7 +100,7 @@ class paycardboxMsgAuth extends PaycardProcessPage {
             echo PaycardLib::paycardMsgBox("Invalid Amount: $amt",
                 $validmsg, "[clear] to cancel");
         } elseif ($balanceLimit > 0) {
-            $msg = "Tender ".PaycardLib::paycard_moneyFormat($amt);
+            $msg = "Tender ".PaycardLib::moneyFormat($amt);
             if ($this->conf->get("CacheCardType") != "") {
                 $msg .= " as ".$this->conf->get("CacheCardType");
             } elseif ($this->conf->get('paycard_type') == PaycardLib::PAYCARD_TYPE_GIFT) {
@@ -111,14 +111,14 @@ class paycardboxMsgAuth extends PaycardProcessPage {
                     [enter] to continue if correct<br>Enter a different amount if incorrect<br>
                     [clear] to cancel");
         } elseif ($amt > 0) {
-            $msg = "Tender ".PaycardLib::paycard_moneyFormat($amt);
+            $msg = "Tender ".PaycardLib::moneyFormat($amt);
             if ($this->conf->get("CacheCardType") != "") {
                 $msg .= " as ".$this->conf->get("CacheCardType");
             } elseif ($this->conf->get('paycard_type') == PaycardLib::PAYCARD_TYPE_GIFT) {
                 $msg .= ' as GIFT';
             }
             if ($cashback > 0) {
-                $msg .= ' (CB:'.PaycardLib::paycard_moneyFormat($cashback).')';
+                $msg .= ' (CB:'.PaycardLib::moneyFormat($cashback).')';
             }
             $msg .= '?';
             if ($this->conf->get('CacheCardType') == 'EBTFOOD' && abs($this->conf->get('subtotal') - $this->conf->get('fsEligible')) > 0.005) {
@@ -127,7 +127,7 @@ class paycardboxMsgAuth extends PaycardProcessPage {
             }
             echo PaycardLib::paycardMsgBox($msg,"","[enter] to continue if correct<br>Enter a different amount if incorrect<br>[clear] to cancel");
         } elseif( $amt < 0) {
-            echo PaycardLib::paycardMsgBox("Refund ".PaycardLib::paycard_moneyFormat($amt)."?","","[enter] to continue if correct<br>Enter a different amount if incorrect<br>[clear] to cancel");
+            echo PaycardLib::paycardMsgBox("Refund ".PaycardLib::moneyFormat($amt)."?","","[enter] to continue if correct<br>Enter a different amount if incorrect<br>[clear] to cancel");
         } else {
             echo PaycardLib::paycardErrBox("Invalid Entry",
                 "Enter a different amount","[clear] to cancel");

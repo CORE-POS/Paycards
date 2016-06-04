@@ -52,14 +52,15 @@ class PaycardLib {
     const PAYCARD_ERR_TRY_VERIFY    =-8;
 
 // helper static public function to format money amounts pre-php5
-static public function paycard_moneyFormat($amt) {
+static public function moneyFormat($amt) 
+{
     $sign = "";
     if( $amt < 0) {
         $sign = "-";
         $amt = -$amt;
     }
     return $sign."$".number_format($amt,2);
-} // paycard_moneyFormat
+} 
 
 // display a paycard-related error due to cashier mistake
 static public function paycardMsgBox($title, $msg, $action) 

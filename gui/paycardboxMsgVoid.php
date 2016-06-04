@@ -86,9 +86,9 @@ class paycardboxMsgVoid extends PaycardProcessPage
         // generate message to print
         $amt = $this->conf->get("paycard_amount");
         if ($amt > 0) {
-            echo PaycardLib::paycardMsgBox("Void " . PaycardLib::paycard_moneyFormat($amt) . " Payment?","Please enter password then","[enter] to continue voiding or<br>[clear] to cancel the void");
+            echo PaycardLib::paycardMsgBox("Void " . PaycardLib::moneyFormat($amt) . " Payment?","Please enter password then","[enter] to continue voiding or<br>[clear] to cancel the void");
         } else {
-            echo PaycardLib::paycardMsgBox("Void " . PaycardLib::paycard_moneyFormat($amt) . " Refund?","Please enter password then","[enter] to continue voiding or<br>[clear] to cancel the void");
+            echo PaycardLib::paycardMsgBox("Void " . PaycardLib::moneyFormat($amt) . " Refund?","Please enter password then","[enter] to continue voiding or<br>[clear] to cancel the void");
         }
         $this->conf->set("msgrepeat",2);
         echo '</div>';

@@ -275,7 +275,7 @@ class MercuryGift extends BasicCCModule
         $manual = ($this->conf->get("paycard_manual") ? 1 : 0);
         $cardPAN = $this->getPAN();
         $cardTr2 = $this->getTrack2();
-        $identifier = $this->valutecIdentifier($transID); // valutec allows 10 digits; this uses lanenum-transnum-transid since we send cashiernum in another field
+        $identifier = $this->refnum($transID); 
         
         /**
           Log transaction in newer table
@@ -521,7 +521,7 @@ class MercuryGift extends BasicCCModule
         // prepare data for the request
         $now = date('Y-m-d H:i:s'); // full timestamp
         $transID = $this->conf->get("paycard_id");
-        $identifier = $this->valutecIdentifier($transID); // valutec allows 10 digits; this uses lanenum-transnum-transid since we send cashiernum in another field
+        $identifier = $this->refnum($transID); 
 
         $validResponse = ($xml->isValid()) ? 1 : 0;
         $errorMsg = $xml->get_first("TEXTRESPONSE");
@@ -545,23 +545,10 @@ class MercuryGift extends BasicCCModule
             }
         }
 
-        $normalized = ($validResponse == 0) ? 4 : 0;
         $status = $xml->get_first('CMDSTATUS');
-        $rMsg = $status;
-        $resultCode = 0;
-        if ($status == 'Approved') {
-            $normalized = 1;
-            $resultCode = 1;
-            $rMsg = 'Approved';
-        } elseif ($status == 'Declined') {
-            $normalized = 2;
-            $resultCode = 2;
-            $rMsg = 'Declined';
-        } elseif ($status == 'Error') {
-            $normalized = 3;
-            $resultCode = 0;
-            $rMsg = substr($errorMsg, 0, 100);
-        }
+        $normalized = $this->getNormalized($status);
+        $resultCode = ($normalized >= 3) ? 0 : $normalized;
+        $rMsg = $normalized === 3 ? substr($errorMsg, 0, 100) : $status;
         $apprNumber = $xml->get_first('REFNO');
 
         $finishQ = sprintf("UPDATE PaycardTransactions SET
@@ -677,24 +664,13 @@ class MercuryGift extends BasicCCModule
             $validResponse = -2; 
         }
 
-        $normalized = ($validResponse == 0) ? 4 : 0;
-        $resultCode = 0;
         $status = $xml->get_first('CMDSTATUS');
-        $rMsg = $status;
-        if ($status == 'Approved') {
-            $normalized = 1;
-            $resultCode = 1;
-            $rMsg = 'Approved';
-        } elseif ($status == 'Declined') {
-            $normalized = 2;
-            $resultCode = 2;
-            $rMsg = 'Declined';
-        } elseif ($status == 'Error') {
-            $normalized = 3;
-            $resultCode = 0;
-            $rMsg = substr($xml->get_first('TEXTRESPONSE'), 0, 100);
-        }
+        $errorMsg = $xml->get_first("TEXTRESPONSE");
+        $normalized = $this->getNormalized($status);
+        $resultCode = ($normalized >= 3) ? 0 : $normalized;
+        $rMsg = $normalized === 3 ? substr($errorMsg, 0, 100) : $status;
         $apprNumber = $xml->get_first('REFNO');
+
         $finishQ = sprintf("UPDATE PaycardTransactions SET
                                 responseDatetime='%s',
                                 seconds=%f,
@@ -808,25 +784,6 @@ class MercuryGift extends BasicCCModule
         return PaycardLib::PAYCARD_ERR_PROC;
     }
 
-    // generate a partially-daily-unique identifier number according to the gift card processor's limitations
-    // along with their CashierID field, it will be a daily-unique identifier on the transaction
-    private function valutecIdentifier($transID) 
-    {
-        $transNo   = (int)$this->conf->get("transno");
-        $laneNo    = (int)$this->conf->get("laneno");
-        // fail if any field is too long (we don't want to truncate, since that might produce a non-unique refnum and cause bigger problems)
-        if ($transID > 999 || $transNo > 999 || $laneNo > 99) {
-            return "";
-        }
-        // assemble string
-        $ref = "00"; // fill all 10 digits, since they will if we don't and we want to compare with == later
-        $ref .= str_pad($laneNo,    2, "0", STR_PAD_LEFT);
-        $ref .= str_pad($transNo,   3, "0", STR_PAD_LEFT);
-        $ref .= str_pad($transID,   3, "0", STR_PAD_LEFT);
-
-        return $ref;
-    } // valutecIdentifier()
-    
     private function getTermID()
     {
         if ($this->conf->get("training") == 1) {
@@ -857,6 +814,18 @@ class MercuryGift extends BasicCCModule
             return false;
         }
         return $this->conf->get("paycard_tr2");
+    }
+
+    private function getNormalized($status)
+    {
+        if ($status === 'Approved') {
+            return 1;
+        } elseif ($status === 'Declined') {
+            return 2;
+        } elseif ($status === 'Error') {
+            return 3;
+        }
+        return 4;
     }
 }
 

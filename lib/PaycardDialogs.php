@@ -43,32 +43,6 @@ class PaycardDialogs
         return true;
     }
 
-    private function checkLuhn($pan)
-    {
-        $validator = new CardValidator();
-        if ($validator->validNumber($pan) != 1) {
-            $this->conf->reset();
-            throw new Exception(PaycardLib::paycardErrBox("Invalid Card Number",
-                "Swipe again or type in manually",
-                "[clear] to cancel"));
-        }
-
-        return true;
-    }
-
-    private function checkExpiration($exp)
-    {
-        $validator = new CardValidator();
-        if ($validator->validExpiration($exp) != 1) {
-            $this->conf->reset();
-            throw new Exception(PaycardLib::paycardErrBox("Invalid Expiration Date",
-                "The expiration date has passed or was not recognized",
-                "[clear] to cancel"));
-        }
-
-        return true;
-    }
-
     public function validateCard($pan, $expirable=true, $luhn=true)
     {
         $validator = new CardValidator();

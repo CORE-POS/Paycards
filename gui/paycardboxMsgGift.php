@@ -87,10 +87,10 @@ class paycardboxMsgGift extends PaycardProcessPage {
                 "Enter a positive amount to put on the card",
                 "[clear] to cancel");
         } elseif ($mode == PaycardLib::PAYCARD_MODE_ACTIVATE) {
-            echo PaycardLib::paycardMsgBox("Activate ".PaycardLib::paycard_moneyFormat($amt)."?","",
+            echo PaycardLib::paycardMsgBox("Activate ".PaycardLib::moneyFormat($amt)."?","",
                 "[enter] to continue if correct<br>Enter a different amount if incorrect<br>[clear] to cancel");
         } elseif ($mode == PaycardLib::PAYCARD_MODE_ADDVALUE) {
-            echo PaycardLib::paycardMsgBox("Add Value ".PaycardLib::paycard_moneyFormat($amt)."?","",
+            echo PaycardLib::paycardMsgBox("Add Value ".PaycardLib::moneyFormat($amt)."?","",
                 "[enter] to continue if correct<br>Enter a different amount if incorrect<br>[clear] to cancel");
         }
         $this->conf->set("msgrepeat",2);

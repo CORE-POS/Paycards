@@ -202,7 +202,6 @@ class Valutec extends BasicCCModule
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND); // internal error, nothing sent (ok to retry)
         }
         $request = new PaycardGiftRequest($this->valutecIdentifier($this->conf->get('paycard_id')), $dbTrans);
-        $program = 'Gift'; // valutec also has 'Loyalty' cards which store arbitrary point values
         $mode = "";
         $loggedMode = $mode;
         $authMethod = "";
@@ -245,7 +244,7 @@ class Valutec extends BasicCCModule
         }
                 
         $authFields = array(
-            'ProgramType'       => $program,
+            'ProgramType'       => 'Gift',
             'CardNumber'        => (($cardTr2) ? $cardTr2 : $cardPAN),
             'Amount'            => $request->formattedAmount(),
             'ServerID'          => $request->cashierNo,
@@ -274,7 +273,6 @@ class Valutec extends BasicCCModule
         }
         $request = new PaycardVoidRequest($this->valutecIdentifier($this->conf->get('paycard_id')), $dbTrans);
 
-        $program = 'Gift'; // valutec also has 'Loyalty' cards which store arbitrary point values
         $cardPAN = $this->getPAN();
         $termID = $this->getTermID();
 
@@ -290,7 +288,7 @@ class Valutec extends BasicCCModule
         // assemble and send void request
         $vdMethod = 'Void';
         $vdFields = array(
-            'ProgramType'       => $program,
+            'ProgramType'       => 'Gift',
             'CardNumber'        => $cardPAN,
             'RequestAuthCode'   => $authcode,
             'ServerID'          => $request->cashierNo,
@@ -314,7 +312,6 @@ class Valutec extends BasicCCModule
     {
         // prepare data for the request
         $cashierNo = $this->conf->get("CashierNo");
-        $program = 'Gift'; // valutec also has 'Loyalty' cards which store arbitrary point values
         $cardPAN = $this->getPAN();
         $cardTr2 = $this->getTrack2();
         $identifier = date('mdHis'); // the balance check itself needs a unique identifier, so just use a timestamp minus the year (10 digits only)
@@ -323,7 +320,7 @@ class Valutec extends BasicCCModule
         // assemble and send balance check
         $balMethod = 'CardBalance';
         $balFields = array(
-            'ProgramType'       => $program,
+            'ProgramType'       => 'Gift',
             'CardNumber'        => (($cardTr2) ? $cardTr2 : $cardPAN),
             'ServerID'          => $cashierNo,
             'Identifier'        => $identifier
@@ -356,11 +353,6 @@ class Valutec extends BasicCCModule
         $response = new PaycardResponse($request, $authResult, PaycardLib::paycard_db());
         $identifier = $this->valutecIdentifier($this->conf->get('paycard_id'));
 
-        // initialize
-        $dbTrans = Database::tDataConnect();
-
-        $program = 'Gift';
-
         $validResponse = ($xml->isValid()) ? 1 : 0;
         $errorMsg = $xml->get_first("ERRORMSG");
         $balance = $xml->get("BALANCE");
@@ -385,13 +377,13 @@ class Valutec extends BasicCCModule
                         }
                     }       
                 } elseif ($balance && $balance !== "") {
-                    $errorMsg = "NSF, BAL: ".PaycardLib::paycard_moneyFormat($balance);    
+                    $errorMsg = "NSF, BAL: ".PaycardLib::moneyFormat($balance);    
                 }
             }
 
             // verify that echo'd fields match our request
             $validResponse = 4; // response was parsed as XML but fields didn't match
-            if ($xml->get('TRANSACTIONTYPE') && $xml->get('TRANSACTIONTYPE') == $program
+            if ($xml->get('TRANSACTIONTYPE') && $xml->get('TRANSACTIONTYPE') == 'Gift'
                 && $xml->get('IDENTIFIER') && $xml->get('IDENTIFIER') == $identifier
                 && $xml->get('AUTHORIZED')
             ) {
@@ -420,16 +412,9 @@ class Valutec extends BasicCCModule
             $response->saveResponse();
         } catch (Exception $ex) {}
 
-        // check for communication errors (any cURL error or any HTTP code besides 200)
-        if ($authResult['curlErr'] != CURLE_OK || $authResult['curlHTTP'] != 200) {
-            if ($authResult['curlHTTP'] == '0') {
-                    $this->conf->set("boxMsg","No response from processor<br />
-                                The transaction did not go through");
-
-                    return PaycardLib::PAYCARD_ERR_PROC;
-            }
-
-            return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_COMM);
+        $comm = $this->pmod->commError($authResult);
+        if ($comm !== false) {
+            return $comm === true ? $this->setErrorMsg(PaycardLib::PAYCARD_ERR_COMM) : $comm;
         }
 
          // check for data errors (any failure to parse response XML or echo'd field mismatch
@@ -471,11 +456,9 @@ class Valutec extends BasicCCModule
         $this->last_paycard_transaction_id = $request->last_paycard_transaction_id;
         $response = new PaycardResponse($request, $vdResult, PaycardLib::paycard_db());
 
-        $program = "Gift";
-
         $validResponse = 4; // response was parsed as XML but fields didn't match
         // verify that echo'd fields match our request
-        if ($xml->get('TRANSACTIONTYPE') && $xml->get('TRANSACTIONTYPE') == $program
+        if ($xml->get('TRANSACTIONTYPE') && $xml->get('TRANSACTIONTYPE') == 'Gift'
                 && $xml->get('AUTHORIZED')
                 && $xml->get('AUTHORIZATIONCODE')
                 && $xml->get('BALANCE')
@@ -502,16 +485,11 @@ class Valutec extends BasicCCModule
             $response->saveResponse();
         } catch (Exception $ex) {}
 
-        if ($vdResult['curlErr'] != CURLE_OK || $vdResult['curlHTTP'] != 200) {
-            if ($vdResult['curlHTTP'] == '0') {
-                $this->conf->set("boxMsg","No response from processor<br />
-                                The transaction did not go through");
-
-                return PaycardLib::PAYCARD_ERR_PROC;
-            }
-
-            return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_COMM); // comm error, try again
+        $comm = $this->pmod->commError($vdResult);
+        if ($comm !== false) {
+            return $comm === true ? $this->setErrorMsg(PaycardLib::PAYCARD_ERR_COMM) : $comm;
         }
+
         // check for data errors (any failure to parse response XML or echo'd field mismatch)
         // invalid server response, we don't know if the transaction was voided (use carbon)
         if ($validResponse != 1) {
@@ -540,16 +518,10 @@ class Valutec extends BasicCCModule
     protected function handleResponseBalance($balResult)
     {
         $xml = new xmlData($balResult["response"]);
-        $program = 'Gift';
 
-        if ($balResult['curlErr'] != CURLE_OK || $balResult['curlHTTP'] != 200) {
-            if ($balResult['curlHTTP'] == '0'){
-                $this->conf->set("boxMsg","No response from processor<br />
-                                          The transaction did not go through");
-                return PaycardLib::PAYCARD_ERR_PROC;
-            }
-
-            return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_COMM); // comm error, try again
+        $comm = $this->pmod->commError($balResult);
+        if ($comm !== false) {
+            return $comm === true ? $this->setErrorMsg(PaycardLib::PAYCARD_ERR_COMM) : $comm;
         }
 
         $this->conf->set("paycard_response",array());
@@ -562,7 +534,7 @@ class Valutec extends BasicCCModule
 
         // there's less to verify for balance checks, just make sure all the fields are there
         if ($xml->isValid()
-            && $xml->get('TRANSACTIONTYPE') && $xml->get('TRANSACTIONTYPE') == $program
+            && $xml->get('TRANSACTIONTYPE') && $xml->get('TRANSACTIONTYPE') == 'Gift'
             && $xml->get('AUTHORIZED') && $xml->get('AUTHORIZED') == 'true'
             && (!$xml->get('ERRORMSG') || $xml->get_first('ERRORMSG') == '')
             && $xml->get('BALANCE')
