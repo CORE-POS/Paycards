@@ -31,8 +31,9 @@ class paycardboxMsgAuth extends PaycardProcessPage {
     {
         // check for posts before drawing anything, so we can redirect
         $this->addOnloadCommand("\$('#formlocal').submit(paycardboxmsgAuth.submitWrapper);\n");
+        $cval = new CardValidator();
         if (FormLib::get('validate') !== '') { // ajax callback to validate inputs
-            list($valid, $msg) = PaycardLib::validateAmount();
+            list($valid, $msg) = $cval->validateAmount($this->conf);
             echo json_encode(array('valid'=>$valid, 'msg'=>$msg));
             return false;
         } elseif (FormLib::get('reginput', false) !== false) {
@@ -52,7 +53,7 @@ class paycardboxMsgAuth extends PaycardProcessPage {
                 $this->change_page($this->page_url."gui-modules/pos2.php");
                 return False;
             } elseif ($input == "") {
-                list($valid, $msg) = PaycardLib::validateAmount();
+                list($valid, $msg) = $cval->validateAmount($this->conf);
                 if ($valid) {
                     $this->action = "onsubmit=\"return false;\"";    
                     $this->addOnloadCommand("paycard_submitWrapper();");
@@ -93,7 +94,8 @@ class paycardboxMsgAuth extends PaycardProcessPage {
         $cashback = $this->conf->get('CacheCardCashBack');
         $balanceLimit = $this->conf->get('PaycardRetryBalanceLimit');
         if ($cashback > 0) $amt -= $cashback;
-        list($valid, $validmsg) = PaycardLib::validateAmount();
+        $cval = new CardValidator();
+        list($valid, $validmsg) = $cval->validateAmount($this->conf);
         if ($valid === false) {
             echo PaycardLib::paycardMsgBox("Invalid Amount: $amt",
                 $validmsg, "[clear] to cancel");

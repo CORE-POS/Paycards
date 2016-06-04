@@ -461,59 +461,58 @@ class BasicCCModule
      */
     public function setErrorMsg($errorCode)
     {
+        $flags = array('retry'=>true, 'standalone'=>true, 'carbon'=>false, 'tellIT'=>true);
+        $type = CoreLocal::get('paycard_type');
         switch ($errorCode) {
             case PaycardLib::PAYCARD_ERR_COMM:
-                CoreLocal::set("boxMsg",
-                                 PaycardLib::paycardErrorText("Communication Error",
-                                                               $errorCode,
-                                                               1,
-                                                               1,
-                                                               0,
-                                                               0,
-                                                               CoreLocal::get("paycard_type")
-                                 )
-                );
+                $flags['tellIT'] = false;
+                CoreLocal::set("boxMsg", $this->getErrorText("Communication Error",$errorCode,$flags,$type));
                 break;
             case PaycardLib::PAYCARD_ERR_TIMEOUT:
-                CoreLocal::set("boxMsg",
-                                 PaycardLib::paycardErrorText("Timeout Error",
-                                                               $errorCode,
-                                                               0,
-                                                               0,
-                                                               1,
-                                                               0,
-                                                               CoreLocal::get("paycard_type")
-                                 )
-                );
+                $flags = array('retry'=>false, 'standalone'=>false, 'carbon'=>true, 'tellIT'=>false);
+                CoreLocal::set("boxMsg", $this->getErrorText("Timeout Error",$errorCode,$flags,$type));
                 break;
             case PaycardLib::PAYCARD_ERR_DATA:
-                CoreLocal::set("boxMsg",
-                                 PaycardLib::paycardErrorText("System Error",
-                                                               $errorCode,
-                                                               0,
-                                                               0,
-                                                               1,
-                                                               1,
-                                                               CoreLocal::get("paycard_type")
-                                 )
-                );
+                $flags = array('retry'=>false, 'standalone'=>false, 'carbon'=>true, 'tellIT'=>true);
+                CoreLocal::set("boxMsg", $this->getErrorText("System Error",$errorCode,$flags,$type));
                 break;
             case PaycardLib::PAYCARD_ERR_NOSEND:
             default:
-                CoreLocal::set("boxMsg",
-                                 PaycardLib::paycardErrorText("Internal Error",
-                                                               $errorCode,
-                                                               1,
-                                                               1,
-                                                               0,
-                                                               1,
-                                                               CoreLocal::get("paycard_type")
-                                 )
-                );
+                CoreLocal::set("boxMsg", $this->getErrorText("Internal Error",$errorCode,$flags,$type));
                 break;
         }
 
         return $errorCode;
+    }
+
+    // helper static public function to build error messages
+    private function getErrorText($title, $code, $flags, $type) 
+    {
+        $opts = array();
+        if ($flags['retry']) $opts[] = "<b>retry</b>"; 
+        if ($flags['standalone']) $opts[] = "process in <b>standalone</b>"; 
+        if ($flags['carbon'] && $type == PaycardLib::PAYCARD_TYPE_CREDIT) {
+            $opts[] = "take a <b>carbon</b>";
+        } elseif ($flags['carbon']) {
+            $opts[] = "process <b>manually</b>";
+        }
+        $opts = 'Please ' . implode(', or ', $opts);
+        $tellIT = $flags['tellIT'] ? '<i>(Notify IT)</i>' : '';
+        $msg = "<img src='graphics/" . ($flags['carbon'] ? 'blacksquare' : 'redsquare') . ".gif'> "
+                . "<b>".trim($title)."</b>"
+                . "<br><font size=-2>(#R.".$code.")</font>"
+                . "<font size=-1><br><br>"
+                . $opts . ' ' . $tellIT
+                . '<br><br>';
+        // retry option?
+        if ($flags['retry']) {
+            $msg .= "[enter] to retry<br>";
+        } else {
+            CoreLocal::set("strEntered","");
+            CoreLocal::set("strRemembered","");
+        }
+        $msg .= "[clear] to cancel</font>";
+        return $msg;
     }
 
     protected $trans_pan;

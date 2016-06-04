@@ -483,21 +483,23 @@ class Test extends PHPUnit_Framework_TestCase
         CoreLocal::set('CacheCardType', 'EBTFOOD');
         CoreLocal::set('paycard_amount', 1);
         CoreLocal::set('fsEligible', -1);
-        $this->assertEquals(array(false, 'Enter a negative amount'), PaycardLib::validateAmount());
+        $validator = new CardValidator();
+        $conf = new PaycardConf();
+        $this->assertEquals(array(false, 'Enter a negative amount'), $validator->validateAmount($conf));
         CoreLocal::set('paycard_amount', -1);
         CoreLocal::set('fsEligible', 1);
-        $this->assertEquals(array(false, 'Enter a positive amount'), PaycardLib::validateAmount());
+        $this->assertEquals(array(false, 'Enter a positive amount'), $validator->validateAmount($conf));
         CoreLocal::set('paycard_amount', 5);
-        $this->assertEquals(array(false, 'Cannot exceed amount due'), PaycardLib::validateAmount());
+        $this->assertEquals(array(false, 'Cannot exceed amount due'), $validator->validateAmount($conf));
         CoreLocal::set('CacheCardType', 'DEBIT');
         CoreLocal::set('fsEligible', '');
         CoreLocal::set('amtdue', 1);
         CoreLocal::set('CacheCardCashBack', 1);
-        $this->assertEquals(array(false, 'Cannot exceed amount due plus cashback'), PaycardLib::validateAmount());
+        $this->assertEquals(array(false, 'Cannot exceed amount due plus cashback'), $validator->validateAmount($conf));
         CoreLocal::set('CacheCardCashBack', '');
         CoreLocal::set('paycard_amount', 1);
         CoreLocal::set('PaycardRetryBalanceLimit', 0.50);
-        $this->assertEquals(array(false, 'Cannot exceed card balance'), PaycardLib::validateAmount());
+        $this->assertEquals(array(false, 'Cannot exceed card balance'), $validator->validateAmount($conf));
         CoreLocal::set('paycard_amount', '');
         CoreLocal::set('PaycardRetryBalanceLimit', '');
         CoreLocal::set('CacheCardType', '');
@@ -509,7 +511,7 @@ class Test extends PHPUnit_Framework_TestCase
         SQLManager::clear();
 
         CoreLocal::set('paycard_amount', 'foo');
-        $bad = PaycardLib::validateAmount();
+        $bad = $validator->validateAmount($conf);
         $this->assertEquals(false, $bad[0]);
         CoreLocal::set('paycard_amount', '');
 

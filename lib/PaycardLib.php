@@ -61,40 +61,6 @@ static public function paycard_moneyFormat($amt) {
     return $sign."$".number_format($amt,2);
 } // paycard_moneyFormat
 
-// helper static public function to build error messages
-static public function paycardErrorText($title, $code, $retry, $standalone, $carbon, $tellIT, $type) 
-{
-    // pick the icon
-    $msg = "<img src='graphics/" . ($carbon ? 'blacksquare' : 'redsquare') . ".gif'> ";
-    // write the text
-    $msg .= "<b>".trim($title)."</b>";
-    $msg .= "<br><font size=-2>(#R.".$code.")</font>";
-    $msg .= "<font size=-1><br><br>";
-    // write the options
-    $opt = "";
-    if( $retry)      { $opt .= ($opt ? ", or" : "") . " <b>retry</b>";                 }
-    if( $standalone) { $opt .= ($opt ? ", or" : "") . " process in <b>standalone</b>"; }
-    if( $carbon) {
-        if( $type == self::PAYCARD_TYPE_CREDIT) { $opt .= ($opt ? ", or" : "") . " take a <b>carbon</b>"; }
-        else { $opt .= ($opt ? ", or" : "") . " process <b>manually</b>"; }
-    }
-    if( $opt)        { $opt = "Please " . $opt . "."; }
-    if( $tellIT)     { $opt = trim($opt." <i>(Notify IT)</i>"); }
-    if( $opt)
-        $msg .= $opt."<br>";
-    $msg .= "<br>";
-    // retry option?
-    if( $retry) {
-        $msg .= "[enter] to retry<br>";
-    } else {
-        CoreLocal::set("strEntered","");
-        CoreLocal::set("strRemembered","");
-    }
-    $msg .= "[clear] to cancel</font>";
-    return $msg;
-}
-
-
 // display a paycard-related error due to cashier mistake
 static public function paycardMsgBox($title, $msg, $action) 
 {
@@ -127,36 +93,6 @@ static public function setupAuthJson($json)
     $json['output'] = '';
 
     return $json;
-}
-
-static public function validateAmount()
-{
-    $amt = CoreLocal::get('paycard_amount');
-    $due = CoreLocal::get("amtdue");
-    $type = CoreLocal::get("CacheCardType");
-    $cashback = CoreLocal::get('CacheCardCashBack');
-    $balanceLimit = CoreLocal::get('PaycardRetryBalanceLimit');
-    if ($type == 'EBTFOOD') {
-        $due = CoreLocal::get('fsEligible');
-    }
-    if ($cashback > 0) $amt -= $cashback;
-    if (!is_numeric($amt) || abs($amt) < 0.005) {
-        return array(false, 'Enter a different amount');
-    } elseif ($amt > 0 && $due < 0) {
-        return array(false, 'Enter a negative amount');
-    } elseif ($amt < 0 && $due > 0) {
-        return array(false, 'Enter a positive amount');
-    } elseif (($amt-$due)>0.005 && $type != 'DEBIT' && $type != 'EBTCASH') {
-        return array(false, 'Cannot exceed amount due');
-    } elseif (($amt-$due-0.005)>$cashback && ($type == 'DEBIT' || $type == 'EBTCASH')) {
-        return array(false, 'Cannot exceed amount due plus cashback');
-    } elseif ($balanceLimit > 0 && ($amt-$balanceLimit) > 0.005) {
-        return array(false, 'Cannot exceed card balance');
-    } else {
-        return array(true, 'valid');
-    }
-
-    return array(false, 'invalid');
 }
 
 /*

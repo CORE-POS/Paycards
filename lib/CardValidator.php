@@ -74,5 +74,31 @@ class CardValidator
         return 1;
     } 
 
+    public function validateAmount($conf)
+    {
+        $amt = $conf->get('paycard_amount');
+        $due = $conf->get("amtdue");
+        $type = $conf->get("CacheCardType");
+        $cashback = $conf->get('CacheCardCashBack');
+        $balanceLimit = $conf->get('PaycardRetryBalanceLimit');
+        if ($type == 'EBTFOOD') {
+            $due = $conf->get('fsEligible');
+        }
+        if ($cashback > 0) $amt -= $cashback;
+        if (!is_numeric($amt) || abs($amt) < 0.005) {
+            return array(false, 'Enter a different amount');
+        } elseif ($amt > 0 && $due < 0) {
+            return array(false, 'Enter a negative amount');
+        } elseif ($amt < 0 && $due > 0) {
+            return array(false, 'Enter a positive amount');
+        } elseif (($amt-$due)>0.005 && $type != 'DEBIT' && $type != 'EBTCASH') {
+            return array(false, 'Cannot exceed amount due');
+        } elseif (($amt-$due-0.005)>$cashback && ($type == 'DEBIT' || $type == 'EBTCASH')) {
+            return array(false, 'Cannot exceed amount due plus cashback');
+        } elseif ($balanceLimit > 0 && ($amt-$balanceLimit) > 0.005) {
+            return array(false, 'Cannot exceed card balance');
+        }
+        return array(true, 'valid');
+    }
 }
 
