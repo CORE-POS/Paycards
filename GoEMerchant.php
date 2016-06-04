@@ -229,15 +229,9 @@ class GoEMerchant extends BasicCCModule
         );
         $dbTrans->query($finishQ);
 
-        if ($authResult['curlErr'] != CURLE_OK || $authResult['curlHTTP'] != 200) {
-            if ($authResult['curlHTTP'] == '0') {
-                $this->conf->set("boxMsg","No response from processor<br />
-                            The transaction did not go through");
-
-                return PaycardLib::PAYCARD_ERR_PROC;
-            }
-
-            return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_COMM);
+        $comm = $this->pmod->commError($authResult);
+        if ($comm !== false) {
+            return $comm === true ? $this->setErrorMsg(PaycardLib::PAYCARD_ERR_COMM) : $comm;
         }
 
         switch ($xml->get("STATUS1")) {

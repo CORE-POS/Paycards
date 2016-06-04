@@ -42,7 +42,7 @@ class MercuryE2E extends BasicCCModule
     private $voidTrans;
     private $voidRef;
     protected $SOAPACTION = "http://www.mercurypay.com/CreditTransaction";
-    private $second_try;
+    private $secondTry;
 
     private $encBlock;
     private $pmod;
@@ -123,7 +123,6 @@ class MercuryE2E extends BasicCCModule
             $authResult["response"]);
         $xml = new xmlData($resp);
 
-        $dbTrans = PaycardLib::paycard_db();
         $request = $this->last_request;
         $this->last_paycard_transaction_id = $request->last_paycard_transaction_id;
         $response = new PaycardResponse($request, $authResult, PaycardLib::paycard_db());
@@ -196,10 +195,10 @@ class MercuryE2E extends BasicCCModule
         }
 
         if ($authResult['curlErr'] != CURLE_OK || $authResult['curlHTTP'] != 200) {
-            if (!$this->second_try){
-                $this->second_try = true;
+            if (!$this->secondTry){
+                $this->secondTry = true;
 
-                return $this->send_auth("w2.backuppay.com");
+                return $this->sendAuth("w2.backuppay.com");
             } else if ($authResult['curlHTTP'] == '0') {
                 $this->conf->set("boxMsg","No response from processor<br />
                             The transaction did not go through");
@@ -207,7 +206,7 @@ class MercuryE2E extends BasicCCModule
             } else {
                 return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_COMM);
             }
-        } else if ($this->second_try && $authResult['curlTime'] < 10 && $this->conf->get('MercurySwitchUrls') <= 0) {
+        } else if ($this->secondTry && $authResult['curlTime'] < 10 && $this->conf->get('MercurySwitchUrls') <= 0) {
             $this->conf->set('MercurySwitchUrls', 5);
         }
 
@@ -253,7 +252,6 @@ class MercuryE2E extends BasicCCModule
         $resp = $this->desoapify("CreditTransactionResult",
             $authResult["response"]);
         $xml = new xmlData($resp);
-        $dbTrans = PaycardLib::paycard_db();
         $request = $this->last_request;
         $this->last_paycard_transaction_id = $request->last_paycard_transaction_id;
         $response = new PaycardResponse($request, $authResult, PaycardLib::paycard_db());
@@ -270,9 +268,6 @@ class MercuryE2E extends BasicCCModule
         $resultCode = $xml->get_first("DSIXRETURNCODE");
         $response->setResultCode($resultCode);
         $resultMsg = $xml->get_first("CMDSTATUS");
-        if ($resultMsg) {
-            $rMsg = $resultMsg;
-        }
         $response->setResultMsg($resultMsg);
         $response->setValid($validResponse);
 
@@ -309,7 +304,7 @@ class MercuryE2E extends BasicCCModule
                 if ($skipReversal == true) {
                     $this->conf->set("MercuryE2ESkipReversal", false);
                 } else {
-                    return $this->send_void(true);
+                    return $this->sendVoid(true);
                 }
             case 'ERROR':
                 $this->conf->set("boxMsg","");
@@ -353,10 +348,6 @@ class MercuryE2E extends BasicCCModule
                 // numeric input screws up parsing on negative values > $0.99
                 $amt = "".(-1*($this->conf->get("paycard_amount")));
                 $type = $this->conf->get("CacheCardType");
-                $t_type = 'CC';
-                if ($this->conf->get('paycard_issuer') == 'American Express') {
-                    $t_type = 'AX';
-                }
                 if ($type == 'EBTFOOD') {
                     // extra tax exemption steps
                     TransRecord::addfsTaxExempt();
@@ -364,19 +355,19 @@ class MercuryE2E extends BasicCCModule
                     Database::setglobalvalue("FntlFlag", 0);
                 }
                 $tInfo = new PaycardTenders($this->conf);
-                list($tender_code, $tender_description) = $tInfo->getTenderInfo($type, $this->conf->get('paycard_issuer'));
+                list($tenderCode, $tenderDescription) = $tInfo->getTenderInfo($type, $this->conf->get('paycard_issuer'));
 
                 // if the transaction has a non-zero paycardTransactionID,
                 // include it in the tender line
-                $record_id = $this->last_paycard_transaction_id;
-                $charflag = ($record_id != 0) ? 'PT' : '';
-                TransRecord::addFlaggedTender($tender_description, $tender_code, $amt, $record_id, $charflag);
+                $recordID = $this->last_paycard_transaction_id;
+                $charflag = ($recordID != 0) ? 'PT' : '';
+                TransRecord::addFlaggedTender($tenderDescription, $tenderCode, $amt, $recordID, $charflag);
 
-                $appr_type = 'Approved';
+                $apprType = 'Approved';
                 if ($this->conf->get('paycard_partial')){
-                    $appr_type = 'Partial Approval';
+                    $apprType = 'Partial Approval';
                 } elseif ($this->conf->get('paycard_amount') == 0) {
-                    $appr_type = 'Declined';
+                    $apprType = 'Declined';
                     $json['receipt'] = 'ccDecline';
                 }
                 $this->conf->set('paycard_partial', false);
@@ -385,7 +376,7 @@ class MercuryE2E extends BasicCCModule
                 $needSig = ($this->conf->get('paycard_amount') > $this->conf->get('CCSigLimit') || $this->conf->get('paycard_amount') < 0) ? true : false;
                 if (($isCredit || $this->conf->get('EmvSignature') === true) && $needSig) {
                     $this->conf->set("boxMsg",
-                            "<b>$appr_type</b>
+                            "<b>$apprType</b>
                             <font size=-1>
                             <p>Please verify cardholder signature
                             <p>[enter] to continue
@@ -397,7 +388,7 @@ class MercuryE2E extends BasicCCModule
                     }
                 } else {
                     $this->conf->set("boxMsg",
-                            "<b>$appr_type</b>
+                            "<b>$apprType</b>
                             <font size=-1>
                             <p>No signature required
                             <p>[enter] to continue
@@ -422,12 +413,12 @@ class MercuryE2E extends BasicCCModule
 
     public function doSend($type)
     {
-        $this->second_try = false;
+        $this->secondTry = false;
         switch ($type) {
             case PaycardLib::PAYCARD_MODE_AUTH: 
-                return $this->send_auth();
+                return $this->sendAuth();
             case PaycardLib::PAYCARD_MODE_VOID: 
-                return $this->send_void(); 
+                return $this->sendVoid(); 
             default:
                 $this->conf->reset();
                 return $this->setErrorMsg(0);
@@ -438,7 +429,7 @@ class MercuryE2E extends BasicCCModule
       Updated for E2E
       Status: Should be functional once device is available
     */
-    private function send_auth($domain="w1.mercurypay.com")
+    private function sendAuth($domain="w1.mercurypay.com")
     {
         // initialize
         $dbTrans = PaycardLib::paycard_db();
@@ -536,29 +527,27 @@ class MercuryE2E extends BasicCCModule
     {
         $request = new PaycardRequest($this->refnum($this->conf->get('paycard_id')), PaycardLib::paycard_db());
         $request->setProcessor('MercuryE2E');
-        $tran_code = $amount > 0 ? 'Sale' : 'Return';
+        $tranCode = $amount > 0 ? 'Sale' : 'Return';
         if ($type == 'EMV') {
-            $tran_code = 'EMV' . $tran_code;
+            $tranCode = 'EMV' . $tranCode;
         } elseif ($type == 'GIFT') {
-            $tran_code = $amount > 0 ? 'NoNSFSale' : 'Return';
+            $tranCode = $amount > 0 ? 'NoNSFSale' : 'Return';
         } else if ($this->conf->get("ebt_authcode") != "" && $this->conf->get("ebt_vnum") != "") {
-            $tran_code = 'Voucher';
+            $tranCode = 'Voucher';
         }
 
-        $host = $this->getAxHost();
-
-        $tran_type = 'Credit';
-        $card_type = false;
+        $tranType = 'Credit';
+        $cardType = false;
         if ($type == 'DEBIT') {
-            $tran_type = 'Debit';
+            $tranType = 'Debit';
         } elseif ($type == 'EBTFOOD') {
-            $tran_type = 'EBT';
-            $card_type = 'Foodstamp';
+            $tranType = 'EBT';
+            $cardType = 'Foodstamp';
         } elseif ($type == 'EBTCASH') {
-            $tran_type = 'EBT';
-            $card_type = 'Cash';
+            $tranType = 'EBT';
+            $cardType = 'Cash';
         } elseif ($type == 'GIFT') {
-            $tran_type = 'PrePaid';
+            $tranType = 'PrePaid';
         }
 
         $request->setManual($prompt ? 1 : 0);
@@ -575,16 +564,16 @@ class MercuryE2E extends BasicCCModule
 
         // start with fields common to PDCX and EMVX
         $msgXml = $this->beginXmlRequest($request);
-        $msgXml .= '<TranCode>' . $tran_code . '</TranCode>
+        $msgXml .= '<TranCode>' . $tranCode . '</TranCode>
             <SecureDevice>{{SecureDevice}}</SecureDevice>
             <ComPort>{{ComPort}}</ComPort>';
         if ($type == 'EMV') { // add EMV specific fields
-            $dc_host = $this->conf->get('PaycardsDatacapLanHost');
-            if (empty($dc_host)) {
-                $dc_host = '127.0.0.1';
+            $dcHost = $this->conf->get('PaycardsDatacapLanHost');
+            if (empty($dcHost)) {
+                $dcHost = '127.0.0.1';
             }
             $msgXml .= '
-            <HostOrIP>' . $dc_host . '</HostOrIP>
+            <HostOrIP>' . $dcHost . '</HostOrIP>
             <SequenceNo>{{SequenceNo}}</SequenceNo>
             <CollectData>CardholderName</CollectData>
             <PartialAuth>Allow</PartialAuth>';
@@ -604,9 +593,9 @@ class MercuryE2E extends BasicCCModule
             <Account>
                 <AcctNo>' . ($prompt ? 'Prompt' : 'SecureDevice') . '</AcctNo>
             </Account>
-            <TranType>' . $tran_type . '</TranType>';
-            if ($card_type) {
-                $msgXml .= '<CardType>' . $card_type . '</CardType>';
+            <TranType>' . $tranType . '</TranType>';
+            if ($cardType) {
+                $msgXml .= '<CardType>' . $cardType . '</CardType>';
             }
             if ($type == 'CREDIT') {
                 $msgXml .= '<PartialAuth>Allow</PartialAuth>';
@@ -644,7 +633,6 @@ class MercuryE2E extends BasicCCModule
         $request = new PaycardVoidRequest($this->refnum($this->conf->get('paycard_id')), $dbc);
         $request->setProcessor('MercuryE2E');
 
-        $host = $this->getAxHost();
         $request->last_paycard_transaction_id = $pcID; 
         try {
             $prev = $request->findOriginal();
@@ -668,33 +656,33 @@ class MercuryE2E extends BasicCCModule
            PIN Debit and EBT run an opposite transaction
            (e.g., Return after a Sale)
         */
-        $tran_code = '';
-        $tran_type = '';
-        $card_type = false;
+        $tranCode = '';
+        $tranType = '';
+        $cardType = false;
         if ($prev['mode'] == 'EMVSale') {
-            $tran_code = 'EMVVoidSale';
-            $tran_type = 'EMV';
+            $tranCode = 'EMVVoidSale';
+            $tranType = 'EMV';
         } elseif ($prev['mode'] == 'EMVReturn') {
-            $tran_code = 'EMVVoidReturn';
-            $tran_type = 'EMV';
+            $tranCode = 'EMVVoidReturn';
+            $tranType = 'EMV';
         } elseif ($prev['mode'] == 'NoNSFSale') {
-            $tran_type = 'PrePaid';
-            $tran_code = 'VoidSale';
+            $tranType = 'PrePaid';
+            $tranCode = 'VoidSale';
         } else {
             switch ($prev['cardType']) {
                 case 'Credit':
-                    $tran_code = ($prev['mode'] == 'Sale') ? 'VoidSaleByRecordNo' : 'VoidReturnByRecordNo';
-                    $tran_type = 'Credit';
+                    $tranCode = ($prev['mode'] == 'Sale') ? 'VoidSaleByRecordNo' : 'VoidReturnByRecordNo';
+                    $tranType = 'Credit';
                     break;
                 case 'Debit':
-                    $tran_code = ($prev['mode'] == 'Sale') ? 'ReturnByRecordNo' : 'SaleByRecordNo';
-                    $tran_type = 'Debit';
+                    $tranCode = ($prev['mode'] == 'Sale') ? 'ReturnByRecordNo' : 'SaleByRecordNo';
+                    $tranType = 'Debit';
                     break;
                 case 'EBTFOOD':
                 case 'EBTCASH':
-                    $tran_code = ($prev['mode'] == 'Sale') ? 'ReturnByRecordNo' : 'SaleByRecordNo';
-                    $tran_type = 'EBT';
-                    $card_type = ($prev['cardType'] === 'EBTFOOD') ? 'Foodstamp' : 'Cash';
+                    $tranCode = ($prev['mode'] == 'Sale') ? 'ReturnByRecordNo' : 'SaleByRecordNo';
+                    $tranType = 'EBT';
+                    $cardType = ($prev['cardType'] === 'EBTFOOD') ? 'Foodstamp' : 'Cash';
                     break;
             }
         }
@@ -702,16 +690,16 @@ class MercuryE2E extends BasicCCModule
         // common fields
         $request->setAmount(abs($prev['amount']));
         $msgXml = $this->beginXmlRequest($request);
-        $msgXml .= '<TranCode>' . $tran_code . '</TranCode>
+        $msgXml .= '<TranCode>' . $tranCode . '</TranCode>
             <SecureDevice>{{SecureDevice}}</SecureDevice>
             <ComPort>{{ComPort}}</ComPort>';
-        if ($tran_type == 'EMV') { // add EMV specific fields
-            $dc_host = $this->conf->get('PaycardsDatacapLanHost');
-            if (empty($dc_host)) {
-                $dc_host = '127.0.0.1';
+        if ($tranType == 'EMV') { // add EMV specific fields
+            $dcHost = $this->conf->get('PaycardsDatacapLanHost');
+            if (empty($dcHost)) {
+                $dcHost = '127.0.0.1';
             }
             $msgXml .= '
-            <HostOrIP>' . $dc_host . '</HostOrIP>
+            <HostOrIP>' . $dcHost . '</HostOrIP>
             <SequenceNo>{{SequenceNo}}</SequenceNo>
             <CollectData>CardholderName</CollectData>
             <PartialAuth>Allow</PartialAuth>';
@@ -725,11 +713,11 @@ class MercuryE2E extends BasicCCModule
             <Account>
                 <AcctNo>SecureDevice</AcctNo>
             </Account>
-            <TranType>' . $tran_type . '</TranType>';
-            if ($card_type) {
-                $msgXml .= '<CardType>' . $card_type . '</CardType>';
+            <TranType>' . $tranType . '</TranType>';
+            if ($cardType) {
+                $msgXml .= '<CardType>' . $cardType . '</CardType>';
             }
-            if ($tran_type == 'PrePaid') {
+            if ($tranType == 'PrePaid') {
                 $msgXml .= '<IpPort>9100</IpPort>';
                 $msgXml .= '<IpAddress>' . $this->giftServerIP() . '</IpAddress>';
             }
@@ -774,23 +762,22 @@ class MercuryE2E extends BasicCCModule
         }
         $refNum = $this->refnum($transID);
 
-        $host = $this->getAxHost();
         $live = 1;
         if ($this->conf->get("training") == 1) {
             $live = 0;
             $operatorID = 'test';
         }
 
-        $tran_type = '';
-        $card_type = '';
+        $tranType = '';
+        $cardType = '';
         if ($type == 'EBTFOOD') {
-            $tran_type = 'EBT';
-            $card_type = 'Foodstamp';
+            $tranType = 'EBT';
+            $cardType = 'Foodstamp';
         } elseif ($type == 'EBTCASH') {
-            $tran_type = 'EBT';
-            $card_type = 'Cash';
+            $tranType = 'EBT';
+            $cardType = 'Cash';
         } elseif ($type == 'GIFT') {
-            $tran_type = 'PrePaid';
+            $tranType = 'PrePaid';
         }
 
         $msgXml = '<?xml version="1.0"?'.'>
@@ -799,7 +786,7 @@ class MercuryE2E extends BasicCCModule
             <MerchantID>'.$termID.'</MerchantID>
             <OperatorID>'.$operatorID.'</OperatorID>
             <LaneID>'.$mcTerminalID.'</LaneID>
-            <TranType>' . $tran_type . '</TranType>
+            <TranType>' . $tranType . '</TranType>
             <TranCode>Balance</TranCode>
             <SecureDevice>{{SecureDevice}}</SecureDevice>
             <ComPort>{{ComPort}}</ComPort>
@@ -812,8 +799,8 @@ class MercuryE2E extends BasicCCModule
             <Amount>
                 <Purchase>0.00</Purchase>
             </Amount>';
-        if ($card_type) {
-            $msgXml .= '<CardType>' . $card_type . '</CardType>';
+        if ($cardType) {
+            $msgXml .= '<CardType>' . $cardType . '</CardType>';
         }
         if ($type == 'GIFT') {
             $msgXml .= '<IpPort>9100</IpPort>';
@@ -838,9 +825,9 @@ class MercuryE2E extends BasicCCModule
         if ($this->conf->get("training") == 1) {
             $host = "g1.mercurydev.net";
         }
-        $tran_code = 'Issue';
+        $tranCode = 'Issue';
         if ($mode == PaycardLib::PAYCARD_MODE_ADDVALUE) {
-            $tran_code = 'Reload';
+            $tranCode = 'Reload';
         }
         $request->setMode($mode);
         $request->setManual($prompt ? 1 : 0);
@@ -863,7 +850,7 @@ class MercuryE2E extends BasicCCModule
 
         $msgXml = $this->beginXmlRequest($request);
         $msgXml .= '<TranType>PrePaid</TranType>
-            <TranCode>' . $tran_code . '</TranCode>
+            <TranCode>' . $tranCode . '</TranCode>
             <SecureDevice>{{SecureDevice}}</SecureDevice>
             <ComPort>{{ComPort}}</ComPort>
             <Account>
@@ -925,9 +912,9 @@ class MercuryE2E extends BasicCCModule
                     $rMsg .= ' ' . $apprNumber;
                 }
             } else {
-                $processor_text = $xml->query('/RStream/CmdResponse/TextResponse');
-                if ($processor_text) {
-                    $rMsg = $processor_text;
+                $processorText = $xml->query('/RStream/CmdResponse/TextResponse');
+                if ($processorText) {
+                    $rMsg = $processorText;
                 }
             }
         }
@@ -939,27 +926,27 @@ class MercuryE2E extends BasicCCModule
         }
 
         $issuer = $xml->query('/RStream/TranResponse/CardType');
-        $resp_balance = $xml->query('/RStream/TranResponse/Amount/Balance');
+        $respBalance = $xml->query('/RStream/TranResponse/Amount/Balance');
         $ebtbalance = 0;
-        if ($issuer == 'Foodstamp' && $resp_balance !== false) {
+        if ($issuer == 'Foodstamp' && $respBalance !== false) {
             $issuer = 'EBT';
-            $this->conf->set('EbtFsBalance', $resp_balance);
-            $ebtbalance = $resp_balance;
-        } elseif ($issuer == 'Cash' && $resp_balance !== false) {
+            $this->conf->set('EbtFsBalance', $respBalance);
+            $ebtbalance = $respBalance;
+        } elseif ($issuer == 'Cash' && $respBalance !== false) {
             $issuer = 'EBT';
-            $this->conf->set('EbtCaBalance', $resp_balance);
-            $ebtbalance = $resp_balance;
-        } elseif ($xml->query('/RStream/TranResponse/TranType') == 'PrePaid' && $resp_balance !== false) {
+            $this->conf->set('EbtCaBalance', $respBalance);
+            $ebtbalance = $respBalance;
+        } elseif ($xml->query('/RStream/TranResponse/TranType') == 'PrePaid' && $respBalance !== false) {
             $issuer = 'NCG';
-            $ebtbalance = $resp_balance;
-            $this->conf->set('GiftBalance', $resp_balance);
+            $ebtbalance = $respBalance;
+            $this->conf->set('GiftBalance', $respBalance);
         }
         $response->setBalance($ebtbalance);
 
         $dbc = Database::tDataConnect();
 
-        $tran_code = $xml->query('/RStream/TranResponse/TranCode');
-        if (substr($tran_code, 0, 3) == 'EMV') {
+        $tranCode = $xml->query('/RStream/TranResponse/TranCode');
+        if (substr($tranCode, 0, 3) == 'EMV') {
             if (strpos($rawXml, 'x____') !== false) {
                 $this->conf->set('EmvSignature', true);
             } else {
@@ -1003,8 +990,8 @@ class MercuryE2E extends BasicCCModule
         }
 
         $pan = $xml->query('/RStream/TranResponse/AcctNo');
-        $resp_name = $xml->query('/RStream/TranResponse/CardholderName');
-        $name = $resp_name ? $resp_name : 'Cardholder';
+        $respName = $xml->query('/RStream/TranResponse/CardholderName');
+        $name = $respName ? $respName : 'Cardholder';
         $request->updateCardInfo($pan, $name, $issuer);
 
         switch (strtoupper($xml->query('/RStream/CmdResponse/CmdStatus'))) {
@@ -1017,7 +1004,7 @@ class MercuryE2E extends BasicCCModule
                     // charge the card for a less amount. 
                     TransRecord::addcomment("");
                     $this->conf->set('boxMsg', sprintf('Card Balance: $%.2f', $ebtbalance));
-                } elseif (substr($tran_code, 0, 3) == 'EMV') {
+                } elseif (substr($tranCode, 0, 3) == 'EMV') {
                     $this->conf->set('paycard_amount', 0);
                     return PaycardLib::PAYCARD_ERR_OK;
                 }
@@ -1087,7 +1074,7 @@ class MercuryE2E extends BasicCCModule
     /**
       Updated for E2E
     */
-    private function send_void($skipReversal=False,$domain="w1.mercurypay.com")
+    private function sendVoid($skipReversal=False,$domain="w1.mercurypay.com")
     {
         // initialize
         $dbTrans = PaycardLib::paycard_db();
@@ -1221,7 +1208,7 @@ class MercuryE2E extends BasicCCModule
 
     public function lookupTransaction($ref, $local, $mode)
     {
-        $ws_params = array(
+        $wsParams = array(
             'merchant' => $this->conf->get('MercuryE2ETerminalID'),
             'pw' => $this->conf->get('MercuryE2EPassword'),
             'invoice' => $ref,
@@ -1229,20 +1216,20 @@ class MercuryE2E extends BasicCCModule
 
         // emp_no 9999 => test transaction
         if (substr($ref, 4, 4) == "9999") {
-            $ws_params['merchant'] = '395347308=E2ETKN';
-            $ws_params['pw'] = '123E2ETKN';
+            $wsParams['merchant'] = '395347308=E2ETKN';
+            $wsParams['pw'] = '123E2ETKN';
         }
 
         $this->SOAPACTION = 'http://www.mercurypay.com/CTranDetail';
-        $soaptext = $this->soapify('CTranDetail', $ws_params, 'http://www.mercurypay.com');
+        $soaptext = $this->soapify('CTranDetail', $wsParams, 'http://www.mercurypay.com');
         $this->GATEWAY = 'https://' . self::PRIMARY_URL . '/ws/ws.asmx';
 
-        $curl_result = $this->curlSend($soaptext, 'SOAP', false, array(), false);
+        $curlResult = $this->curlSend($soaptext, 'SOAP', false, array(), false);
 
-        if ($curl_result['curlErr'] != CURLE_OK || $curl_result['curlHTTP'] != 200) {
+        if ($curlResult['curlErr'] != CURLE_OK || $curlResult['curlHTTP'] != 200) {
             $this->GATEWAY = 'https://' . self::BACKUP_URL . '/ws/ws.asmx';
-            $curl_result = $this->curlSend($soaptext, 'SOAP', false, array(), false);
-            if ($curl_result['curlErr'] != CURLE_OK || $curl_result['curlHTTP'] != 200) {
+            $curlResult = $this->curlSend($soaptext, 'SOAP', false, array(), false);
+            if ($curlResult['curlErr'] != CURLE_OK || $curlResult['curlHTTP'] != 200) {
                 return array(
                     'output' => DisplayLib::boxMsg('No response from processor', '', true),
                     'confirm_dest' => MiscLib::baseURL() . 'gui-modules/pos2.php',
@@ -1257,17 +1244,17 @@ class MercuryE2E extends BasicCCModule
             'cancel_dest' => MiscLib::baseURL() . 'gui-modules/pos2.php',
         );
         $info = new Paycards();
-        $url_stem = $info->pluginUrl();
+        $urlStem = $info->pluginUrl();
 
-        $xml_resp = $this->desoapify('CTranDetailResponse', $curl_result['response']);
-        $xml = new xmlData($xml_resp);
+        $xmlResp = $this->desoapify('CTranDetailResponse', $curlResult['response']);
+        $xml = new xmlData($xmlResp);
 
         $status = trim($xml->get_first('STATUS'));
         if ($status === '') {
             $status = 'NOTFOUND';
             $directions = 'Press [enter] to try again, [clear] to stop';
-            $query_string = 'id=' . ($local ? '_l' : '') . $ref . '&mode=' . $mode;
-            $resp['confirm_dest'] = $url_stem . '/gui/PaycardTransLookupPage.php?' . $query_string;
+            $queryString = 'id=' . ($local ? '_l' : '') . $ref . '&mode=' . $mode;
+            $resp['confirm_dest'] = $urlStem . '/gui/PaycardTransLookupPage.php?' . $queryString;
         } else if ($local == 1 && $mode == 'verify') {
             // Update PaycardTransactions record to contain
             // actual processor result and finish
@@ -1280,8 +1267,8 @@ class MercuryE2E extends BasicCCModule
                 $normalized = 1;
                 $this->conf->wipePAN();
                 $this->cleanup(array());
-                $resp['confirm_dest'] = $url_stem . '/gui/paycardSuccess.php';
-                $resp['cancel_dest'] = $url_stem . '/gui/paycardSuccess.php';
+                $resp['confirm_dest'] = $urlStem . '/gui/paycardSuccess.php';
+                $resp['cancel_dest'] = $urlStem . '/gui/paycardSuccess.php';
                 $directions = 'Press [enter] to continue';
             } else if ($status == 'Declined') {
                 $this->conf->reset();
@@ -1307,8 +1294,8 @@ class MercuryE2E extends BasicCCModule
                 $rMsg = substr($rMsg,0,100);
             }
 
-            $db = Database::tDataConnect(); 
-            $upP = $db->prepare("
+            $dbc = Database::tDataConnect(); 
+            $upP = $dbc->prepare("
                 UPDATE PaycardTransactions 
                 SET xResponseCode=?,
                     xResultCode=?,
@@ -1330,7 +1317,7 @@ class MercuryE2E extends BasicCCModule
                 $ref,
                 $this->conf->get('paycard_id'),
             );
-            $upR = $db->execute($upP, $args);
+            $dbc->execute($upP, $args);
         }
 
         switch(strtoupper($status)) {
@@ -1382,22 +1369,20 @@ class MercuryE2E extends BasicCCModule
         if ($this->conf->get('training') == 1) {
             $host = 'g1.mercurydev.net';
         }
-        $host_cache = $this->conf->get('DnsCache');
-        if (!is_array($host_cache)) {
-            $host_cache = array();
+        $hostCache = $this->conf->get('DnsCache');
+        if (!is_array($hostCache)) {
+            $hostCache = array();
         }
-        if (isset($host_cache[$host])) {
-            return $host_cache[$host];
-        } else {
-            $addr = gethostbyname($host);
-            if ($addr === $host) { // name did not resolve
-                return $host;
-            } else { // cache IP for next time
-                $host_cache[$host] = $addr;
-                $this->conf->set('DnsCache', $host_cache);
-                return $addr;
-            }
+        if (isset($hostCache[$host])) {
+            return $hostCache[$host];
         }
+        $addr = gethostbyname($host);
+        if ($addr === $host) { // name did not resolve
+            return $host;
+        }
+        $hostCache[$host] = $addr;
+        $this->conf->set('DnsCache', $hostCache);
+        return $addr;
     }
 
     private function responseToNumber($responseCode)
@@ -1440,7 +1425,7 @@ class MercuryE2E extends BasicCCModule
         return $normalized;
     }
 
-    private function beginXmlRequest($request, $ref_no=false, $record_no=false)
+    private function beginXmlRequest($request, $refNo=false, $recordNo=false)
     {
         $termID = $this->getTermID();
         $mcTerminalID = $this->conf->get('PaycardsTerminalID');
@@ -1455,9 +1440,9 @@ class MercuryE2E extends BasicCCModule
             <OperatorID>'.$request->cashierNo.'</OperatorID>
             <LaneID>'.$mcTerminalID.'</LaneID>
             <InvoiceNo>'.$request->refNum.'</InvoiceNo>
-            <RefNo>'. ($ref_no ? $ref_no : $request->refNum) .'</RefNo>
+            <RefNo>'. ($refNo ? $refNo : $request->refNum) .'</RefNo>
             <Memo>CORE POS 1.0.0</Memo>
-            <RecordNo>' . ($record_no ? $record_no : 'RecordNumberRequested') . '</RecordNo>
+            <RecordNo>' . ($recordNo ? $recordNo : 'RecordNumberRequested') . '</RecordNo>
             <Frequency>OneTime</Frequency>
             <Amount>
                 <Purchase>'.$request->formattedAmount().'</Purchase>';
@@ -1489,12 +1474,12 @@ class MercuryE2E extends BasicCCModule
         */
         if ($this->conf->get('MercurySwitchUrls') > 0) {
             $domain = self::PRIMARY_URL;
-            if (!$this->second_try) {
+            if (!$this->secondTry) {
                 $domain = self::BACKUP_URL;    
             }
         } else {
             $domain = self::BACKUP_URL;    
-            if (!$this->second_try) {
+            if (!$this->secondTry) {
                 $domain = self::PRIMARY_URL;
             }
         }
@@ -1504,9 +1489,9 @@ class MercuryE2E extends BasicCCModule
           Go back to normal order when it reaches zero 
         */    
         if ($this->conf->get('MercurySwitchUrls') > 0) {
-            $switch_count = $this->conf->get('MercurySwitchUrls');
-            $switch_count--;
-            $this->conf->set('MercurySwitchUrls', $switch_count);
+            $switchCount = $this->conf->get('MercurySwitchUrls');
+            $switchCount--;
+            $this->conf->set('MercurySwitchUrls', $switchCount);
         }
 
         return $domain;

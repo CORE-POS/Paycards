@@ -84,7 +84,7 @@ class PaycardDialogs
                                                          "That card number was not used in this transaction",
                                                          "[clear] to cancel"
             ));
-        } else if ($num > 1) {
+        } elseif ($num > 1) {
             $this->conf->reset();
             throw new Exception(PaycardLib::paycardMsgBox("Multiple Uses",
                                                          "That card number was used more than once in this transaction; select the payment and press VOID",

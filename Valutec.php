@@ -84,7 +84,7 @@ class Valutec extends BasicCCModule
         }
 
         // other modes
-        $plugin_info = new Paycards();
+        $pluginInfo = new Paycards();
         switch ($this->conf->get("paycard_mode")) {
             case PaycardLib::PAYCARD_MODE_AUTH:
                 return PaycardLib::setupAuthJson($json);
@@ -92,10 +92,10 @@ class Valutec extends BasicCCModule
             case PaycardLib::PAYCARD_MODE_ADDVALUE:
                 $this->conf->set("paycard_amount",0);
                 $this->conf->set("paycard_id",$this->conf->get("LastID")+1); // kind of a hack to anticipate it this way..
-                $json['main_frame'] = $plugin_info->pluginUrl().'/gui/paycardboxMsgGift.php';
+                $json['main_frame'] = $pluginInfo->pluginUrl().'/gui/paycardboxMsgGift.php';
                 return $json;
             case PaycardLib::PAYCARD_MODE_BALANCE:
-                $json['main_frame'] = $plugin_info->pluginUrl().'/gui/paycardboxMsgBalance.php';
+                $json['main_frame'] = $pluginInfo->pluginUrl().'/gui/paycardboxMsgBalance.php';
                 return $json;
         } // switch mode
     
@@ -146,9 +146,9 @@ class Valutec extends BasicCCModule
             case PaycardLib::PAYCARD_MODE_AUTH:
                 $amt = "".(-1*($this->conf->get("paycard_amount")));
                 $this->conf->set("autoReprint",1);
-                $record_id = $this->last_paycard_transaction_id;
-                $charflag = ($record_id != 0) ? 'PT' : '';
-                TransRecord::addFlaggedTender("Gift Card", "GD", $amt, $record_id, $charflag);
+                $recordID = $this->last_paycard_transaction_id;
+                $charflag = ($recordID != 0) ? 'PT' : '';
+                TransRecord::addFlaggedTender("Gift Card", "GD", $amt, $recordID, $charflag);
                 $resp = $this->conf->get("paycard_response");
                 $this->conf->set("boxMsg","<b>Approved</b><font size=-1>
                                            <p>Used: $" . $this->conf->get("paycard_amount") . "
@@ -204,23 +204,23 @@ class Valutec extends BasicCCModule
         $request = new PaycardGiftRequest($this->valutecIdentifier($this->conf->get('paycard_id')), $dbTrans);
         $program = 'Gift'; // valutec also has 'Loyalty' cards which store arbitrary point values
         $mode = "";
-        $logged_mode = $mode;
+        $loggedMode = $mode;
         $authMethod = "";
         $amount = $this->conf->get('paycard_amount');
         switch ($this->conf->get("paycard_mode")) {
             case PaycardLib::PAYCARD_MODE_AUTH:
                 $mode = (($amount < 0) ? 'refund' : 'tender');
-                $logged_mode = (($amount < 0) ? 'Return' : 'Sale');
+                $loggedMode = (($amount < 0) ? 'Return' : 'Sale');
                 $authMethod = (($amount < 0) ? 'AddValue' : 'Sale');
                 break;
             case PaycardLib::PAYCARD_MODE_ADDVALUE:
                 $mode = 'addvalue';
-                $logged_mode = 'Reload';
+                $loggedMode = 'Reload';
                 $authMethod = 'AddValue';
                 break;
             case PaycardLib::PAYCARD_MODE_ACTIVATE:
                 $mode = 'activate';
-                $logged_mode = 'Issue';
+                $loggedMode = 'Issue';
                 $authMethod = 'ActivateCard';
                 break;
             default:
@@ -232,7 +232,7 @@ class Valutec extends BasicCCModule
         $request->setPAN($cardPAN);
         $request->setIssuer('Valutec');
         $request->setProcessor('Valutec');
-        $request->setMode($logged_mode);
+        $request->setMode($loggedMode);
         $request->setSent(1, 0, 0, 0);
         if ($cardTr2) {
             $request->setSent(0, 0, 0, 1);

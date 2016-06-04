@@ -34,6 +34,16 @@ class SigCapture
         unlink($file);
     } 
 
+    private function isCredit()
+    {
+        $ret = ($this->conf->get('CacheCardType') == 'CREDIT' || $this->conf->get('CacheCardType') == '') ? true : false;
+        if ($this->conf->get('paycard_type') == PaycardLib::PAYCARD_TYPE_GIFT) {
+            $ret = false;
+        }
+
+        return $ret;
+    }
+
     public function required()
     {
         // Signature Capture support
@@ -41,12 +51,7 @@ class SigCapture
         //   a) enabled
         //   b) a Credit transaction
         //   c) Over limit threshold OR a return
-        $isCredit = ($this->conf->get('CacheCardType') == 'CREDIT' || $this->conf->get('CacheCardType') == '') ? true : false;
-        // gift doesn't set CacheCardType so customer swipes and
-        // cashier types don't overwrite each other's type
-        if ($this->conf->get('paycard_type') == PaycardLib::PAYCARD_TYPE_GIFT) {
-            $isCredit = false;
-        }
+        $isCredit = $this->isCredit();
         $needSig = ($this->conf->get('paycard_amount') > $this->conf->get('CCSigLimit') || $this->conf->get('paycard_amount') < 0) ? true : false;
         $isVoid = ($this->conf->get('paycard_mode') == PaycardLib::PAYCARD_MODE_VOID) ? true : false;
 
