@@ -71,7 +71,7 @@ class BasicCCModule
       otherwise, do whatever you want here
      */
     public function __construct(){
-        
+        $this->conf = new PaycardConf();        
     }
 
     // BEGIN INTERFACE METHODS
@@ -345,7 +345,7 @@ class BasicCCModule
      */
     public function handleResponse($response)
     {
-        $mode = CoreLocal::get('paycard_mode');
+        $mode = $this->conf->get('paycard_mode');
         if (isset($this->respondByType[$mode])) {
             $method = $this->respondByType[$mode];
             return $this->$method($response);
@@ -366,9 +366,9 @@ class BasicCCModule
      */
     public function refnum($transID)
     {
-        $transNo   = (int)CoreLocal::get("transno");
-        $cashierNo = (int)CoreLocal::get("CashierNo");
-        $laneNo    = (int)CoreLocal::get("laneno");
+        $transNo   = (int)$this->conf->get("transno");
+        $cashierNo = (int)$this->conf->get("CashierNo");
+        $laneNo    = (int)$this->conf->get("laneno");
         // fail if any field is too long (we don't want to truncate, since that might produce a non-unique refnum and cause bigger problems)
         if ($transID > 999 || $transNo > 999 || $laneNo > 99 || $cashierNo > 9999) {
             return "";
@@ -451,7 +451,7 @@ class BasicCCModule
     /** 
       @param $errorCode error code contstant from paycardLib.php
 
-      Set CoreLocal::["boxMsg"] appropriately for
+      Set $this->conf->["boxMsg"] appropriately for
       the given error code. I find this easier
       than manually setting an appropriate message
       every time I return a common error like
@@ -462,23 +462,23 @@ class BasicCCModule
     public function setErrorMsg($errorCode)
     {
         $flags = array('retry'=>true, 'standalone'=>true, 'carbon'=>false, 'tellIT'=>true);
-        $type = CoreLocal::get('paycard_type');
+        $type = $this->conf->get('paycard_type');
         switch ($errorCode) {
             case PaycardLib::PAYCARD_ERR_COMM:
                 $flags['tellIT'] = false;
-                CoreLocal::set("boxMsg", $this->getErrorText("Communication Error",$errorCode,$flags,$type));
+                $this->conf->set("boxMsg", $this->getErrorText("Communication Error",$errorCode,$flags,$type));
                 break;
             case PaycardLib::PAYCARD_ERR_TIMEOUT:
                 $flags = array('retry'=>false, 'standalone'=>false, 'carbon'=>true, 'tellIT'=>false);
-                CoreLocal::set("boxMsg", $this->getErrorText("Timeout Error",$errorCode,$flags,$type));
+                $this->conf->set("boxMsg", $this->getErrorText("Timeout Error",$errorCode,$flags,$type));
                 break;
             case PaycardLib::PAYCARD_ERR_DATA:
                 $flags = array('retry'=>false, 'standalone'=>false, 'carbon'=>true, 'tellIT'=>true);
-                CoreLocal::set("boxMsg", $this->getErrorText("System Error",$errorCode,$flags,$type));
+                $this->conf->set("boxMsg", $this->getErrorText("System Error",$errorCode,$flags,$type));
                 break;
             case PaycardLib::PAYCARD_ERR_NOSEND:
             default:
-                CoreLocal::set("boxMsg", $this->getErrorText("Internal Error",$errorCode,$flags,$type));
+                $this->conf->set("boxMsg", $this->getErrorText("Internal Error",$errorCode,$flags,$type));
                 break;
         }
 
@@ -508,8 +508,8 @@ class BasicCCModule
         if ($flags['retry']) {
             $msg .= "[enter] to retry<br>";
         } else {
-            CoreLocal::set("strEntered","");
-            CoreLocal::set("strRemembered","");
+            $this->conf->set("strEntered","");
+            $this->conf->set("strRemembered","");
         }
         $msg .= "[clear] to cancel</font>";
         return $msg;
