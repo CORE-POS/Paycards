@@ -114,12 +114,12 @@ if (!class_exists('DisplayLib', false)) {
 
         public static function boxMsg($msg, $header, $noBeep, $buttons=array())
         {
-            return '';
+            return $msg . $header;
         }
 
         public static function xboxMsg($msg, $buttons=array())
         {
-            return '';
+            return $msg;
         }
 
         public static function standardClearButton()

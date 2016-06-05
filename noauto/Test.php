@@ -762,7 +762,7 @@ class Test extends PHPUnit_Framework_TestCase
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
         CoreLocal::set('RegisteredPaycardClasses', array('AuthorizeDotNet'));
         CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_CREDIT);
-        $this->assertEquals(true, $page->preprocess());
+        $this->assertEquals(false, $page->preprocess());
         FormLib::set('reginput', 'CL');
         $this->assertEquals(false, $page->preprocess());
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
@@ -785,12 +785,15 @@ class Test extends PHPUnit_Framework_TestCase
         FormLib::set('reginput', '');
         $this->assertEquals(true, $page->preprocess());
         CoreLocal::set('paycard_amount', 0);
-        CoreLocal::set('paycard_type', PaycardLib::PAYCARD_MODE_ACTIVATE);
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_ACTIVATE);
         ob_start();
         $page->body_content();
+        $str = ob_get_clean();
+        $this->assertNotEquals(false, strstr($str, 'Activation Amount'));
         CoreLocal::set('paycard_amount', 10);
+        ob_start();
         $page->body_content();
-        CoreLocal::set('paycard_type', PaycardLib::PAYCARD_MODE_ADDVALUE);
+        CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_ADDVALUE);
         $page->body_content();
         CoreLocal::set('paycard_amount', 0);
         $page->body_content();
