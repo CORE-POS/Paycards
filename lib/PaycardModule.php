@@ -85,10 +85,15 @@ class PaycardModule
             return $json;
         }
     
+        return $this->setupVoid($request, $cashier.'-'.$lane.'-'.$trans, $transID, $json);
+    }
+
+    public function setupVoid($request, $tnum, $transID, $json)
+    {
         // save the details
         $this->conf->set("paycard_amount", $this->isReturn($request['mode']) ? -1*$request['amount'] :  $request['amount']);
         $this->conf->set("paycard_id",$transID);
-        $this->conf->set("paycard_trans",$cashier."-".$lane."-".$trans);
+        $this->conf->set("paycard_trans",$tnum);
         $this->conf->set("paycard_type",PaycardLib::PAYCARD_TYPE_CREDIT);
         $this->conf->set("paycard_mode",PaycardLib::PAYCARD_MODE_VOID);
         $this->conf->set("paycard_name",$request['name']);

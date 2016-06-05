@@ -460,6 +460,8 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertInternalType('array', $pmod->ccEntered('4111111111111111', true, array()));
         $this->assertEquals(true, $pmod->commError(array('curlErr'=>CURLE_OK, 'curlHTTP'=>500)));
         CoreLocal::set('CCintegrate', '');
+        $req = array('mode'=>PaycardLib::PAYCARD_MODE_AUTH, 'amount'=>1, 'name'=>'Foo');
+        $this->assertInternalType('array', $pmod->setupVoid($req, '1-1-1', 1, array()));
     }
 
     public function testLib()
