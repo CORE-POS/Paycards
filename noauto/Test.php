@@ -684,6 +684,9 @@ class Test extends PHPUnit_Framework_TestCase
         CoreLocal::set('paycard_amount', -1);
         CoreLocal::set('PaycardsSigCapture', 1);
         ob_start();
+        FormLib::set('receipt', 'ccSlip');
+        $page->body_content();
+        CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_GIFT);
         $page->body_content();
         ob_end_clean();
         CoreLocal::set('paycard_amount', '');
@@ -710,6 +713,11 @@ class Test extends PHPUnit_Framework_TestCase
         CoreLocal::set('paycard_amount', -1);
         CoreLocal::set('PaycardsSigCapture', 1);
         ob_start();
+        $page->body_content();
+        CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_GIFT);
+        $page->body_content();
+        CoreLocal::set('PaycardsSigCapture', '');
+        CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_ENCRYPTED);
         $page->body_content();
         ob_end_clean();
         CoreLocal::set('paycard_amount', '');
@@ -923,7 +931,7 @@ class Test extends PHPUnit_Framework_TestCase
     public function testXml()
     {
         $xml = '<' . '?xml version="1.0"?' . '>'
-            . '<Nodes><Node>Value</Node><Foo>Bar</Foo><Foo>Baz</Foo></Nodes>';
+            . '<Nodes><Empty/><Node>Value</Node><Foo>Bar</Foo><Foo>Baz</Foo></Nodes>';
 
         $obj = new BetterXmlData($xml);
         $this->assertEquals('Value', $obj->query('/Nodes/Node'));
@@ -936,6 +944,8 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('Value', $obj->get_first('Node'));
         $this->assertEquals(false, $obj->get('Fake'));
         $this->assertEquals(false, $obj->get_first('Fake'));
+        $this->assertEquals(false, $obj->get('Empty'));
+        $this->assertEquals(false, $obj->get_first('Empty'));
         $this->assertEquals(true, $obj->isValid());
         $this->assertEquals(array('Bar','Baz','Baz'), $obj->get('Foo'));
         $obj->arrayDump();
@@ -1100,7 +1110,7 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('TEST/MPS', $info['Name']);
         $this->assertEquals('6781', $info['Last4']);
 
-        $ingenico = '23.0%B4003000000006781^TEST/MPS^15120000000000000?@@;4003000000006781=15120000000000000000?@@956959220A1B34705735A3035B017D4B3C5DD67575DC0BFEB85A02A71E3F8C6A67160D720F37CBCE16E061D14D520EAC:21111010000002600182:320D3C963EF3A21D730A9B467C8AE43022DDC9241BB3D2FEBD936773191B55BE6F2948589ABBA829:21111010000002600183';
+        $ingenico = '23.0%B4003000000006781^TEST/MPS^15120000000000000?@@;4003000000006781=15120000000000000000?@@956959220A1B34705735A3035B017D4B3C5DD67575DC0BFEB85A02A71E3F8C6A67160D720F37CBCE16E061D14D520EAC:21111010000002600182:320D3C963EF3A21D730A9B467C8AE43022DDC9241BB3D2FEBD936773191B55BE6F2948589ABBA829:21111010000002600183;fakeTrack3';
         $info = $enc->parseEncBlock($ingenico);
         $this->assertEquals('320D3C963EF3A21D730A9B467C8AE43022DDC9241BB3D2FEBD936773191B55BE6F2948589ABBA829', $info['Block']);
         $this->assertEquals('MagneSafe', $info['Format']);
@@ -1239,6 +1249,11 @@ class Test extends PHPUnit_Framework_TestCase
         );
         $this->assertEquals(true, $d->validateVoid($request, $response, $lineitem));
 
+        $request['live'] = 99;
+        try {
+            $d->validateVoid($request, $response, $lineitem);
+        } catch (Exception $ex) {}
+        $request = array('live'=>$d->paycardLive(PaycardLib::PAYCARD_TYPE_CREDIT));
         $response['httpCode'] = 500;
         try {
             $d->validateVoid($request, $response, $lineitem);

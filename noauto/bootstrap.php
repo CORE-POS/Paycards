@@ -349,7 +349,7 @@ if (!class_exists('Authenticate', false)) {
         }
         public static function getPermission($emp)
         {
-            return 100;
+            return 0;
         }
 
         public static function checkPermission($emp, $level)
