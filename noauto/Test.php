@@ -781,6 +781,9 @@ class Test extends PHPUnit_Framework_TestCase
         CoreLocal::set('RegisteredPaycardClasses', array('AuthorizeDotNet'));
         CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_CREDIT);
         $this->assertEquals(false, $page->preprocess());
+        CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_GIFT);
+        $this->assertEquals(true, $page->preprocess());
+        CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_CREDIT);
         FormLib::set('reginput', 'CL');
         $this->assertEquals(false, $page->preprocess());
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_VOID);
@@ -875,6 +878,9 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(true, $page->preprocess());
         ob_start();
         $page->head_content();
+        CoreLocal::set('paycard_amount', -1);
+        $page->body_content();
+        CoreLocal::set('paycard_amount', '');
         ob_end_clean();
         FormLib::clear();
         FormLib::set('xml-resp', file_get_contents(__DIR__ . '/responses/dc.auth.approved.xml'));
