@@ -65,13 +65,9 @@ class PaycardProcessPage extends BasicCorePage
         echo "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n";
         echo "<link rel=\"stylesheet\" type=\"text/css\"
             href=\"{$myUrl}css/pos.css\">";
-        if (MiscLib::win32()) {
-            echo "<script type=\"text/javascript\"
-                src=\"{$myUrl}js/jquery-1.8.3.min.js\"></script>";
-        } else {
-            echo "<script type=\"text/javascript\"
-                src=\"{$myUrl}js/jquery.js\"></script>";
-        }
+        $jquery = MiscLib::win32() ? 'jquery-1.8.3.min.js' : 'jquery.js';
+        echo "<script type=\"text/javascript\"
+            src=\"{$myUrl}js/{$jquery}\"></script>";
         $this->paycardJscriptFunctions();
         $this->head_content();
         echo "</head>";

@@ -688,6 +688,9 @@ class Test extends PHPUnit_Framework_TestCase
         $page->body_content();
         CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_GIFT);
         $page->body_content();
+        CoreLocal::set('PaycardsSigCapture', '');
+        CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_ENCRYPTED);
+        $page->body_content();
         ob_end_clean();
         CoreLocal::set('paycard_amount', '');
         CoreLocal::set('PaycardsSigCapture', '');
@@ -713,6 +716,7 @@ class Test extends PHPUnit_Framework_TestCase
         CoreLocal::set('paycard_amount', -1);
         CoreLocal::set('PaycardsSigCapture', 1);
         ob_start();
+        FormLib::set('receipt', 'ccSlip');
         $page->body_content();
         CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_GIFT);
         $page->body_content();
