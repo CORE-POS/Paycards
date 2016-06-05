@@ -117,7 +117,7 @@ function emvSubmit() {
         if ($valid === false) {
             echo PaycardLib::paycardMsgBox("Invalid Amount: $amt",
                 $validmsg, "[clear] to cancel");
-        } else if ($balanceLimit > 0) {
+        } elseif ($balanceLimit > 0) {
             $msg = "Tender ".PaycardLib::moneyFormat($amt);
             if ($this->conf->get("CacheCardType") != "") {
                 $msg .= " as ".$this->conf->get("CacheCardType");
@@ -146,11 +146,7 @@ function emvSubmit() {
             echo PaycardLib::paycardMsgBox($msg,"","[enter] to continue if correct<br>Enter a different amount if incorrect<br>[clear] to cancel");
         } elseif ( $amt < 0) {
             echo PaycardLib::paycardMsgBox("Refund ".PaycardLib::moneyFormat($amt)."?","","[enter] to continue if correct<br>Enter a different amount if incorrect<br>[clear] to cancel");
-        } else {
-            echo PaycardLib::paycardErrBox("Invalid Entry",
-                "Enter a different amount","[clear] to cancel");
         }
-        $this->conf->set("msgrepeat",2);
         echo '</div>';
         $this->addOnloadCommand("singleSubmit.restrict('#formlocal');\n");
     }
