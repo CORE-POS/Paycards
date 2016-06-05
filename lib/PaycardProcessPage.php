@@ -144,7 +144,7 @@ class PaycardProcessPage extends BasicCorePage
 
     protected function emvResponseHandler($xml, $balance=false)
     {
-        $e2e = new MercuryE2E();
+        $e2e = new MercuryDC();
         $json = array();
         $pluginInfo = new Paycards();
         $json['main_frame'] = $pluginInfo->pluginUrl().'/gui/PaycardEmvSuccess.php';

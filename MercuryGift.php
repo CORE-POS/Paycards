@@ -242,33 +242,20 @@ class MercuryGift extends BasicCCModule
         $transID = $this->conf->get("paycard_id");
         $amount = $this->conf->get("paycard_amount");
         $amountText = number_format(abs($amount), 2, '.', '');
-        $mode = "";
-        $authMethod = "";
-        $loggedMode = $mode;
         switch ($this->conf->get("paycard_mode")) {
             case PaycardLib::PAYCARD_MODE_AUTH:
-                $mode = 'tender';
-                $authMethod = 'NoNSFSale';  
-                $loggedMode = 'Sale';
-                if ($amount < 0) {
-                    $mode = 'refund';
-                    $authMethod = 'Return';
-                    $loggedMode = 'Return';
-                }
+                $authMethod = $amount < 0 ? 'Return' : 'NoNSFSale';  
                 break;
             case PaycardLib::PAYCARD_MODE_ADDVALUE:
-                $mode = 'addvalue';
                 $authMethod = 'Reload';
-                $loggedMode = 'Reload';
                 break;
             case PaycardLib::PAYCARD_MODE_ACTIVATE:
-                $mode = 'activate';
                 $authMethod = 'Issue';
-                $loggedMode = 'Issue';
                 break;
             default:
                 return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND);
         }
+        $loggedMode = $authMethod === 'NoNSFSale' ? 'Sale' : $authMethod;
         $termID = $this->getTermID();
         $password = $this->getPw();
         $live = 0;
@@ -534,14 +521,12 @@ class MercuryGift extends BasicCCModule
                 && $xml->get('CMDSTATUS')
             ) {
                 $validResponse = 1; // response was parsed normally, echo'd fields match, and other required fields are present
-            } else {
-                if (!$xml->get('CMDSTATUS')) {
-                    $validResponse = -2; // response was parsed as XML but fields didn't match
-                } elseif (!$xml->get('TRANTYPE')) {
-                    $validResponse = -3; // response was parsed as XML but fields didn't match
-                } elseif (!$xml->get('INVOICENO')) {
-                    $validResponse = -4; // response was parsed as XML but fields didn't match
-                }
+            } elseif (!$xml->get('CMDSTATUS')) {
+                $validResponse = -2; // response was parsed as XML but fields didn't match
+            } elseif (!$xml->get('TRANTYPE')) {
+                $validResponse = -3; // response was parsed as XML but fields didn't match
+            } elseif (!$xml->get('INVOICENO')) {
+                $validResponse = -4; // response was parsed as XML but fields didn't match
             }
         }
 
@@ -584,15 +569,10 @@ class MercuryGift extends BasicCCModule
             if ($authResult['curlHTTP'] == '0') {
                 if (!$this->secondTry) {
                     $this->secondTry = true;
-
                     return $this->sendAuth("w2.backuppay.com");
-                } else {
-                    $this->conf->set("boxMsg","No response from processor
-                                               <br />The transaction did not go through"
-                    );
-
-                    return PaycardLib::PAYCARD_ERR_PROC;
                 }
+                $this->conf->set("boxMsg","No response from processor<br />The transaction did not go through");
+                return PaycardLib::PAYCARD_ERR_PROC;
             }
 
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_COMM);
@@ -651,17 +631,11 @@ class MercuryGift extends BasicCCModule
         // prepare data for the void request
         $now = date('Y-m-d H:i:s'); // full timestamp
 
-        $validResponse = 0;
+        $validResponse = -2;
         // verify that echo'd fields match our request
-        if ($xml->get('TRANTYPE') 
-            && $xml->get('CMDSTATUS')
-            && $xml->get('BALANCE')
-        ) {
+        if ($xml->get('TRANTYPE') && $xml->get('CMDSTATUS') && $xml->get('BALANCE')) {
             // response was parsed normally, echo'd fields match, and other required fields are present
             $validResponse = 1;
-        } else {
-            // response was parsed as XML but fields didn't match
-            $validResponse = -2; 
         }
 
         $status = $xml->get_first('CMDSTATUS');
@@ -703,14 +677,10 @@ class MercuryGift extends BasicCCModule
             if ($vdResult['curlHTTP'] == '0'){
                 if (!$this->secondTry){
                     $this->secondTry = true;
-
                     return $this->sendVoid("w2.backuppay.com");
-                } else {
-                    $this->conf->set("boxMsg","No response from processor<br />
-                                The transaction did not go through");
-
-                    return PaycardLib::PAYCARD_ERR_PROC;
                 }
+                $this->conf->set("boxMsg","No response from processor<br />The transaction did not go through");
+                return PaycardLib::PAYCARD_ERR_PROC;
             }
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_COMM); // comm error, try again
         }
@@ -749,14 +719,10 @@ class MercuryGift extends BasicCCModule
             if ($balResult['curlHTTP'] == '0'){
                 if (!$this->secondTry) {
                     $this->secondTry = true;
-
                     return $this->sendBalance("w2.backuppay.com");
-                } else {
-                    $this->conf->set("boxMsg","No response from processor<br />
-                                The transaction did not go through");
-
-                    return PaycardLib::PAYCARD_ERR_PROC;
                 }
+                $this->conf->set("boxMsg","No response from processor<br />The transaction did not go through");
+                return PaycardLib::PAYCARD_ERR_PROC;
             }
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_COMM); // comm error, try again
         }

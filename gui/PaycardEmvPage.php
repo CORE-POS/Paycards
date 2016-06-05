@@ -87,7 +87,7 @@ class PaycardEmvPage extends PaycardProcessPage
         if (!$this->runTransaction) {
             return '';
         }
-        $e2e = new MercuryE2E();
+        $e2e = new MercuryDC();
         ?>
 <script type="text/javascript">
 function emvSubmit() {
