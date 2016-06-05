@@ -18,7 +18,7 @@ class MercuryDC extends MercuryE2E
             $tranCode = 'EMV' . $tranCode;
         } elseif ($type == 'GIFT') {
             $tranCode = $amount > 0 ? 'NoNSFSale' : 'Return';
-        } else if ($this->conf->get("ebt_authcode") != "" && $this->conf->get("ebt_vnum") != "") {
+        } elseif ($this->conf->get("ebt_authcode") != "" && $this->conf->get("ebt_vnum") != "") {
             $tranCode = 'Voucher';
         }
 
@@ -377,13 +377,11 @@ class MercuryDC extends MercuryE2E
 
         $xml = new BetterXmlData($xml);
 
-        $validResponse = 1;
         $responseCode = $xml->query('/RStream/CmdResponse/CmdStatus');
         $resultMsg = $responseCode;
+        $validResponse = -3;
         if ($responseCode) {
             $responseCode = $this->responseToNumber($responseCode);
-        } else {
-            $validResponse = -3;
         }
         $response->setResponseCode($responseCode);
         $resultCode = $xml->query('/RStream/CmdResponse/DSIXReturnCode');
@@ -393,15 +391,11 @@ class MercuryDC extends MercuryE2E
         $rMsg = $resultMsg;
         if ($resultMsg) {
             $rMsg = $resultMsg;
-            if ($responseCode == 1) { // approved
-                if ($apprNumber) {
-                    $rMsg .= ' ' . $apprNumber;
-                }
-            } else {
-                $processorText = $xml->query('/RStream/CmdResponse/TextResponse');
-                if ($processorText) {
-                    $rMsg = $processorText;
-                }
+            $processorText = $xml->query('/RStream/CmdResponse/TextResponse');
+            if ($responseCode == 1 && $apprNumber) { // approved
+                $rMsg .= ' ' . $apprNumber;
+            } elseif ($processorText) {
+                $rMsg = $processorText;
             }
         }
         $response->setResultMsg($rMsg);
@@ -433,10 +427,9 @@ class MercuryDC extends MercuryE2E
 
         $tranCode = $xml->query('/RStream/TranResponse/TranCode');
         if (substr($tranCode, 0, 3) == 'EMV') {
+            $this->conf->set('EmvSignature', false);
             if (strpos($rawXml, 'x____') !== false) {
                 $this->conf->set('EmvSignature', true);
-            } else {
-                $this->conf->set('EmvSignature', false);
             }
             $printData = $xml->query('/RStream/PrintData/*', false);
             /* Code Climate's syntax highlighting gets confused by the previous line */
@@ -502,12 +495,11 @@ class MercuryDC extends MercuryE2E
                 $texts = $xml->query('/RStream/CmdResponse/TextResponse');
                 $this->conf->set("boxMsg","Error: $texts");
                 $dsix = $xml->query('/RStream/CmdResponse/DSIXReturnCode');
-                if ($dsix == '001007' || $dsix == '003007' || $dsix == '003010') {
+                if ($dsix !== '001007' || $dsix !== '003007' || $dsix !== '003010') {
                     /* These error codes indicate a potential connectivity
                      * error mid-transaction. Do not add a comment record to
                      * the transaction to avoid incrementing InvoiceNo
                      */
-                } else {
                     TransRecord::addcomment("");
                 }
                 break;
@@ -527,12 +519,10 @@ class MercuryDC extends MercuryE2E
     public function handleResponseDataCapBalance($xml)
     {
         $xml = new xmlData($xml);
-        $validResponse = ($xml->isValid()) ? 1 : 0;
         $responseCode = $xml->get("CMDSTATUS");
+        $validResponse = -3;
         if ($responseCode) {
             $responseCode = $this->responseToNumber($responseCode);
-        } else {
-            $validResponse = -3;
         }
 
         $balance = $xml->get_first('BALANCE');

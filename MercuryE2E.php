@@ -126,13 +126,10 @@ class MercuryE2E extends BasicCCModule
         $this->last_paycard_transaction_id = $request->last_paycard_transaction_id;
         $response = new PaycardResponse($request, $authResult, PaycardLib::paycard_db());
 
-        $validResponse = ($xml->isValid()) ? 1 : 0;
-
         $responseCode = $xml->get("CMDSTATUS");
+        $validResponse = -3;
         if ($responseCode) {
             $responseCode = $this->responseToNumber($responseCode);
-        } else {
-            $validResponse = -3;
         }
         $response->setResponseCode($responseCode);
         $resultCode = $xml->get("DSIXRETURNCODE");
@@ -198,14 +195,13 @@ class MercuryE2E extends BasicCCModule
                 $this->secondTry = true;
 
                 return $this->sendAuth("w2.backuppay.com");
-            } else if ($authResult['curlHTTP'] == '0') {
+            } elseif ($authResult['curlHTTP'] == '0') {
                 $this->conf->set("boxMsg","No response from processor<br />
                             The transaction did not go through");
                 return PaycardLib::PAYCARD_ERR_PROC;
-            } else {
-                return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_COMM);
             }
-        } else if ($this->secondTry && $authResult['curlTime'] < 10 && $this->conf->get('MercurySwitchUrls') <= 0) {
+            return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_COMM);
+        } elseif ($this->secondTry && $authResult['curlTime'] < 10 && $this->conf->get('MercurySwitchUrls') <= 0) {
             $this->conf->set('MercurySwitchUrls', 5);
         }
 
@@ -255,13 +251,10 @@ class MercuryE2E extends BasicCCModule
         $this->last_paycard_transaction_id = $request->last_paycard_transaction_id;
         $response = new PaycardResponse($request, $authResult, PaycardLib::paycard_db());
 
-        $validResponse = ($xml->isValid()) ? 1 : 0;
-
         $responseCode = $xml->get("CMDSTATUS");
+        $validResponse = -3;
         if ($responseCode) {
             $responseCode = $this->responseToNumber($responseCode);
-        } else {
-            $validResponse = -3;
         }
         $response->setResponseCode($responseCode);
         $resultCode = $xml->get_first("DSIXRETURNCODE");
@@ -300,11 +293,10 @@ class MercuryE2E extends BasicCCModule
                 // if declined, try again with a regular Void op
                 // and no reversal information
                 $skipReversal = $this->conf->get("MercuryE2ESkipReversal");
-                if ($skipReversal == true) {
-                    $this->conf->set("MercuryE2ESkipReversal", false);
-                } else {
+                if ($skipReversal == false) {
                     return $this->sendVoid(true);
                 }
+                $this->conf->set("MercuryE2ESkipReversal", false);
             case 'ERROR':
                 $this->conf->set("boxMsg","");
                 $texts = $xml->get_first("TEXTRESPONSE");
@@ -443,7 +435,7 @@ class MercuryE2E extends BasicCCModule
 
         if ($this->conf->get("paycard_voiceauthcode") != "") {
             $request->setMode("VoiceAuth");
-        } else if ($this->conf->get("ebt_authcode") != "" && $this->conf->get("ebt_vnum") != "") {
+        } elseif ($this->conf->get("ebt_authcode") != "" && $this->conf->get("ebt_vnum") != "") {
             $request->setMode("Voucher");
         }
         $password = $this->getPw();
@@ -471,7 +463,7 @@ class MercuryE2E extends BasicCCModule
             if ($request->type == 'EBTFOOD') {
                 $this->conf->set('EbtFsBalance', 'unknown');
                 $msgXml .= '<CardType>Foodstamp</CardType>';
-            } else if ($request->type == 'EBTCASH') {
+            } elseif ($request->type == 'EBTCASH') {
                 $msgXml .= '<CardType>Cash</CardType>';
                 $this->conf->set('EbtCaBalance', 'unknown');
             }
@@ -497,7 +489,7 @@ class MercuryE2E extends BasicCCModule
             $msgXml .= $this->conf->get("paycard_voiceauthcode");
             $msgXml .= "</AuthCode>";
             $msgXml .= "</TransInfo>";
-        } else if ($this->conf->get("ebt_authcode") != "" && $this->conf->get("ebt_vnum") != "") {
+        } elseif ($this->conf->get("ebt_authcode") != "" && $this->conf->get("ebt_vnum") != "") {
             $msgXml .= $this->ebtVoucherXml();
         }
         $msgXml .= "</Transaction>
@@ -527,11 +519,7 @@ class MercuryE2E extends BasicCCModule
             return $this->setErrorMsg(PaycardLib::PAYCARD_ERR_NOSEND);
         }
 
-        if ($skipReversal) {
-            $this->conf->set("MercuryE2ESkipReversal", true);
-        } else {
-            $this->conf->set("MercuryE2ESkipReversal", false);
-        }
+        $this->conf->set("MercuryE2ESkipReversal", $skipReversal ? true : false);
 
         $request = new PaycardVoidRequest($this->refnum($this->conf->get('paycard_id')), $dbTrans);
         $request->setProcessor('MercuryE2E');
@@ -561,11 +549,11 @@ class MercuryE2E extends BasicCCModule
             $type = 'Debit';
             if (substr($res['mode'],-5)=="_Sale") {
                 $mode = 'ReturnByRecordNo';
-            } else if (substr($res['mode'],-7)=="_Return") {
+            } elseif (substr($res['mode'],-7)=="_Return") {
                 $mode = 'SaleByRecordNo';
             }
             $this->conf->set("MercuryE2ESkipReversal", true);
-        } else if (substr($res['mode'],-7)=="_Return") {
+        } elseif (substr($res['mode'],-7)=="_Return") {
             $mode = 'VoidReturnByRecordNo';
         }
 
@@ -699,7 +687,7 @@ class MercuryE2E extends BasicCCModule
             $directions = 'Press [enter] to try again, [clear] to stop';
             $queryString = 'id=' . ($local ? '_l' : '') . $ref . '&mode=' . $mode;
             $resp['confirm_dest'] = $urlStem . '/gui/PaycardTransLookupPage.php?' . $queryString;
-        } else if ($local == 1 && $mode == 'verify') {
+        } elseif ($local == 1 && $mode == 'verify') {
             // Update PaycardTransactions record to contain
             // actual processor result and finish
             // the transaction correctly
@@ -714,11 +702,11 @@ class MercuryE2E extends BasicCCModule
                 $resp['confirm_dest'] = $urlStem . '/gui/paycardSuccess.php';
                 $resp['cancel_dest'] = $urlStem . '/gui/paycardSuccess.php';
                 $directions = 'Press [enter] to continue';
-            } else if ($status == 'Declined') {
+            } elseif ($status == 'Declined') {
                 $this->conf->reset();
                 $responseCode = 2;
                 $normalized = 2;
-            } else if ($status == 'Error') {
+            } elseif ($status == 'Error') {
                 $this->conf->reset();
                 $responseCode = 0;
                 $resultCode = -1; // CTranDetail does not provide this value
@@ -768,8 +756,8 @@ class MercuryE2E extends BasicCCModule
             case 'APPROVED':
                 $line1 = $status . ' ' . $xml->get_first('authcode');
                 $line2 = 'Amount: ' . sprintf('%.2f', $xml->get_first('total'));
-                $trans_type = $xml->get_first('trantype');
-                $line3 = 'Type: ' . $trans_type;
+                $transType = $xml->get_first('trantype');
+                $line3 = 'Type: ' . $transType;
                 $voided = $xml->get_first('voided');
                 $line4 = 'Voided: ' . ($voided == 'true' ? 'Yes' : 'No');
                 $resp['output'] = DisplayLib::boxMsg($line1 
@@ -838,9 +826,8 @@ class MercuryE2E extends BasicCCModule
             return 2;
         } elseif ($responseCode == "Error") {
             return 0;
-        } else {
-            return -1;
         }
+        return -1;
     }
 
     protected function ebtVoucherXml()
@@ -860,9 +847,9 @@ class MercuryE2E extends BasicCCModule
         $normalized = ($validResponse == 0) ? 4 : 0;
         if ($responseCode == 1) {
             $normalized = 1;
-        } else if ($responseCode == 2) {
+        } elseif ($responseCode == 2) {
             $normalized = 2;
-        } else if ($responseCode == 0) {
+        } elseif ($responseCode == 0) {
             $normalized = 3;
         }
 
@@ -916,15 +903,14 @@ class MercuryE2E extends BasicCCModule
           a timeout and waiting 30 seconds for the primary
           to fail every single transaction isn't ideal.
         */
+        $domain = self::BACKUP_URL;    
+        if (!$this->secondTry) {
+            $domain = self::PRIMARY_URL;
+        }
         if ($this->conf->get('MercurySwitchUrls') > 0) {
             $domain = self::PRIMARY_URL;
             if (!$this->secondTry) {
                 $domain = self::BACKUP_URL;    
-            }
-        } else {
-            $domain = self::BACKUP_URL;    
-            if (!$this->secondTry) {
-                $domain = self::PRIMARY_URL;
             }
         }
 
