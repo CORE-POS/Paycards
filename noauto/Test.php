@@ -390,11 +390,14 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('Error', $d->prepareDataCapVoid(1));
         SQLManager::addResult(array('registerNo'=>1,'transNo'=>1));
         SQLManager::addResult(array('refNum'=>1,'xTransactionID'=>1,'amount'=>1,'token'=>1,'processData'=>1,'acqRefData'=>1,'xApprovalNumber'=>1,'mode'=>'EMVSale','cardType'=>'Credit'));
+        CoreLocal::set('PaycardsDatacapMode', 2);
         $this->assertInternalType('string', $d->prepareDataCapVoid(1));
         SQLManager::clear();
         SQLManager::addResult(array('registerNo'=>1,'transNo'=>1));
         SQLManager::addResult(array('refNum'=>1,'xTransactionID'=>1,'amount'=>1,'token'=>1,'processData'=>1,'acqRefData'=>1,'xApprovalNumber'=>1,'mode'=>'EMVReturn','cardType'=>'Credit'));
+        CoreLocal::set('PaycardsDatacapMode', 3);
         $this->assertInternalType('string', $d->prepareDataCapVoid(1));
+        CoreLocal::set('PaycardsDatacapMode', '');
         SQLManager::clear();
         SQLManager::addResult(array('registerNo'=>1,'transNo'=>1));
         SQLManager::addResult(array('refNum'=>1,'xTransactionID'=>1,'amount'=>1,'token'=>1,'processData'=>1,'acqRefData'=>1,'xApprovalNumber'=>1,'mode'=>'NoNSFSale','cardType'=>'Credit'));
@@ -627,6 +630,8 @@ class Test extends PHPUnit_Framework_TestCase
         CoreLocal::set('PaycardRetryBalanceLimit', 1);
         ob_start();
         $this->assertEquals(false, $page->preprocess());
+        $page->body_content();
+        CoreLocal::set('paycard_amount', 'foo');
         $page->body_content();
         CoreLocal::set('PaycardRetryBalanceLimit', '');
         CoreLocal::set('amtdue', 1);

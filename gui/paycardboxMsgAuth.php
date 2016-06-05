@@ -86,9 +86,7 @@ class paycardboxMsgAuth extends PaycardProcessPage {
 
     function body_content()
     {
-        ?>
-        <div class="baseHeight">
-        <?php
+        echo '<div class="baseHeight">';
         // generate message to print
         $amt = $this->conf->get("paycard_amount");
         $cashback = $this->conf->get('CacheCardCashBack');
@@ -128,14 +126,8 @@ class paycardboxMsgAuth extends PaycardProcessPage {
             echo PaycardLib::paycardMsgBox($msg,"","[enter] to continue if correct<br>Enter a different amount if incorrect<br>[clear] to cancel");
         } elseif( $amt < 0) {
             echo PaycardLib::paycardMsgBox("Refund ".PaycardLib::moneyFormat($amt)."?","","[enter] to continue if correct<br>Enter a different amount if incorrect<br>[clear] to cancel");
-        } else {
-            echo PaycardLib::paycardErrBox("Invalid Entry",
-                "Enter a different amount","[clear] to cancel");
         }
-        $this->conf->set("msgrepeat",2);
-        ?>
-        </div>
-        <?php
+        echo '</div>';
     }
 }
 
