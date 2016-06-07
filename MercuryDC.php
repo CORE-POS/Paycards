@@ -55,9 +55,8 @@ class MercuryDC extends MercuryE2E
             <ComPort>{{ComPort}}</ComPort>';
         if ($type == 'EMV') { // add EMV specific fields
             $dcHost = $this->conf->get('PaycardsDatacapLanHost');
-            if (empty($dcHost)) {
-                $dcHost = '127.0.0.1';
-            }
+            $dcHost = $this->pickHost(empty($dcHost) ? '127.0.0.1' : $dcHost);
+
             $msgXml .= '
             <HostOrIP>' . $dcHost . '</HostOrIP>
             <SequenceNo>{{SequenceNo}}</SequenceNo>
@@ -181,9 +180,7 @@ class MercuryDC extends MercuryE2E
             <ComPort>{{ComPort}}</ComPort>';
         if ($tranType == 'EMV') { // add EMV specific fields
             $dcHost = $this->conf->get('PaycardsDatacapLanHost');
-            if (empty($dcHost)) {
-                $dcHost = '127.0.0.1';
-            }
+            $dcHost = $this->pickHost(empty($dcHost) ? '127.0.0.1' : $dcHost);
             $msgXml .= '
             <HostOrIP>' . $dcHost . '</HostOrIP>
             <SequenceNo>{{SequenceNo}}</SequenceNo>
@@ -545,6 +542,50 @@ class MercuryDC extends MercuryE2E
         }
 
         return PaycardLib::PAYCARD_ERR_PROC;
+    }
+
+    private function pickHost($hosts)
+    {
+        // split on any delimiter
+        $names = preg_split('/[^0-9\.]+/', $hosts, -1, PREG_SPLIT_NO_EMPTY);
+
+        $filtered = array();
+        /**
+          Check for hosts previously marked as down.
+          Decrement their down counters and re-add hosts
+          to potential options when their down counter
+          reaches zero.
+        */
+        for ($i=0; $i<count($names); $i++) {
+            if ($this->conf->get('NEPDOWN' . $names[$i]) >= 1) {
+                $count = $this->conf->get('NEPDOWN' . $names[$i]);
+                $this->conf->set('NEPDOWN' . $names[$i], $count-1);
+            } else {
+                $filtered[] = $names[$i];
+            }
+        }
+        if (count($filtered) == 0) {
+            return false;
+        }
+
+        /**
+          Pick a host at random and check if it's
+          up. Either return it or mark it as down.
+          Repeat until valid host or no hosts left
+          to try.
+        */
+        while (count($filtered) > 0) {
+            $pick = array_rand($filtered, 1); 
+            $host = $filtered[$pick];
+            if (MiscLib::pingport($host . ':9000', 'manual')) {
+                return $host;
+            } else {
+                $this->conf->set('NEPDOWN' . $host, 10);
+                unset($filtered[$pick]);
+            }
+        }
+
+        return false;
     }
 }
 

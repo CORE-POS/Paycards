@@ -375,9 +375,11 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertInternalType('string', $d->prepareDataCapAuth('EBTFOOD', 1, true));
         $this->assertInternalType('string', $d->prepareDataCapAuth('EBTCASH', 1, false));
         $this->assertInternalType('string', $d->prepareDataCapAuth('GIFT', 1, false));
-        $this->assertInternalType('string', $d->prepareDataCapAuth('EMV', 1, true));
+        $this->assertNotEquals(false, strstr($d->prepareDataCapAuth('EMV', 1, true), '127.0.0.1'));
         CoreLocal::set('PaycardsDatacapMode', 2);
-        $this->assertInternalType('string', $d->prepareDataCapAuth('EMV', 1, true));
+        CoreLocal::set('PaycardsDatacapLanHost', '127.1.1.1; 127.1.1.2, 127.1.1.3 127.1.1.4');
+        $this->assertNotEquals(false, strstr($d->prepareDataCapAuth('EMV', 1, true), '127.1.1.'));
+        CoreLocal::set('NEPDOWN127.1.1.1', 5);
         CoreLocal::set('PaycardsDatacapMode', 3);
         $this->assertInternalType('string', $d->prepareDataCapAuth('EMV', 1, true));
         CoreLocal::set('PaycardsDatacapMode', '');
