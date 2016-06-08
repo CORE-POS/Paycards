@@ -55,9 +55,8 @@ class MercuryDC extends MercuryE2E
             <ComPort>{{ComPort}}</ComPort>';
         if ($type == 'EMV') { // add EMV specific fields
             $dcHost = $this->conf->get('PaycardsDatacapLanHost');
-            if (empty($dcHost)) {
-                $dcHost = '127.0.0.1';
-            }
+            $dcHost = $this->pickHost(empty($dcHost) ? '127.0.0.1' : $dcHost);
+
             $msgXml .= '
             <HostOrIP>' . $dcHost . '</HostOrIP>
             <SequenceNo>{{SequenceNo}}</SequenceNo>
@@ -181,9 +180,7 @@ class MercuryDC extends MercuryE2E
             <ComPort>{{ComPort}}</ComPort>';
         if ($tranType == 'EMV') { // add EMV specific fields
             $dcHost = $this->conf->get('PaycardsDatacapLanHost');
-            if (empty($dcHost)) {
-                $dcHost = '127.0.0.1';
-            }
+            $dcHost = $this->pickHost(empty($dcHost) ? '127.0.0.1' : $dcHost);
             $msgXml .= '
             <HostOrIP>' . $dcHost . '</HostOrIP>
             <SequenceNo>{{SequenceNo}}</SequenceNo>
@@ -545,6 +542,18 @@ class MercuryDC extends MercuryE2E
         }
 
         return PaycardLib::PAYCARD_ERR_PROC;
+    }
+
+    private function pickHost($hosts)
+    {
+        // split on any delimiter
+        $names = preg_split('/[^0-9\.]+/', $hosts, -1, PREG_SPLIT_NO_EMPTY);
+        shuffle($names);
+        if (count($names) == 0) {
+            return '127.0.0.1';
+        } else {
+            return array_reduce($names, function($c, $i){ return $c . trim($i) . ','; });
+        }
     }
 }
 

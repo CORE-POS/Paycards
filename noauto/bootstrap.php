@@ -104,6 +104,7 @@ if (!class_exists('Parser', false)) {
         }
     }
 }
+
 if (!class_exists('DisplayLib', false)) {
     class DisplayLib
     {
@@ -155,6 +156,11 @@ if (!class_exists('MiscLib', false)) {
         public static function win32()
         {
             return false;
+        }
+
+        static public function pingport($host, $dbms)
+        {
+            return 1;
         }
     }
 }
