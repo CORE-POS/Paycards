@@ -21,6 +21,10 @@
 
 *********************************************************************************/
 
+namespace COREPOS\pos\plugins\Paycards\sql;
+use \Exception;
+use \PaycardConf;
+
 class PaycardRequest
 {
     public $issuer = 'UNKNOWN';

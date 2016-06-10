@@ -1,5 +1,12 @@
 <?php
 
+use COREPOS\pos\plugins\Paycards\sql\PaycardRequest;
+use COREPOS\pos\plugins\Paycards\sql\PaycardGiftRequest;
+use COREPOS\pos\plugins\Paycards\sql\PaycardVoidRequest;
+use COREPOS\pos\plugins\Paycards\sql\PaycardResponse;
+use COREPOS\pos\plugins\Paycards\xml\BetterXmlData;
+use COREPOS\pos\plugins\Paycards\xml\XmlData;
+
 class MercuryDC extends MercuryE2E
 {
     /**
@@ -515,7 +522,7 @@ class MercuryDC extends MercuryE2E
     */
     public function handleResponseDataCapBalance($xml)
     {
-        $xml = new xmlData($xml);
+        $xml = new XmlData($xml);
         $responseCode = $xml->get("CMDSTATUS");
         $validResponse = -3;
         if ($responseCode) {

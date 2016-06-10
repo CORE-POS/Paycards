@@ -10,7 +10,7 @@
         "codeclimate/php-test-reporter": "^0.3.2"
     },
     "autoload": {
-        "exclude-from-classmap": ["/*.php", "/ajax/", "/gui/", "/lib/", "/noauto/"]
+        "exclude-from-classmap": ["/*.php", "/ajax/", "/gui/", "/lib/", "/xml/", "/sql/", "/noauto/"]
     },
     "license": "GPL2"
 }

@@ -21,6 +21,9 @@
 
 *********************************************************************************/
 
+namespace COREPOS\pos\plugins\Paycards\sql;
+use \Exception;
+
 class PaycardVoidRequest extends PaycardRequest
 {
     public function __construct($refnum, $dbTrans)

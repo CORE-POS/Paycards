@@ -21,6 +21,8 @@
 
 *********************************************************************************/
 
+use COREPOS\pos\plugins\Paycards\xml\BetterXmlData;
+
 class DatacapCaAdmin 
 {
     public function __construct()

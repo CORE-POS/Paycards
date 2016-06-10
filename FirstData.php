@@ -21,8 +21,11 @@
 
 *********************************************************************************/
 
+use COREPOS\pos\plugins\Paycards\sql\PaycardRequest;
+use COREPOS\pos\plugins\Paycards\sql\PaycardResponse;
+use COREPOS\pos\plugins\Paycards\xml\XmlData;
+
 if (!class_exists("BasicCCModule")) include_once(realpath(dirname(__FILE__)."/BasicCCModule.php"));
-if (!class_exists("xmlData")) include_once(realpath(dirname(__FILE__)."/lib/xmlData.php"));
 if (!class_exists("PaycardLib")) include_once(realpath(dirname(__FILE__)."/lib/PaycardLib.php"));
 
 if (!class_exists("AutoLoader")) include_once(realpath(dirname(__FILE__).'/../../lib/AutoLoader.php'));
@@ -96,7 +99,7 @@ class FirstData extends BasicCCModule
     protected function handleResponseAuth($authResult)
     {
         $innerXml = $this->desoapify("SOAP-ENV:Body",$authResult['response']);
-        $xml = new xmlData($innerXml);
+        $xml = new XmlData($innerXml);
         $request = $this->last_request;
         $this->last_paycard_transaction_id = $request->last_paycard_transaction_id;
         $response = new PaycardResponse($request, $authResult, PaycardLib::paycard_db());

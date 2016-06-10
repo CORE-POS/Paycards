@@ -21,8 +21,10 @@
 
 *********************************************************************************/
 
+use COREPOS\pos\plugins\Paycards\card\CardReader;
+use COREPOS\pos\plugins\Paycards\xml\XmlData;
+
 if (!class_exists("BasicCCModule")) include_once(realpath(dirname(__FILE__)."/BasicCCModule.php"));
-if (!class_exists("xmlData")) include_once(realpath(dirname(__FILE__)."/lib/xmlData.php"));
 if (!class_exists("PaycardLib")) include_once(realpath(dirname(__FILE__)."/lib/PaycardLib.php"));
 
 if (!class_exists("AutoLoader")) include_once(realpath(dirname(__FILE__).'/../../lib/AutoLoader.php'));
@@ -83,7 +85,7 @@ class GoEMerchant extends BasicCCModule
 
     private function handleResponseAuth($authResult)
     {
-        $xml = new xmlData($authResult['response']);
+        $xml = new XmlData($authResult['response']);
         $dbTrans = PaycardLib::paycard_db();
 
         // prepare some fields to store the parsed response; we'll add more as we verify it
@@ -177,7 +179,7 @@ class GoEMerchant extends BasicCCModule
 
     private function handleResponseVoid($authResult)
     {
-        $xml = new xmlData($authResult['response']);
+        $xml = new XmlData($authResult['response']);
         // prepare some fields to store the parsed response; we'll add more as we verify it
         $now = date('Y-m-d H:i:s'); // full timestamp
 
@@ -636,7 +638,7 @@ class GoEMerchant extends BasicCCModule
         $info = new Paycards();
         $urlStem = $info->pluginUrl();
 
-        $xmlResp = new xmlData($curlResult['response']);
+        $xmlResp = new XmlData($curlResult['response']);
         $status = 'UNKNOWN';
         if ($xmlResp->get_first('RECORDS_FOUND') == 0) {
             $status = 'NOTFOUND';

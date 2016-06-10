@@ -1,5 +1,7 @@
 <?php
 
+namespace COREPOS\pos\plugins\Paycards\card;
+
 class CardValidator
 {
     /**

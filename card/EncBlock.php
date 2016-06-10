@@ -21,6 +21,8 @@
 
 *********************************************************************************/
 
+namespace COREPOS\pos\plugins\Paycards\card;
+
 class EncBlock 
 {
     public function __construct()

@@ -1,9 +1,11 @@
 <?php
 
+namespace COREPOS\pos\plugins\Paycards\xml;
+
 /**
   A very generic parser class for XML data
 */
-class xmlData {
+class XmlData {
 
     var $parser;
     var $DATA;

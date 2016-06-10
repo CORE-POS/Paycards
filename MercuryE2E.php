@@ -21,6 +21,13 @@
 
 *********************************************************************************/
 
+use COREPOS\pos\plugins\Paycards\sql\PaycardRequest;
+use COREPOS\pos\plugins\Paycards\sql\PaycardVoidRequest;
+use COREPOS\pos\plugins\Paycards\sql\PaycardGiftRequest;
+use COREPOS\pos\plugins\Paycards\sql\PaycardResponse;
+use COREPOS\pos\plugins\Paycards\card\EncBlock;
+use COREPOS\pos\plugins\Paycards\xml\XmlData;
+
 /**
 2014-04-01:
  Mercury has a public webservices implementation on github:
@@ -31,7 +38,6 @@
 */
 
 if (!class_exists("BasicCCModule")) include_once(realpath(dirname(__FILE__)."/BasicCCModule.php"));
-if (!class_exists("xmlData")) include_once(realpath(dirname(__FILE__)."/lib/xmlData.php"));
 if (!class_exists("PaycardLib")) include_once(realpath(dirname(__FILE__)."/lib/PaycardLib.php"));
 
 if (!class_exists("AutoLoader")) include_once(realpath(dirname(__FILE__).'/../../lib/AutoLoader.php'));
@@ -120,7 +126,7 @@ class MercuryE2E extends BasicCCModule
     {
         $resp = $this->desoapify("CreditTransactionResult",
             $authResult["response"]);
-        $xml = new xmlData($resp);
+        $xml = new XmlData($resp);
 
         $request = $this->last_request;
         $this->last_paycard_transaction_id = $request->last_paycard_transaction_id;
@@ -246,7 +252,7 @@ class MercuryE2E extends BasicCCModule
     {
         $resp = $this->desoapify("CreditTransactionResult",
             $authResult["response"]);
-        $xml = new xmlData($resp);
+        $xml = new XmlData($resp);
         $request = $this->last_request;
         $this->last_paycard_transaction_id = $request->last_paycard_transaction_id;
         $response = new PaycardResponse($request, $authResult, PaycardLib::paycard_db());
@@ -679,7 +685,7 @@ class MercuryE2E extends BasicCCModule
         $urlStem = $info->pluginUrl();
 
         $xmlResp = $this->desoapify('CTranDetailResponse', $curlResult['response']);
-        $xml = new xmlData($xmlResp);
+        $xml = new XmlData($xmlResp);
 
         $status = trim($xml->get_first('STATUS'));
         if ($status === '') {

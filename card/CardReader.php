@@ -1,5 +1,10 @@
 <?php
 
+namespace COREPOS\pos\plugins\Paycards\card;
+
+use \Exeception;
+use \PaycardLib;
+
 class CardReader
 {
     private $binRanges = array(

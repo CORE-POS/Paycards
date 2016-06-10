@@ -1,12 +1,14 @@
 <?php
 
+namespace COREPOS\pos\plugins\Paycards\xml;
+
 class BetterXmlData
 {
     public function __construct($str)
     {
-        $this->dom = new DOMDocument();
+        $this->dom = new \DOMDocument();
         $this->dom->loadXML($str);
-        $this->xpath = new DOMXPath($this->dom);
+        $this->xpath = new \DOMXPath($this->dom);
     }
 
     public function query($query, $asArray=false)

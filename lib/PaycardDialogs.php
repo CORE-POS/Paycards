@@ -21,6 +21,9 @@
 
 *********************************************************************************/
 
+use COREPOS\pos\plugins\Paycards\card\CardReader;
+use COREPOS\pos\plugins\Paycards\card\CardValidator;
+
 class PaycardDialogs
 {
     public function __construct()

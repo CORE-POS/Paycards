@@ -1,6 +1,15 @@
 <?php
 
 use COREPOS\pos\lib\FormLib;
+use COREPOS\pos\plugins\Paycards\card\CardReader;
+use COREPOS\pos\plugins\Paycards\card\CardValidator;
+use COREPOS\pos\plugins\Paycards\card\EncBlock;
+use COREPOS\pos\plugins\Paycards\sql\PaycardRequest;
+use COREPOS\pos\plugins\Paycards\sql\PaycardGiftRequest;
+use COREPOS\pos\plugins\Paycards\sql\PaycardVoidRequest;
+use COREPOS\pos\plugins\Paycards\sql\PaycardResponse;
+use COREPOS\pos\plugins\Paycards\xml\BetterXmlData;
+use COREPOS\pos\plugins\Paycards\xml\XmlData;
 
 class Test extends PHPUnit_Framework_TestCase
 {
@@ -940,11 +949,13 @@ class Test extends PHPUnit_Framework_TestCase
         $xml = '<' . '?xml version="1.0"?' . '>'
             . '<Nodes><Empty/><Node>Value</Node><Foo>Bar</Foo><Foo>Baz</Foo></Nodes>';
 
+/*
         $obj = new BetterXmlData($xml);
         $this->assertEquals('Value', $obj->query('/Nodes/Node'));
         $this->assertEquals(false, $obj->query('/Nodes/Fake'));
         $this->assertEquals(array('Bar','Baz'), $obj->query('/Nodes/Foo', true));
         $this->assertEquals("Bar\nBaz\n", $obj->query('/Nodes/Foo'));
+        */
 
         $obj = new xmlData($xml);
         $this->assertEquals('Value', $obj->get('Node'));

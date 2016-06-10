@@ -21,6 +21,9 @@
 
 *********************************************************************************/
 
+namespace COREPOS\pos\plugins\Paycards\sql;
+use \Exception;
+
 class PaycardResponse
 {
     public $validResponse = 1;

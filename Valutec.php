@@ -21,12 +21,16 @@
 
 *********************************************************************************/
 
+use COREPOS\pos\plugins\Paycards\sql\PaycardGiftRequest;
+use COREPOS\pos\plugins\Paycards\sql\PaycardVoidRequest;
+use COREPOS\pos\plugins\Paycards\sql\PaycardResponse;
+use COREPOS\pos\plugins\Paycards\xml\XmlData;
+
 /*
  * Valutec processing module
  *
  */
 if (!class_exists("AutoLoader")) include_once(realpath(dirname(__FILE__).'/../../lib/AutoLoader.php'));
-
 if (!class_exists("PaycardLib")) include_once(realpath(dirname(__FILE__)."/lib/PaycardLib.php"));
 
 class Valutec extends BasicCCModule 
@@ -347,7 +351,7 @@ class Valutec extends BasicCCModule
 
     protected function handleResponseAuth($authResult)
     {
-        $xml = new xmlData($authResult["response"]);
+        $xml = new XmlData($authResult["response"]);
         $request = $this->last_request;
         $this->last_paycard_transaction_id = $request->last_paycard_transaction_id;
         $response = new PaycardResponse($request, $authResult, PaycardLib::paycard_db());
@@ -451,7 +455,7 @@ class Valutec extends BasicCCModule
 
     protected function handleResponseVoid($vdResult)
     {
-        $xml = new xmlData($vdResult["response"]);
+        $xml = new XmlData($vdResult["response"]);
         $request = $this->last_request;
         $this->last_paycard_transaction_id = $request->last_paycard_transaction_id;
         $response = new PaycardResponse($request, $vdResult, PaycardLib::paycard_db());
@@ -517,7 +521,7 @@ class Valutec extends BasicCCModule
 
     protected function handleResponseBalance($balResult)
     {
-        $xml = new xmlData($balResult["response"]);
+        $xml = new XmlData($balResult["response"]);
 
         $comm = $this->pmod->commError($balResult);
         if ($comm !== false) {

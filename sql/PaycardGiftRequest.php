@@ -21,6 +21,8 @@
 
 *********************************************************************************/
 
+namespace COREPOS\pos\plugins\Paycards\sql;
+
 class PaycardGiftRequest extends PaycardRequest
 {
     public function __construct($refnum, $dbTrans)

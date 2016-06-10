@@ -2,11 +2,19 @@
 
 function pcAutoLoad($class)
 {
-    $name = $class . '.php';
-    $base = __DIR__ . '/../';
-    $file = pcFindFile($base, $name);
-    if ($file) {
-        include($file);
+    if (strstr($class, '\\')) {
+        if ($class[0] == '\\') $class = substr($class, 1);
+        if (substr($class, 0, 29) === 'COREPOS\\pos\\plugins\\Paycards\\') {
+            $path = __DIR__ . '/../' . str_replace('\\', '/', substr($class, 29)) . '.php';
+            if (file_exists($path)) include($path);
+        }
+    } else {
+        $name = $class . '.php';
+        $base = __DIR__ . '/../';
+        $file = pcFindFile($base, $name);
+        if ($file) {
+            include($file);
+        }
     }
 }
 

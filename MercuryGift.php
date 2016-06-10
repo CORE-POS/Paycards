@@ -21,13 +21,14 @@
 
 *********************************************************************************/
 
+use COREPOS\pos\plugins\Paycards\xml\XmlData;
+
 /*
  * Mercury Gift Card processing module
  *
  */
 
 if (!class_exists("AutoLoader")) include_once(realpath(dirname(__FILE__).'/../../lib/AutoLoader.php'));
-
 if (!class_exists("PaycardLib")) include_once(realpath(dirname(__FILE__)."/lib/PaycardLib.php"));
 
 define('MERCURY_GTERMINAL_ID',"");
@@ -500,7 +501,7 @@ class MercuryGift extends BasicCCModule
     {
         $resp = $this->desoapify("GiftTransactionResult",
             $authResult["response"]);
-        $xml = new xmlData($resp);
+        $xml = new XmlData($resp);
 
         // initialize
         $dbTrans = Database::tDataConnect();
@@ -623,7 +624,7 @@ class MercuryGift extends BasicCCModule
     {
         $resp = $this->desoapify("GiftTransactionResult",
             $vdResult["response"]);
-        $xml = new xmlData($resp);
+        $xml = new XmlData($resp);
 
         // initialize
         $dbTrans = Database::tDataConnect();
@@ -713,7 +714,7 @@ class MercuryGift extends BasicCCModule
     {
         $resp = $this->desoapify("GiftTransactionResult",
             $balResult["response"]);
-        $xml = new xmlData($resp);
+        $xml = new XmlData($resp);
 
         if ($balResult['curlErr'] != CURLE_OK || $balResult['curlHTTP'] != 200) {
             if ($balResult['curlHTTP'] == '0'){
