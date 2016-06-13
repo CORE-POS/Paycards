@@ -371,15 +371,6 @@ if (!class_exists('PrehLib', false)) {
         public static function peekItem($bool){}
     }
 }
-if (!class_exists('Void', false)) {
-    class Void
-    {
-        public function voidid($id, $json)
-        {
-            return array();
-        }
-    }
-}
 if (!class_exists('ESCPOSPrintHandler', false)) {
     class ESCPOSPrintHandler
     {
@@ -389,6 +380,10 @@ if (!class_exists('ESCPOSPrintHandler', false)) {
 
 if (!class_exists('COREPOS\\pos\\lib\\MemberLib')) {
     include(__DIR__ . '/mocks/MemberLib.php');
+}
+
+if (!class_exists('COREPOS\\pos\\parser\\parse\\Void')) {
+    include(__DIR__ . '/mocks/Void.php');
 }
 
 if (!class_exists('COREPOS\\pos\\lib\\DeptLib')) {
