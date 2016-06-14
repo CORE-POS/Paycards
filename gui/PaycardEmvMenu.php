@@ -94,6 +94,7 @@ class PaycardEmvMenu extends NoInputCorePage
             if ($this->conf->get('PaycardsDatacapMode') == 1) {
                 $this->menu = array(
                     'EMV' => 'EMV Credit/Debit',
+                    'CREDIT' => 'Credit only',
                     'EBT' => 'EBT',
                     'GIFT' => 'Gift',
                 );
