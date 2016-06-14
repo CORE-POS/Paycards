@@ -39,6 +39,8 @@ class SigCapture
         $ret = ($this->conf->get('CacheCardType') == 'CREDIT' || $this->conf->get('CacheCardType') == '') ? true : false;
         if ($this->conf->get('paycard_type') == PaycardLib::PAYCARD_TYPE_GIFT) {
             $ret = false;
+        } elseif ($this->conf->get('EmvSignature') === true) {
+            $ret = true;
         }
 
         return $ret;
