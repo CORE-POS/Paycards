@@ -346,24 +346,6 @@ if (!class_exists('TenderModule', false)) {
         }
     }
 }
-if (!class_exists('Authenticate', false)) {
-    class Authenticate
-    {
-        public static function checkPassword($p)
-        {
-            return true;
-        }
-        public static function getPermission($emp)
-        {
-            return 0;
-        }
-
-        public static function checkPermission($emp, $level)
-        {
-            return true;
-        }
-    }
-}
 if (!class_exists('PrehLib', false)) {
     class PrehLib
     {
@@ -392,6 +374,10 @@ if (!class_exists('COREPOS\\pos\\lib\\DeptLib')) {
 
 if (!class_exists('COREPOS\\pos\\lib\\FormLib')) {
     include(__DIR__ . '/mocks/FormLib.php');
+}
+
+if (!class_exists('COREPOS\\pos\\lib\\Authenticate')) {
+    include(__DIR__ . '/mocks/Authenticate.php');
 }
 
 include(__DIR__ . '/self.php');

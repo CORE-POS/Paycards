@@ -22,6 +22,7 @@
 
 *********************************************************************************/
 
+use COREPOS\pos\lib\Authenticate;
 use COREPOS\pos\lib\FormLib;
 if (!class_exists('AutoLoader')) include_once(dirname(__FILE__).'/../../../lib/AutoLoader.php');
 
