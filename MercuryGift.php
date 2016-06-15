@@ -21,6 +21,7 @@
 
 *********************************************************************************/
 
+use COREPOS\pos\lib\Database;
 use COREPOS\pos\plugins\Paycards\xml\XmlData;
 
 /*

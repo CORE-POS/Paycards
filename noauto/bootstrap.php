@@ -276,32 +276,6 @@ if (!class_exists('SQLManager', false)) {
     }
 }
 
-if (!class_exists('Database', false)) {
-    class Database
-    {
-        public static function setglobalvalue($k, $v)
-        {
-        }
-
-        public static function getsubtotals(){}
-
-        public static function pDataConnect()
-        {
-            return new SQLManager('', '', '', '', '');
-        }
-
-        public static function tDataConnect()
-        {
-            return new SQLManager('', '', '', '', '');
-        }
-
-        public static function mDataConnect()
-        {
-            return new SQLManager('', '', '', '', '');
-        }
-    }
-}
-
 if (!class_exists('CoreLocal', false)) {
     class CoreLocal
     {
@@ -378,6 +352,10 @@ if (!class_exists('COREPOS\\pos\\lib\\FormLib')) {
 
 if (!class_exists('COREPOS\\pos\\lib\\Authenticate')) {
     include(__DIR__ . '/mocks/Authenticate.php');
+}
+
+if (!class_exists('COREPOS\\pos\\lib\\Database')) {
+    include(__DIR__ . '/mocks/Database.php');
 }
 
 include(__DIR__ . '/self.php');

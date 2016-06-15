@@ -1,5 +1,6 @@
 <?php
 
+use COREPOS\pos\lib\Database;
 use COREPOS\pos\lib\FormLib;
 use COREPOS\pos\plugins\Paycards\card\CardReader;
 use COREPOS\pos\plugins\Paycards\card\CardValidator;

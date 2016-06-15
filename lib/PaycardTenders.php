@@ -1,5 +1,7 @@
 <?php
 
+use COREPOS\pos\lib\Database;
+
 class PaycardTenders
 {
     public function __construct($conf)
