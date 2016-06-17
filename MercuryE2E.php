@@ -22,6 +22,7 @@
 *********************************************************************************/
 
 use COREPOS\pos\lib\Database;
+use COREPOS\pos\lib\UdpComm;
 use COREPOS\pos\plugins\Paycards\sql\PaycardRequest;
 use COREPOS\pos\plugins\Paycards\sql\PaycardVoidRequest;
 use COREPOS\pos\plugins\Paycards\sql\PaycardGiftRequest;

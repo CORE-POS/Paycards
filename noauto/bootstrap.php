@@ -29,13 +29,6 @@ if (!class_exists('LibraryClass', false)) {
     class LibraryClass {}
 }
 
-if (!class_exists('UdpComm', false)) {
-    class UdpComm
-    {
-        public static function udpSend($msg){}
-    }
-}
-
 if (!class_exists('AutoLoader', false)) {
     class AutoLoader 
     {
@@ -356,6 +349,10 @@ if (!class_exists('COREPOS\\pos\\lib\\Authenticate')) {
 
 if (!class_exists('COREPOS\\pos\\lib\\Database')) {
     include(__DIR__ . '/mocks/Database.php');
+}
+
+if (!class_exists('COREPOS\\pos\\lib\\UdpComm')) {
+    include(__DIR__ . '/mocks/UdpComm.php');
 }
 
 include(__DIR__ . '/self.php');
