@@ -1,6 +1,6 @@
 <?php
 
-namespace COREPOS\\pos\\lib\\gui;
+namespace COREPOS\pos\lib\gui;
 
 class NoInputCorePage extends BasicCorePage {}
 

@@ -25,6 +25,7 @@ use COREPOS\pos\lib\Database;
 use COREPOS\pos\lib\FormLib;
 use COREPOS\pos\lib\MiscLib;
 use COREPOS\pos\lib\gui\NoInputCorePage;
+use COREPOS\pos\lib\PrintHandlers\PrintHandler;
 if (!class_exists('AutoLoader')) include_once(dirname(__FILE__).'/../../../lib/AutoLoader.php');
 
 class PaycardEmvCaAdmin extends NoInputCorePage 
@@ -84,11 +85,7 @@ class PaycardEmvCaAdmin extends NoInputCorePage
                 $this->change_page(MiscLib::baseURL() . 'gui-modules/boxMsg2.php');
                 return false;
             }
-            $printClass = $this->conf->get('ReceiptDriver');
-            if ($printClass === '' || !class_exists($printClass)) {
-                $printClass = 'ESCPOSPrintHandler';
-            }
-            $PRINTOBJ = new $printClass();
+            $PRINTOBJ = PrintHandler::factory($this->conf->get('ReceiptDriver'));
             $receiptBody = implode("\n", $resp['receipt']);
             $receiptBody .= "\n\n\n\n\n\n\n";
             $receiptBody .= chr(27).chr(105);

@@ -24,7 +24,7 @@
 use COREPOS\pos\lib\Database;
 use COREPOS\pos\lib\FormLib;
 use COREPOS\pos\lib\DisplayLib;
-use COREPOS\pos\lib\FormLib;
+use COREPOS\pos\lib\PrehLib;
 use COREPOS\pos\lib\ReceiptLib;
 use COREPOS\pos\lib\UdpComm;
 use COREPOS\pos\lib\gui\BasicCorePage;

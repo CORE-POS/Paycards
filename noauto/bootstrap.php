@@ -143,18 +143,11 @@ if (!class_exists('CoreLocal', false)) {
     }
 }
 
-if (!class_exists('PrehLib', false)) {
-    class PrehLib
-    {
-        public static function fsEligible(){}
-        public static function peekItem($bool){}
-    }
+if (!class_exists('COREPOS\\pos\\lib\\PrehLib', false)) {
+    include(__DIR__ . '/mocks/PrehLib.php');
 }
-if (!class_exists('ESCPOSPrintHandler', false)) {
-    class ESCPOSPrintHandler
-    {
-        public function writeLine($msg){}
-    }
+if (!class_exists('COREPOS\\pos\\lib\\PrintHandlers\\PrintHandler', false)) {
+    include(__DIR__ . '/mocks/PrintHandler.php');
 }
 
 if (!class_exists('COREPOS\\pos\\lib\\MemberLib')) {

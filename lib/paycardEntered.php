@@ -21,6 +21,7 @@
 
 *********************************************************************************/
 
+use COREPOS\pos\lib\PrehLib;
 use COREPOS\pos\lib\UdpComm;
 use COREPOS\pos\parser\Parser;
 use COREPOS\pos\plugins\Paycards\card\CardReader;
