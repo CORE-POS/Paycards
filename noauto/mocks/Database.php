@@ -1,4 +1,5 @@
 <?php
+
 namespace COREPOS\pos\lib;
 use \SQLManager;
 
@@ -25,5 +26,4 @@ class Database
         return new SQLManager('', '', '', '', '');
     }
 }
-
 

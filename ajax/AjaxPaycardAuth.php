@@ -21,6 +21,9 @@
 
 *********************************************************************************/
 
+use COREPOS\pos\lib\AjaxCallback;
+use COREPOS\pos\lib\MiscLib;
+
 if (!class_exists('AutoLoader')) include_once(dirname(__FILE__).'/../../../lib/AutoLoader.php');
 
 class AjaxPaycardAuth extends AjaxCallback

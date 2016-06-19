@@ -24,6 +24,7 @@
 use COREPOS\pos\lib\Authenticate;
 use COREPOS\pos\lib\Database;
 use COREPOS\pos\lib\FormLib;
+use COREPOS\pos\lib\gui\NoInputCorePage;
 if (!class_exists('AutoLoader')) include_once(dirname(__FILE__).'/../../../lib/AutoLoader.php');
 
 class PaycardTransListPage extends NoInputCorePage 

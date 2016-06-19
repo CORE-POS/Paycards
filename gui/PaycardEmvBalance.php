@@ -22,7 +22,9 @@
 
 *********************************************************************************/
 
+use COREPOS\pos\lib\Database;
 use COREPOS\pos\lib\FormLib;
+use COREPOS\pos\lib\MiscLib;
 if (!class_exists('AutoLoader')) include_once(dirname(__FILE__).'/../../../lib/AutoLoader.php');
 
 class PaycardEmvBalance extends PaycardProcessPage 

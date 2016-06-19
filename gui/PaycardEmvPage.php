@@ -23,6 +23,7 @@
 *********************************************************************************/
 
 use COREPOS\pos\lib\FormLib;
+use COREPOS\pos\lib\MiscLib;
 use COREPOS\pos\lib\UdpComm;
 use COREPOS\pos\plugins\Paycards\card\CardValidator;
 if (!class_exists('AutoLoader')) include_once(dirname(__FILE__).'/../../../lib/AutoLoader.php');

@@ -22,6 +22,7 @@
 *********************************************************************************/
 
 use COREPOS\pos\lib\UdpComm;
+use COREPOS\pos\parser\Parser;
 use COREPOS\pos\plugins\Paycards\card\CardReader;
 
 if (!class_exists("PaycardLib")) 

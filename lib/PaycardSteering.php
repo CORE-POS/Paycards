@@ -21,6 +21,8 @@
 
 *********************************************************************************/
 
+use COREPOS\pos\parser\Parser;
+
 class PaycardSteering extends Parser {
 
     function check($str)

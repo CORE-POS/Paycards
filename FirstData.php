@@ -21,6 +21,7 @@
 
 *********************************************************************************/
 
+use COREPOS\pos\lib\TransRecord;
 use COREPOS\pos\plugins\Paycards\sql\PaycardRequest;
 use COREPOS\pos\plugins\Paycards\sql\PaycardResponse;
 use COREPOS\pos\plugins\Paycards\xml\XmlData;

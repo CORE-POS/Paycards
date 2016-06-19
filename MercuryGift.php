@@ -22,6 +22,7 @@
 *********************************************************************************/
 
 use COREPOS\pos\lib\Database;
+use COREPOS\pos\lib\TransRecord;
 use COREPOS\pos\plugins\Paycards\xml\XmlData;
 
 /*

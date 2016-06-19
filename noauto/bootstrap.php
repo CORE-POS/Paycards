@@ -4,29 +4,16 @@ define('MOCK_ALL_REQUESTS', true);
 
 /* mock COREPOS API classes for testing */
 
-if (!class_exists('Plugin', false)) {
-    class Plugin 
-    {
-        public function pluginUrl()
-        {
-            return '';
-        }
-    }
+if (!class_exists('COREPOS\\pos\\plugins\\Plugin', false)) {
+    include(__DIR__ . '/mocks/Plugin.php');
 }
 
-if (!class_exists('AjaxCallback', false)) {
-    class AjaxCallback
-    {
-        public static function run(){}
-    }
+if (!class_exists('COREPOS\\pos\\lib\\AjaxCallback', false)) {
+    include(__DIR__ . '/mocks/AjaxCallback.php');
 }
 
-if (!class_exists('Notifier', false)) {
-    class Notifier {}
-}
-
-if (!class_exists('LibraryClass', false)) {
-    class LibraryClass {}
+if (!class_exists('COREPOS\\pos\\lib\\Notifier', false)) {
+    include(__DIR__ . '/mocks/Notifier.php');
 }
 
 if (!class_exists('AutoLoader', false)) {
@@ -36,165 +23,32 @@ if (!class_exists('AutoLoader', false)) {
     }
 }
 
-if (!class_exists('PreParser', false)) {
-    class PreParser {}
+if (!class_exists('COREPOS\\pos\\lib\\gui\\BasicCorePage', false)) {
+    include(__DIR__ . '/mocks/BasicCorePage.php');
 }
 
-if (!class_exists('FooterBox', false)) {
-    class FooterBox {}
+if (!class_exists('COREPOS\\pos\\lib\\gui\\NoInputCorePage', false)) {
+    include(__DIR__ . '/mocks/NoInputCorePage.php');
 }
 
-if (!class_exists('ReceiptMessage', false)) {
-    class ReceiptMessage {}
+if (!class_exists('COREPOS\\pos\\parser\\Parser', false)) {
+    include(__DIR__ . '/mocks/Parser.php');
 }
 
-if (!class_exists('SpecialUPC', false)) {
-    class SpecialUPC {}
+if (!class_exists('COREPOS\\pos\\lib\\DisplayLib', false)) {
+    include(__DIR__ . '/mocks/DisplayLib.php');
 }
 
-if (!class_exists('BasicCorePage', false)) {
-
-    class BasicCorePage 
-    {
-        protected $page_url = '';
-        protected $body_class = '';
-        public function __construct(){}
-        public function change_page($url){}
-        public function addOnloadCommand($str){}
-        public function input_header($action='')
-        {
-            return '';
-        }
-        public function hide_input($hide){}
-        public function head_content(){}
-        protected function scale_box()
-        {
-            return '';
-        }
-        protected function scanner_scale_polling()
-        {
-            return '';
-        }
-    }
+if (!class_exists('COREPOS\\pos\\lib\\MiscLib', false)) {
+    include(__DIR__ . '/mocks/MiscLib.php');
 }
 
-if (!class_exists('InputCorePage', false)) {
-    class InputCorePage extends BasicCorePage {}
+if (!class_exists('COREPOS\\pos\\lib\\TransRecord', false)) {
+    include(__DIR__ . '/mocks/TransRecord.php');
 }
 
-if (!class_exists('NoInputCorePage', false)) {
-    class NoInputCorePage extends BasicCorePage {}
-}
-
-if (!class_exists('Parser', false)) {
-    class Parser
-    {
-        public function default_json()
-        {
-            return array(
-                'main_frame' => false,
-            );
-        }
-    }
-}
-
-if (!class_exists('DisplayLib', false)) {
-    class DisplayLib
-    {
-        public static function printfooter()
-        {
-            return '';
-        }
-
-        public static function boxMsg($msg, $header, $noBeep, $buttons=array())
-        {
-            return $msg . $header;
-        }
-
-        public static function xboxMsg($msg, $buttons=array())
-        {
-            return $msg;
-        }
-
-        public static function standardClearButton()
-        {
-            return array();
-        }
-        
-        public static function lastpage()
-        {
-            return '';
-        }
-    }
-}
-
-if (!class_exists('QuickMenuLauncher', false)) {
-    class QuickMenuLauncher
-    {
-        public function parse($str)
-        {
-            return array();
-        }
-    }
-}
-
-if (!class_exists('MiscLib', false)) {
-    class MiscLib
-    {
-        public static function baseURL()
-        {
-            return '';
-        }
-
-        public static function win32()
-        {
-            return false;
-        }
-
-        static public function pingport($host, $dbms)
-        {
-            return 1;
-        }
-    }
-}
-
-if (!class_exists('TransRecord', false)) {
-    class TransRecord
-    {
-        public static function addComment($c){}
-        public static function addFsTaxExempt(){}
-        public static function addRecord($arr)
-        {
-        }
-        public static function addFlaggedTender($desc, $code, $amt, $id, $flag){}
-        public static function debugLog($msg){}
-    }
-}
-
-if (!class_exists('ReceiptLib', false)) {
-
-    class ReceiptLib
-    {
-        public static function bold()
-        {
-            return '';
-        }
-
-        public static function unbold()
-        {
-            return '';
-        }
-
-        public static function centerString($str)
-        {
-            return $str;
-        }
-
-        public static function receiptNumber()
-        {
-            return '1-1-1';
-        }
-    }
+if (!class_exists('COREPOS\\pos\\lib\\ReceiptLib', false)) {
+    include(__DIR__ . '/mocks/ReceiptLib.php');
 }
 
 if (!class_exists('SQLManager', false)) {
@@ -269,6 +123,10 @@ if (!class_exists('SQLManager', false)) {
     }
 }
 
+if (!class_exists('COREPOS\\pos\\lib\\Database', false)) {
+    include(__DIR__ . '/mocks/Database.php');
+}
+
 if (!class_exists('CoreLocal', false)) {
     class CoreLocal
     {
@@ -285,34 +143,6 @@ if (!class_exists('CoreLocal', false)) {
     }
 }
 
-if (!class_exists('LookupByCard', false)) {
-    class MemberLookup
-    {
-        protected function listToArray($dbc, $result)
-        {
-            return array();
-        }
-    }
-}
-
-if (!class_exists('TenderModule', false)) {
-    class TenderModule
-    {
-        protected $amount = 0;
-        protected $tender_code = 'TT';
-        protected $name_string = 'Tender';
-
-        public function defaultTotal()
-        {
-            return 0;
-        }
-
-        public function setTC($tc)
-        {
-            $this->tender_code = $tc;
-        }
-    }
-}
 if (!class_exists('PrehLib', false)) {
     class PrehLib
     {
