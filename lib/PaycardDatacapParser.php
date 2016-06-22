@@ -94,7 +94,8 @@ class PaycardDatacapParser extends Parser
                 $this->conf->set('CacheCardType', 'CREDIT');
                 break;
             case 'DATACAPCCAUTO':
-                $this->conf->set('CacheCardType', 'CREDIT');
+                $autoMode = $this->conf->get('PaycardsDatacapMode') == 1 ? 'EMV' : 'CREDIT';
+                $this->conf->set('CacheCardType', $autoMode);
                 $ret['main_frame'] .= '?reginput=';
                 break;
             case 'DATACAPDC':

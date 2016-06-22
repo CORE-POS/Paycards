@@ -71,13 +71,12 @@ class MercuryDC extends MercuryE2E
             <HostOrIP>' . $dcHost . '</HostOrIP>
             <SequenceNo>{{SequenceNo}}</SequenceNo>
             <CollectData>CardholderName</CollectData>
+            <OKAmount>Disallow</OKAmount>
             <PartialAuth>Allow</PartialAuth>';
-            if ($prompt) {
-                $msgXml .= '
-                    <Account>
-                        <AcctNo>Prompt</AcctNo>
-                    </Account>';
-            }
+            $msgXml .= '
+            <Account>
+                <AcctNo>' . ($prompt ? 'Prompt' : 'SecureDevice') . '</AcctNo>
+            </Account>';
             if ($this->conf->get('PaycardsDatacapMode') == 2) {
                 $msgXml .= '<MerchantLanguage>English</MerchantLanguage>';
             } elseif ($this->conf->get('PaycardsDatacapMode') == 3) {
@@ -450,7 +449,7 @@ class MercuryDC extends MercuryE2E
                         (dateID, tdate, empNo, registerNo, transNo, transID, content)
                     VALUES 
                         (?, ?, ?, ?, ?, ?, ?)');
-                $dbc->execute($printP, array(date('Ymd'), date('Y-m-d H:i:s'), $this->conf->get('cashierNo'), $this->conf->get('laneno'), $this->conf->get('transno'), $receiptID, $printData));
+                $dbc->execute($printP, array(date('Ymd'), date('Y-m-d H:i:s'), $this->conf->get('CashierNo'), $this->conf->get('laneno'), $this->conf->get('transno'), $receiptID, $printData));
             }
         }
 
@@ -509,6 +508,7 @@ class MercuryDC extends MercuryE2E
                      */
                     TransRecord::addcomment("");
                 }
+                UdpComm::udpSend('termReset');
                 break;
             default:
                 $this->conf->set("boxMsg","An unknown error occurred<br />at the gateway");
