@@ -33,16 +33,6 @@ if (!class_exists("PaycardLib")) include_once(realpath(dirname(__FILE__)."/lib/P
 
 if (!class_exists("AutoLoader")) include_once(realpath(dirname(__FILE__).'/../../lib/AutoLoader.php'));
 
-define('GOEMERCH_ID','');
-define('GOEMERCH_PASSWD','');
-define('GOEMERCH_GATEWAY_ID','');
-
-/* test credentials 
-define('GOEMERCH_ID','1264');
-define('GOEMERCH_PASSWD','password');
-define('GOEMERCH_GATEWAY_ID','a91c38c3-7d7f-4d29-acc7-927b4dca0dbe');
-*/
-
 class GoEMerchant extends BasicCCModule 
 {
 
@@ -356,9 +346,9 @@ class GoEMerchant extends BasicCCModule
         $this->last_ref_num = $refNum;
         $live = 1;
 
-        $merchantID = GOEMERCH_ID;
-        $password = GOEMERCH_PASSWD;
-        $gatewayID = GOEMERCH_GATEWAY_ID;
+        $merchantID = $this->conf->get('GoEMerchID');
+        $password = $this->conf->get('GoEMerchPassword');
+        $gatewayID = $this->conf->get('GoEmerchGatewayID');
         if ($this->conf->get("training") == 1) {
             $merchantID = "1264";
             $password = "password";
@@ -486,9 +476,9 @@ class GoEMerchant extends BasicCCModule
         $laneNo = $temp[1];
         $transNo = $temp[2];
 
-        $merchantID = GOEMERCH_ID;
-        $password = GOEMERCH_PASSWD;
-        $gatewayID = GOEMERCH_GATEWAY_ID;
+        $merchantID = $this->conf->get('GoEMerchID');
+        $password = $this->conf->get('GoEMerchPassword');
+        $gatewayID = $this->conf->get('GoEmerchGatewayID');
         if ($this->conf->get("training") == 1) {
             $merchantID = "1264";
             $password = "password";
@@ -596,9 +586,9 @@ class GoEMerchant extends BasicCCModule
 
     public function lookupTransaction($ref, $local, $mode)
     {
-        $merchantID = GOEMERCH_ID;
-        $password = GOEMERCH_PASSWD;
-        $gatewayID = GOEMERCH_GATEWAY_ID;
+        $merchantID = $this->conf->get('GoEMerchID');
+        $password = $this->conf->get('GoEMerchPassword');
+        $gatewayID = $this->conf->get('GoEmerchGatewayID');
         if (substr($ref, 13, 4) == "9999") {
             $merchantID = "1264";
             $password = "password";

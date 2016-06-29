@@ -758,7 +758,7 @@ class MercuryGift extends BasicCCModule
         if ($this->conf->get("training") == 1) {
             return "595901";
         }
-        return MERCURY_GTERMINAL_ID;
+        return $this->conf->get('MercuryGiftID');
     }
 
     private function getPw()
@@ -766,7 +766,7 @@ class MercuryGift extends BasicCCModule
         if ($this->conf->get("training") == 1) {
             return "xyz";
         }
-        return MERCURY_GPASSWORD;
+        return $this->conf->get('MercuryGiftPassword');
     }
 
     private function getPAN()
