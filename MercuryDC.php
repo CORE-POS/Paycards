@@ -111,6 +111,19 @@ class MercuryDC extends MercuryE2E
         return $msgXml;
     }
 
+    public function switchToRecurring($xml)
+    {
+        $xml = str_replace('OneTime', 'Recurring', $xml);
+        $dbc = Database::tDataConnect();
+        $query = 'UPDATE PaycardTransactions
+            SET transType=' . $dbc->concat("'R.'", 'transType', '') . '
+            WHERE paycardTransactionID=?';
+        $prep = $dbc->prepare($query);
+        $res = $dbc->execute($prep, array($this->last_request->last_paycard_transaction_id));
+
+        return $res ? $xml : false;
+    }
+
     /**
       Prepare an XML request body to void an PDCX
       or EMVX transaction
@@ -153,10 +166,10 @@ class MercuryDC extends MercuryE2E
         $tranCode = '';
         $tranType = '';
         $cardType = false;
-        if ($prev['mode'] == 'EMVSale') {
+        if ($prev['cardType'] == 'EMV' && $prev['mode'] == 'Sale') {
             $tranCode = 'EMVVoidSale';
             $tranType = 'EMV';
-        } elseif ($prev['mode'] == 'EMVReturn') {
+        } elseif ($prev['cardType'] == 'EMV' && $prev['mode'] == 'Return') {
             $tranCode = 'EMVVoidReturn';
             $tranType = 'EMV';
         } elseif ($prev['mode'] == 'NoNSFSale') {
@@ -483,23 +496,17 @@ class MercuryDC extends MercuryE2E
             case 'APPROVED':
                 return PaycardLib::PAYCARD_ERR_OK;
             case 'DECLINED':
-                if ($issuer == 'EBT') {
-                    // if EBT is declined but lists a balance less than the
-                    // requested authorization, it may be possible to
-                    // charge the card for a less amount. 
-                    TransRecord::addcomment("");
-                    $this->conf->set('boxMsg', sprintf('Card Balance: $%.2f', $ebtbalance));
-                } elseif (substr($tranCode, 0, 3) == 'EMV') {
-                    $this->conf->set('paycard_amount', 0);
-                    return PaycardLib::PAYCARD_ERR_OK;
-                }
-                UdpComm::udpSend('termReset');
-                $this->conf->set('ccTermState','swipe');
                 // intentional fallthrough
             case 'ERROR':
                 $this->conf->set("boxMsg","");
                 $texts = $xml->query('/RStream/CmdResponse/TextResponse');
                 $this->conf->set("boxMsg","Error: $texts");
+                if ($issuer == 'EBT' && $ebtbalance) {
+                    // if EBT is declined but lists a balance less than the
+                    // requested authorization, it may be possible to
+                    // charge the card for a lesser amount.
+                    $this->conf->set('boxMsg', sprintf('Error: %s<br />Card Balance: $%.2f', $texts, $ebtbalance));
+                }
                 $dsix = $xml->query('/RStream/CmdResponse/DSIXReturnCode');
                 if ($dsix !== '001007' || $dsix !== '003007' || $dsix !== '003010') {
                     /* These error codes indicate a potential connectivity
@@ -509,6 +516,7 @@ class MercuryDC extends MercuryE2E
                     TransRecord::addcomment("");
                 }
                 UdpComm::udpSend('termReset');
+                $this->conf->set('ccTermState','swipe');
                 break;
             default:
                 $this->conf->set("boxMsg","An unknown error occurred<br />at the gateway");
