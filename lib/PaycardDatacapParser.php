@@ -54,6 +54,7 @@ class PaycardDatacapParser extends Parser
         'PVDATACAPEC',
         'ACDATACAPGD',
         'AVDATACAPGD',
+        'DATACAPRECUR',
     );
     
     public function __construct()
@@ -155,6 +156,9 @@ class PaycardDatacapParser extends Parser
                 $this->conf->set('paycard_mode', PaycardLib::PAYCARD_MODE_ADDVALUE);
                 $this->conf->set('paycard_type', PaycardLib::PAYCARD_TYPE_GIFT);
                 $ret['main_frame'] = $pluginInfo->pluginUrl().'/gui/PaycardEmvGift.php?mode=' . $this->conf->get('paycard_mode');
+                break;
+            case 'DATACAPRECUR':
+                $ret['main_frame'] = $pluginInfo->pluginUrl().'/gui/PaycardEmvRecurring.php';
                 break;
         }
         $this->conf->set('paycard_id', $this->conf->get('LastID')+1);
