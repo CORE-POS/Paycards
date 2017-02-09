@@ -141,6 +141,19 @@ if (!class_exists('CoreLocal', false)) {
             self::$data[$k] = $v;
         }
     }
+
+    class CLWrapper
+    {
+        function get($k)
+        {
+            return CoreLocal::get($k);
+        }
+
+        function set($k, $v)
+        {
+            CoreLocal::set($k, $v);
+        }
+    }
 }
 
 if (!class_exists('COREPOS\\pos\\lib\\PrehLib', false)) {

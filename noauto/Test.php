@@ -577,6 +577,8 @@ class Test extends PHPUnit_Framework_TestCase
     {
         SQLManager::clear();
         CoreLocal::set('paycard_amount', 1);
+        $session = new CLWrapper();
+        $form = null;
 
         $pages = array(
             'PaycardEmvBalance',
@@ -595,7 +597,7 @@ class Test extends PHPUnit_Framework_TestCase
             'paycardboxMsgVoid',
         );
         foreach ($pages as $class) {
-            $p = new $class();
+            $p = new $class($session, $form);
             $p->preprocess();
             ob_start();
             $p->head_content();
@@ -603,11 +605,11 @@ class Test extends PHPUnit_Framework_TestCase
             ob_end_clean();
         }
 
-        $page = new PaycardProcessPage();
+        $page = new PaycardProcessPage($session, $form);
         $this->assertInternalType('string', $page->getHeader());
         $this->assertInternalType('string', $page->getFooter());
 
-        $page = new PaycardEmvMenu();
+        $page = new PaycardEmvMenu($session, $form);
         CoreLocal::set('PaycardsDatacapMode', 1);
         $this->assertEquals(true, $page->preprocess());
         CoreLocal::set('PaycardsDatacapMode', 2);
@@ -627,7 +629,7 @@ class Test extends PHPUnit_Framework_TestCase
         CoreLocal::set('PaycardsDatacapMode', '');
         FormLib::clear();
 
-        $page = new paycardboxMsgAuth();
+        $page = new paycardboxMsgAuth($session, $form);
         FormLib::set('reginput', 'CL');
         $this->assertEquals(false, $page->preprocess());
         FormLib::set('reginput', '100');
@@ -678,7 +680,7 @@ class Test extends PHPUnit_Framework_TestCase
  
         FormLib::clear();
 
-        $page = new paycardSuccess();
+        $page = new paycardSuccess($session, $form);
         CoreLocal::set('boxMsg', '');
         $this->assertEquals(true, $page->preprocess());
         CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_ENCRYPTED);
@@ -710,7 +712,7 @@ class Test extends PHPUnit_Framework_TestCase
         CoreLocal::set('paycard_mode', '');
         FormLib::clear();
 
-        $page = new PaycardEmvSuccess();
+        $page = new PaycardEmvSuccess($session, $form);
         CoreLocal::set('boxMsg', '');
         $this->assertEquals(true, $page->preprocess());
         CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_ENCRYPTED);
@@ -742,7 +744,7 @@ class Test extends PHPUnit_Framework_TestCase
         CoreLocal::set('paycard_mode', '');
         FormLib::clear();
  
-        $page = new PaycardEmvCaAdmin();
+        $page = new PaycardEmvCaAdmin($session, $form);
         FormLib::set('selectlist', 'KC');
         $this->assertEquals(true, $page->preprocess());
         ob_start();
@@ -758,7 +760,7 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(false, $page->preprocess());
         FormLib::clear();
 
-        $page = new PaycardEmvPage();
+        $page = new PaycardEmvPage($session, $form);
         FormLib::set('reginput', 'CL');
         $this->assertEquals(false, $page->preprocess());
         FormLib::set('reginput', '100');
@@ -801,7 +803,7 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(false, $page->preprocess());
         FormLib::clear();
 
-        $page = new paycardboxMsgVoid();
+        $page = new paycardboxMsgVoid($session, $form);
         CoreLocal::set('paycard_mode', PaycardLib::PAYCARD_MODE_AUTH);
         CoreLocal::set('RegisteredPaycardClasses', array('AuthorizeDotNet'));
         CoreLocal::set('paycard_type', PaycardLib::PAYCARD_TYPE_CREDIT);
@@ -823,7 +825,7 @@ class Test extends PHPUnit_Framework_TestCase
         ob_end_clean();
         FormLib::clear();
 
-        $page = new paycardboxMsgGift();
+        $page = new paycardboxMsgGift($session, $form);
         FormLib::set('reginput', 'CL');
         $this->assertEquals(false, $page->preprocess());
         FormLib::set('reginput', '100');
@@ -850,7 +852,7 @@ class Test extends PHPUnit_Framework_TestCase
         CoreLocal::set('paycard_amount', '');
         FormLib::clear();
 
-        $page = new PaycardEmvGift();
+        $page = new PaycardEmvGift($session, $form);
         FormLib::set('amount', 100);
         FormLib::set('mode', PaycardLib::PAYCARD_MODE_AUTH);
         $this->assertEquals(false, $page->preprocess());
@@ -874,7 +876,7 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(false, $page->preprocess());
         FormLib::clear();
 
-        $page = new PaycardEmvBalance();
+        $page = new PaycardEmvBalance($session, $form);
         FormLib::set('reginput', 'CL');
         $this->assertEquals(false, $page->preprocess());
         FormLib::set('reginput', 'MANUAL');
@@ -887,14 +889,14 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(false, $page->preprocess());
         FormLib::clear();
 
-        $page = new  paycardboxMsgBalance();
+        $page = new  paycardboxMsgBalance($session, $form);
         FormLib::set('reginput', 'CL');
         $this->assertEquals(false, $page->preprocess());
         FormLib::set('reginput', '');
         $this->assertEquals(true, $page->preprocess());
         FormLib::clear();
 
-        $page = new PaycardEmvVoid();
+        $page = new PaycardEmvVoid($session, $form);
         SQLManager::addResult(array(0=>1));
         FormLib::set('reginput', 'CL');
         $this->assertEquals(false, $page->preprocess());
@@ -913,7 +915,7 @@ class Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(false, $page->preprocess());
         FormLib::clear();
 
-        $page = new PaycardTransLookupPage();
+        $page = new PaycardTransLookupPage($session, $form);
         FormLib::set('doLookup', 1);
         FormLib::set('id', str_repeat('9', 16));
         FormLib::set('local', 1);
@@ -929,7 +931,7 @@ class Test extends PHPUnit_Framework_TestCase
         ob_end_clean();
         FormLib::clear();
 
-        $page = new PaycardTransListPage();
+        $page = new PaycardTransListPage($session, $form);
         $page->preprocess();
         SQLManager::addResult(array('amount'=>1, 'PAN'=>'1', 'refNum'=>1));
         SQLManager::addResult(false); // end first while loop
