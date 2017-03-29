@@ -4,6 +4,7 @@ namespace COREPOS\pos\lib;
 
 class DeptLib
 {
-    public static function deptkey($amt, $dept){}
+    public function __construct($session){}
+    public function deptkey($amt, $dept){}
 }
 
