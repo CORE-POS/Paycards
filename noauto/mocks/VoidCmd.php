@@ -2,7 +2,7 @@
 
 namespace COREPOS\pos\parser\parse;
 
-class Void
+class VoidCmd
 {
     public function __construct($session)
     {

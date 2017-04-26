@@ -167,8 +167,8 @@ if (!class_exists('COREPOS\\pos\\lib\\MemberLib')) {
     include(__DIR__ . '/mocks/MemberLib.php');
 }
 
-if (!class_exists('COREPOS\\pos\\parser\\parse\\Void')) {
-    include(__DIR__ . '/mocks/Void.php');
+if (!class_exists('COREPOS\\pos\\parser\\parse\\VoidCmd')) {
+    include(__DIR__ . '/mocks/VoidCmd.php');
 }
 
 if (!class_exists('COREPOS\\pos\\lib\\DeptLib')) {
